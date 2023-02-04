@@ -1,30 +1,30 @@
 package org.yuezhikong;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.util.Scanner;
 
-public class Client
-{
-    public static void main(String [] args)
-    {
-        String serverName = args[0];
-        int port = Integer.parseInt(args[1]);
-        try
-        {
-            System.out.println("连接到主机：" + serverName + " ，端口号：" + port);
-            Socket client = new Socket(serverName, port);
-            System.out.println("远程主机地址：" + client.getRemoteSocketAddress());
-            OutputStream outToServer = client.getOutputStream();
-            DataOutputStream out = new DataOutputStream(outToServer);
-
-            out.writeUTF("Hello from " + client.getLocalSocketAddress());
-            InputStream inFromServer = client.getInputStream();
-            DataInputStream in = new DataInputStream(inFromServer);
-            System.out.println("服务器响应： " + in.readUTF());
-            client.close();
-        }catch(IOException e)
-        {
-            e.printStackTrace();
+public class Main {
+    public static void main(String[] args) throws IOException {
+        System.out.print("使用客户端模式请输入1，服务端模式请输入2:");
+        Scanner sc = new Scanner(System.in);
+        int mode = sc.nextInt();
+        if (mode == 1) {
+            Scanner sc2 = new Scanner(System.in);
+            Scanner sc3 = new Scanner(System.in);
+            String serverName = null;
+            System.out.print("请输入要连接的主机:");
+            serverName = sc2.nextLine();
+            System.out.print("请输入端口:");
+            int port = Integer.parseInt(sc3.nextLine());
+            new Client(serverName,port);
+        } else if (mode == 2) {
+            Scanner sc4 = new Scanner(System.in);
+            System.out.print("请输入监听端口:");
+            int port = Integer.parseInt(sc4.nextLine());
+            new Server(port);
+        }
+        else {
+            System.out.print("输入值错误，请重新运行程序");
         }
     }
 }

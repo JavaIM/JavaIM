@@ -1,4 +1,4 @@
-package demo2;
+package org.yuezhikong;
  
 import java.io.BufferedInputStream;  
 import java.io.BufferedOutputStream;  

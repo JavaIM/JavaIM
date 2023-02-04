@@ -1,4 +1,4 @@
-package demo2;
+package org.yuezhikong;
  
 import java.io.BufferedInputStream;  
 import java.io.BufferedOutputStream;  
@@ -19,7 +19,7 @@ import javax.net.ssl.TrustManagerFactory;
  */  
 public class SSLClient{  
  
-	private SSLSocket           sslSocket;  
+	private SSLSocket sslSocket;
  
 	/** 
 	 * 启动客户端程序 
