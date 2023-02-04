@@ -4,7 +4,7 @@ import java.net.*;
 import java.io.*;
 
 public class Server {
-    public Server(int port) throws IOException {
+    public Server(int port) {
         ServerSocket serverSocket = null;
         try {
             serverSocket = new ServerSocket(port);
@@ -44,30 +44,27 @@ public class Server {
             }
         }
         ServerSocket finalServerSocket = serverSocket;
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                BufferedReader reader2 = null;
-                BufferedWriter writer2 = null;
-                while (true) {
-                    try {
-                        Socket server = finalServerSocket.accept();
-                        Socket server2 = finalServerSocket.accept();
-                        reader2 = new BufferedReader(new InputStreamReader(server2.getInputStream()));
-                        writer2 = new BufferedWriter(new OutputStreamWriter(server.getOutputStream()));
-                        String msg2 = null;
-                        while ((msg2 = reader2.readLine()) != null) {
-                            // 读取客户端发送的消息
-                            System.out.println("客户端[" + server2.getInetAddress() + ":" + server2.getPort() + "]: " + msg2);
-                            writer2.write("服务器已收到: " + msg2 + "\n");
-                        }
-                    } catch (SocketTimeoutException s) {
-                        System.out.println("Socket timed out!");
-                        break;
-                } catch (IOException e) {
-                        e.printStackTrace();
-                        break;
+        Runnable runnable = () -> {
+            BufferedReader reader2 = null;
+            BufferedWriter writer2 = null;
+            while (true) {
+                try {
+                    Socket server = finalServerSocket.accept();
+                    Socket server2 = finalServerSocket.accept();
+                    reader2 = new BufferedReader(new InputStreamReader(server2.getInputStream()));
+                    writer2 = new BufferedWriter(new OutputStreamWriter(server.getOutputStream()));
+                    String msg2 = null;
+                    while ((msg2 = reader2.readLine()) != null) {
+                        // 读取客户端发送的消息
+                        System.out.println("客户端[" + server2.getInetAddress() + ":" + server2.getPort() + "]: " + msg2);
+                        writer2.write("服务器已收到: " + msg2 + "\n");
                     }
+                } catch (SocketTimeoutException s) {
+                    System.out.println("Socket timed out!");
+                    break;
+            } catch (IOException e) {
+                    e.printStackTrace();
+                    break;
                 }
             }
         };
