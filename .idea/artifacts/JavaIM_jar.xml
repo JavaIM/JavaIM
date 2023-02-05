@@ -4,6 +4,9 @@
     <root id="archive" name="JavaIM.jar">
       <element id="module-output" name="JavaIM" />
       <element id="library" level="project" name="Maven: commons-io:commons-io:2.11.0" />
+      <element id="library" level="project" name="Maven: commons-codec:commons-codec:1.15" />
+      <element id="library" level="project" name="Maven: org.apache.logging.log4j:log4j-api:2.19.0" />
+      <element id="library" level="project" name="Maven: org.apache.logging.log4j:log4j-core:2.19.0" />
     </root>
   </artifact>
 </component>

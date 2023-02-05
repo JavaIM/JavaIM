@@ -7,14 +7,10 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
-//import java.util.logging.Logger;
+import org.apache.logging.log4j.Level;
 import org.yuezhikong.utils.Logger;
-//import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
 
 public class newServer {
-    //public static final Logger logger = LogManager.getLogger(newServer.class);
     public static final Logger logger = new Logger();
     private final List<Socket> sockets = new ArrayList<>();
     private int ClientID;
@@ -53,17 +49,13 @@ public class newServer {
                 i = i + 1;
             }
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "SendMessage时出现IOException!");
+            logger.log(Level.ERROR, "SendMessage时出现IOException!");
             e.printStackTrace();
         }
     }
+
+
     public newServer(int port) {
-        try {
-            serverSocket = new ServerSocket(port);
-            /* serverSocket.setSoTimeout(10000); */
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         Runnable recvMessage = () -> {
             int CurrentClientID = ClientID;//复制当前的SocketID
             Socket CurrentClientSocket = sockets.get(CurrentClientID);
@@ -100,14 +92,14 @@ public class newServer {
             {
                 if (!"Connection reset".equals(e.getMessage()) && !"Socket closed".equals(e.getMessage()))
                 {
-                    logger.log(Level.SEVERE,"recvMessage线程出现IOException!");
-                    logger.log(Level.SEVERE,"正在关闭Socket并打印报错堆栈！");
+                    logger.log(Level.ERROR,"recvMessage线程出现IOException!");
+                    logger.log(Level.ERROR,"正在关闭Socket并打印报错堆栈！");
                     if (!CurrentClientSocket.isClosed())
                     {
                         try {
                             CurrentClientSocket.close();
                         } catch (IOException ex) {
-                            logger.log(Level.SEVERE,"无法关闭Socket!");
+                            logger.log(Level.ERROR,"无法关闭Socket!");
                         }
                     }
                     e.printStackTrace();
@@ -149,11 +141,17 @@ public class newServer {
                 }
                 catch (IOException e)
                 {
-                    logger.log(Level.SEVERE,"在accept时发生IOException");
+                    logger.log(Level.ERROR,"在accept时发生IOException");
                     e.printStackTrace();
                 }
             }
         };
+        try {
+            serverSocket = new ServerSocket(port);
+            /* serverSocket.setSoTimeout(10000); */
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Thread userAuthThread = new Thread(UserAuthThread);
         userAuthThread.start();
         userAuthThread.setName("UserAuthThread");
@@ -257,7 +255,7 @@ public class newServer {
                                     i = i + 1;
                                 }
                             } catch (IOException e) {
-                                logger.log(Level.SEVERE, "遍历用户时出现IOException!");
+                                logger.log(Level.ERROR, "遍历用户时出现IOException!");
                                 e.printStackTrace();
                             }
                         }
