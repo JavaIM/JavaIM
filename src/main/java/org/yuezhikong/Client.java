@@ -1,15 +1,16 @@
 package org.yuezhikong;
 
+import org.yuezhikong.utils.Logger;
+
 import java.io.*;
 import java.net.Socket;
-import java.util.logging.Logger;
 //import java.util.logging.Logger;
 //import org.apache.logging.log4j.LogManager;
 //import org.apache.logging.log4j.Logger;
 
 public class Client {
     //public static final Logger logger = LogManager.getLogger(Client.class);
-    public static final Logger logger = Logger.getGlobal();
+    public static final Logger logger = new Logger();
     private Socket client;
     public Client(String serverName, int port) {
         try {
@@ -31,11 +32,16 @@ public class Client {
                     try {
                         reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
                         String msg = reader.readLine();
+                        if (msg == null)
+                        {
+                            logger.info("您可能已被服务端强制踢下线");
+                            break;
+                        }
                         logger.info(msg);
                     }
                     catch (IOException e)
                     {
-                        if (!"Connection reset by peer".equals(e.getMessage())) {
+                        if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage())) {
                             logger.warning("发生I/O错误");
                             e.printStackTrace();
                         }
@@ -66,6 +72,8 @@ public class Client {
                     client.close();
                     break;
                 }
+                // 为控制台补上一个>
+                System.out.print(">");
                 // 发送消息给服务器
                 writer.write(input + "\n");
                 writer.flush();
@@ -74,7 +82,7 @@ public class Client {
         }
         catch (IOException e)
         {
-            if (!"Connection reset by peer".equals(e.getMessage())) {
+            if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage())) {
                 logger.warning("发生I/O错误");
                 e.printStackTrace();
             }
