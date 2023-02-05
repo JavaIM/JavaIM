@@ -3,6 +3,7 @@
     <output-path>$PROJECT_DIR$/out/artifacts/JavaIM_jar</output-path>
     <root id="archive" name="JavaIM.jar">
       <element id="module-output" name="JavaIM" />
+      <element id="library" level="project" name="Maven: commons-io:commons-io:2.11.0" />
     </root>
   </artifact>
 </component>

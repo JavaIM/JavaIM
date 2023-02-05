@@ -1,13 +1,12 @@
 package org.yuezhikong.utils;
 
-import com.sun.org.apache.xml.internal.security.utils.Base64;
-import javax.crypto.Cipher;
-
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 
+import javax.crypto.Cipher;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -20,7 +19,6 @@ public class RSA {
      * @param algorithm : 算法
      * @param pubPath   : 公钥保存路径
      * @param priPath   : 私钥保存路径
-     * @throws Exception
      */
     public static void generateKeyToFile(String algorithm, String pubPath, String priPath) throws Exception {
         // 获取密钥对生成器
@@ -35,11 +33,11 @@ public class RSA {
         byte[] publicKeyEncoded = publicKey.getEncoded();
         byte[] privateKeyEncoded = privateKey.getEncoded();
         // 进行Base64编码
-        String publicKeyString = Base64.encode(publicKeyEncoded);
-        String privateKeyString = Base64.encode(privateKeyEncoded);
+        String publicKeyString = Base64.encodeBase64String(publicKeyEncoded);
+        String privateKeyString = Base64.encodeBase64String(privateKeyEncoded);
         // 保存文件
-        FileUtils.writeStringToFile(new File(pubPath), publicKeyString, Charset.forName("UTF-8"));
-        FileUtils.writeStringToFile(new File(priPath), privateKeyString, Charset.forName("UTF-8"));
+        FileUtils.writeStringToFile(new File(pubPath), publicKeyString, StandardCharsets.UTF_8);
+        FileUtils.writeStringToFile(new File(priPath), privateKeyString, StandardCharsets.UTF_8);
  
     }
  
@@ -49,11 +47,10 @@ public class RSA {
      * @param algorithm : 算法
      * @param filePath  : 文件路径
      * @return : 公钥
-     * @throws Exception
      */
     private static PublicKey loadPublicKeyFromFile(String algorithm, String filePath) throws Exception {
         // 将文件内容转为字符串
-        String keyString = FileUtils.readFileToString(new File(filePath), Charset.forName("UTF-8"));
+        String keyString = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
  
         return loadPublicKeyFromString(algorithm, keyString);
  
@@ -65,11 +62,10 @@ public class RSA {
      * @param algorithm : 算法
      * @param keyString : 公钥字符串
      * @return : 公钥
-     * @throws Exception
      */
     private static PublicKey loadPublicKeyFromString(String algorithm, String keyString) throws Exception {
         // 进行Base64解码
-        byte[] decode = Base64.decode(keyString);
+        byte[] decode = Base64.decodeBase64(keyString);
         // 获取密钥工厂
         KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
         // 构建密钥规范
@@ -85,11 +81,10 @@ public class RSA {
      * @param algorithm : 算法
      * @param filePath  : 文件路径
      * @return : 私钥
-     * @throws Exception
      */
     private static PrivateKey loadPrivateKeyFromFile(String algorithm, String filePath) throws Exception {
         // 将文件内容转为字符串
-        String keyString = FileUtils.readFileToString(new File(filePath), Charset.forName("UTF-8"));
+        String keyString = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
         return loadPrivateKeyFromString(algorithm, keyString);
  
     }
@@ -100,11 +95,10 @@ public class RSA {
      * @param algorithm : 算法
      * @param keyString : 私钥字符串
      * @return : 私钥
-     * @throws Exception
      */
     private static PrivateKey loadPrivateKeyFromString(String algorithm, String keyString) throws Exception {
         // 进行Base64解码
-        byte[] decode = Base64.decode(keyString);
+        byte[] decode = Base64.decodeBase64(keyString);
         // 获取密钥工厂
         KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
         // 构建密钥规范
@@ -122,7 +116,6 @@ public class RSA {
      * @param key            : 密钥
      * @param maxEncryptSize : 最大加密长度(需要根据实际情况进行调整)
      * @return : 密文
-     * @throws Exception
      */
     private static String encrypt(String algorithm, String input, Key key, int maxEncryptSize) throws Exception {
         // 获取Cipher对象
@@ -137,7 +130,7 @@ public class RSA {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         decodeByte(maxEncryptSize, cipher, data, total, baos);
         // 对密文进行Base64编码
-        return Base64.encode(baos.toByteArray());
+        return Base64.encodeBase64String(baos.toByteArray());
  
     }
  
@@ -149,7 +142,6 @@ public class RSA {
      * @param key            : 密钥
      * @param maxDecryptSize : 最大解密长度(需要根据实际情况进行调整)
      * @return : 原文
-     * @throws Exception
      */
     private static String decrypt(String algorithm, String encrypted, Key key, int maxDecryptSize) throws Exception {
         // 获取Cipher对象
@@ -157,7 +149,7 @@ public class RSA {
         // 初始化模式(解密)和密钥
         cipher.init(Cipher.DECRYPT_MODE, key);
         // 由于密文进行了Base64编码, 在这里需要进行解码
-        byte[] data = Base64.decode(encrypted);
+        byte[] data = Base64.decodeBase64(encrypted);
         // 总数据长度
         int total = data.length;
         // 输出流
@@ -177,7 +169,6 @@ public class RSA {
      * @param data    : 要处理的byte数组
      * @param total   : 总数据长度
      * @param baos    : 输出流
-     * @throws Exception
      */
     private static void decodeByte(int maxSize, Cipher cipher, byte[] data, int total, ByteArrayOutputStream baos) throws Exception {
         // 偏移量
