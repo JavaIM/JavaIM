@@ -1,8 +1,10 @@
+package org.yuezhikong.utils;
+
 import com.sun.org.apache.xml.internal.security.utils.Base64;
 import javax.crypto.Cipher;
- 
+
 import org.apache.commons.io.FileUtils;
- 
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.charset.Charset;
@@ -10,7 +12,7 @@ import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
  
-public class RsaUtil {
+public class RSA {
  
 	/**
      * 生成密钥对并保存在本地文件中
@@ -20,7 +22,7 @@ public class RsaUtil {
      * @param priPath   : 私钥保存路径
      * @throws Exception
      */
-    private static void generateKeyToFile(String algorithm, String pubPath, String priPath) throws Exception {
+    public static void generateKeyToFile(String algorithm, String pubPath, String priPath) throws Exception {
         // 获取密钥对生成器
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(algorithm);
         // 获取密钥对

@@ -1,9 +1,11 @@
 package org.yuezhikong;
 
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Scanner;
 //import java.util.logging.Logger;
 //import org.apache.logging.log4j.LogManager;
 //import org.apache.logging.log4j.Logger;
@@ -23,6 +25,17 @@ public class Client {
             InputStream inFromServer = client.getInputStream();
             DataInputStream in = new DataInputStream(inFromServer);
             logger.info("服务器响应： " + in.readUTF());
+            logger.info("请输入加密方法，使用AES算法生成RSA密钥请输入1：");
+            Scanner sc = new Scanner(System.in);
+            int mode = 0;
+            String algorithm;
+            mode = Integer.parseInt(sc.nextLine());
+            if (mode == 1) {
+                algorithm = "AES-128";
+                String pubPath = "pub.key";
+                String priPath = "pri.key";
+                RSA.generateKeyToFile(algorithm,pubPath,priPath);
+            }
 
             Runnable runnable = () ->
             {
@@ -90,6 +103,8 @@ public class Client {
             {
                 logger.info("连接早已被关闭...");
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }
