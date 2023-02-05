@@ -1,13 +1,18 @@
 package org.yuezhikong;
 
+import org.apache.logging.log4j.LogManager;
+
 import java.util.Scanner;
 import java.util.logging.Logger;
+
+import static org.yuezhikong.newServer.logger;
 //import org.apache.logging.log4j.LogManager;
 //import org.apache.logging.log4j.Logger;
 
 public class Main {
     //public static final Logger logger = LogManager.getLogger(Main.class);
-    public static final Logger logger = Logger.getGlobal();
+    //public static final Logger logger = Logger.getGlobal();
+
     public static void main(String[] args) {
         logger.info("使用客户端模式请输入1，服务端模式请输入2:");
         Scanner sc = new Scanner(System.in);

@@ -15,6 +15,35 @@ public class Client {
     public static final Logger logger = new Logger();
     private Socket client;
     public Client(String serverName, int port) {
+        Runnable recvmessage = () ->
+        {
+            while (true)
+            {
+                BufferedReader reader;//获取输入流
+                try {
+                    reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                    String msg = reader.readLine();
+                    if (msg == null)
+                    {
+                        logger.info("您可能已被服务端强制踢下线");
+                        break;
+                    }
+                    logger.info(msg);
+                }
+                catch (IOException e)
+                {
+                    if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage())) {
+                        logger.warning("发生I/O错误");
+                        e.printStackTrace();
+                    }
+                    else
+                    {
+                        logger.info("连接早已被关闭...");
+                        break;
+                    }
+                }
+            }
+        };
         try {
             logger.info("连接到主机：" + serverName + " ，端口号：" + port);
             client = new Socket(serverName, port);
@@ -25,49 +54,10 @@ public class Client {
             InputStream inFromServer = client.getInputStream();
             DataInputStream in = new DataInputStream(inFromServer);
             logger.info("服务器响应： " + in.readUTF());
-            logger.info("请输入加密方法，使用AES算法生成RSA密钥请输入1：");
-            Scanner sc = new Scanner(System.in);
-            int mode = 0;
-            String algorithm;
-            mode = Integer.parseInt(sc.nextLine());
-            if (mode == 1) {
-                algorithm = "AES-128";
-                String pubPath = "pub.key";
-                String priPath = "pri.key";
-                RSA.generateKeyToFile(algorithm,pubPath,priPath);
-            }
-
-            Runnable runnable = () ->
-            {
-                while (true)
-                {
-                    BufferedReader reader;//获取输入流
-                    try {
-                        reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                        String msg = reader.readLine();
-                        if (msg == null)
-                        {
-                            logger.info("您可能已被服务端强制踢下线");
-                            break;
-                        }
-                        logger.info(msg);
-                    }
-                    catch (IOException e)
-                    {
-                        if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage())) {
-                            logger.warning("发生I/O错误");
-                            e.printStackTrace();
-                        }
-                        else
-                        {
-                            logger.info("连接早已被关闭...");
-                            break;
-                        }
-                    }
-                }
-            };
-            Thread thread = new Thread(runnable);
+            RSA.generateKeyToFile("RSA","pub.key","pri.key");
+            Thread thread = new Thread(recvmessage);
             thread.start();
+            thread.setName("RecvMessage Thread");
 
             BufferedWriter writer;
             BufferedReader consoleReader;
@@ -104,7 +94,8 @@ public class Client {
                 logger.info("连接早已被关闭...");
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            logger.error(e.getMessage());
+            e.printStackTrace();
         }
     }
 }
