@@ -35,5 +35,5 @@ jobs:
     - name: upload artifact
       uses: actions/upload-artifact@v1
       with:
-          name: JavaIM(Please Un Zip Use)
+          name: JavaIM请解压后使用
           path: artifact
