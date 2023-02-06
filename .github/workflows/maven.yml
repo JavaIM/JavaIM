@@ -35,5 +35,5 @@ jobs:
     - name: upload artifact
       uses: actions/upload-artifact@v1
       with:
-          name: build
-          path: staging
+          name: JavaIM.jar
+          path: staging/JavaIM-1.0-SNAPSHOT.jar
