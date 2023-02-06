@@ -86,10 +86,10 @@ public class Main {
 
     private void saveLibFiles()
     {
-        saveJarFiles("/commons-codec-1.15.jar","/libs/org/apache/commons/codec");
-        saveJarFiles("/commons-io-2.11.0.jar","/libs/org/apache/commons/io");
-        saveJarFiles("/log4j-api-2.19.0.jar","/libs/org/apache/logging/log4j/");
-        saveJarFiles("/log4j-core-2.19.0.jar","/libs/org/apache/logging/log4j/core/");
+        saveJarFiles("/libs/commons-codec-1.15.jar","/libs/org/apache/commons/codec");
+        saveJarFiles("/libs/commons-io-2.11.0.jar","/libs/org/apache/commons/io");
+        saveJarFiles("/libs/log4j-api-2.19.0.jar","/libs/org/apache/logging/log4j/");
+        saveJarFiles("/libs/log4j-core-2.19.0.jar","/libs/org/apache/logging/log4j/core/");
         //System.exit(0);
     }
     /**
