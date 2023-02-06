@@ -4,20 +4,69 @@ package org.yuezhikong.Server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import org.apache.logging.log4j.Level;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.RSA;
 
 public class newServer {
     public static final Logger logger = new Logger();
-    private final List<Socket> sockets = new ArrayList<>();
+    private final List<user> Users = new ArrayList<>();
+    //private final List<Socket> sockets = new ArrayList<>();
     private int clientIDAll = 0;
     private ServerSocket serverSocket = null;
     //服务端实例
     private static newServer instance = null;
+
+    /**
+     * @apiNote 自动创建RSA key而不替换已存在的key
+     */
+    private void RSA_KeyAutogenerate()
+    {
+        if (!(new File("Public.key").exists()))
+        {
+            if (!(new File("Private.key").exists()))
+            {
+                try {
+                    RSA.generateKeyToFile("Public.key", "Private.key");
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            else
+            {
+                logger.warning("系统检测到您的目录下不存在公钥，但，存在私钥，系统将为您覆盖一个新的rsa key");
+                try {
+                    RSA.generateKeyToFile("Public.key", "Private.key");
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+        else
+        {
+            if (!(new File("Private.key").exists()))
+            {
+                logger.warning("系统检测到您的目录下存在公钥，但，不存在私钥，系统将为您覆盖一个新的rsa key");
+                try {
+                    RSA.generateKeyToFile("Public.key", "Private.key");
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
     /**
      * @apiNote 获取服务端实例
@@ -34,31 +83,40 @@ public class newServer {
      */
     private void StartRecvMessageThread(int ClientID)
     {
-        Thread recvmessage = new RecvMessageThread(ClientID,sockets);
+        Thread recvmessage = new RecvMessageThread(ClientID,Users);
         recvmessage.start();
         recvmessage.setName("recvMessage Thread");
     }
     /**
      * @apiNote 向所有客户端发信
-     * @param Message 要发信的信息
+     * @param inputMessage 要发信的信息
      */
-    void SendMessageToAllClient(String Message)
+    void SendMessageToAllClient(String inputMessage)
     {
+        String Message = inputMessage;
         int i = 0;
         int tmpclientidall = clientIDAll;
         tmpclientidall = tmpclientidall - 1;
+        Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
         try {
             while (true) {
                 if (i > tmpclientidall) {
                     break;
                 }
-                Socket sendsocket = sockets.get(i);
+                Socket sendsocket = Users.get(i).GetUserSocket();
+                PublicKey UserPublicKey = Users.get(i).GetUserPublicKey();
+                if (UserPublicKey == null)
+                {
+                    i = i + 1;
+                    continue;
+                }
                 if (sendsocket == null) {
                     i = i + 1;
                     continue;
                 }
+                Message = RSA.encrypt(Message,UserPublicKey);
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(sendsocket.getOutputStream()));
-                writer.write(Message + "\n");
+                writer.write(Message);
                 writer.newLine();
                 writer.flush();
                 if (i == tmpclientidall) {
@@ -68,6 +126,8 @@ public class newServer {
             }
         } catch (IOException e) {
             logger.log(Level.ERROR, "SendMessage时出现IOException!");
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -99,7 +159,9 @@ public class newServer {
                             continue;
                         }
                     }
-                    sockets.add(clientSocket);//添加到数组中
+                    user CureentUser = new user(clientSocket,clientIDAll);//创建用户class
+                    Users.add(CureentUser);//保险措施
+                    Users.set(clientIDAll,CureentUser);//添加到List中
                     StartRecvMessageThread(clientIDAll);//启动RecvMessage线程
                     clientIDAll++;//当前的最大ClientID加1
                 }
@@ -198,7 +260,7 @@ public class newServer {
                                         logger.info("错误，找不到此用户");
                                         break;
                                     }
-                                    Socket sendsocket = sockets.get(i);
+                                    Socket sendsocket = Users.get(i).GetUserSocket();
                                     if (sendsocket == null) {
                                         i = i + 1;
                                         continue;
@@ -235,6 +297,7 @@ public class newServer {
      */
     public newServer(int port) {
         instance = this;
+        RSA_KeyAutogenerate();
         try {
             serverSocket = new ServerSocket(port);
             /* serverSocket.setSoTimeout(10000); */
