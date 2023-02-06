@@ -30,7 +30,10 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
       
+    - name: preupload artifact
+      run: mkdir staging && cp target/*.jar staging
     - name: upload artifact
-    - run: mkdir staging && cp target/*.jar staging
-    - uses: actions/upload-artifact@v3
-    
+      uses: actions/upload-artifact@v1
+      with:
+          name: build
+          path: staging
