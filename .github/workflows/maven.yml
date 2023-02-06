@@ -31,9 +31,9 @@ jobs:
       run: mvn -B package --file pom.xml
       
     - name: preupload artifact
-      run: mkdir staging && cp target/*.jar staging
+      run: mkdir artifact && cp target/*.jar artifact
     - name: upload artifact
       uses: actions/upload-artifact@v1
       with:
-          name: JavaIM.jar
-          path: staging/JavaIM-1.0-SNAPSHOT.jar
+          name: JavaIM(Please Un Zip Use)
+          path: artifact
