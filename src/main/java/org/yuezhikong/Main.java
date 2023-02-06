@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.util.Scanner;
 
 import static org.yuezhikong.Server.newServer.logger;
+import static org.yuezhikong.config.GetAutoSaveDependencyMode;
 
 public class Main {
     private static Main instance;
@@ -96,7 +97,7 @@ public class Main {
      * @apiNote 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
-        getInstance().saveLibFiles();
+        if (GetAutoSaveDependencyMode()) { getInstance().saveLibFiles(); }
         logger.info("使用客户端模式请输入1，服务端模式请输入2:");
         Scanner sc = new Scanner(System.in);
         int mode = sc.nextInt();

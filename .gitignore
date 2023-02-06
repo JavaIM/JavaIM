@@ -3,6 +3,14 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### RSA Key ###
+*.key
+### Log ###
+*.gz
+*.log
+
+### build目录 ###
+out/
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml
