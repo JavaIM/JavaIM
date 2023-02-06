@@ -1,4 +1,4 @@
-package org.yuezhikong;
+package org.yuezhikong.Server;
 
 
 import java.io.*;
@@ -8,29 +8,47 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import org.apache.logging.log4j.Level;
+import org.yuezhikong.config;
 import org.yuezhikong.utils.Logger;
 
 public class newServer {
     public static final Logger logger = new Logger();
     private final List<Socket> sockets = new ArrayList<>();
-    private int ClientID;
     private int clientIDAll = 0;
     private ServerSocket serverSocket = null;
-    private void SendMessageToAllClient(String Message,int clientID)
+    //服务端实例
+    private static newServer instance = null;
+
+    /**
+     * @apiNote 获取服务端实例
+     * @return 服务端实例
+     */
+    static newServer GetInstance()
+    {
+        return instance;
+    }
+
+    /**
+     * @apiNote 启动recvMessage线程
+     * @param ClientID 客户端ID
+     */
+    private void StartRecvMessageThread(int ClientID)
+    {
+        Thread recvmessage = new RecvMessageThread(ClientID,sockets);
+        recvmessage.start();
+        recvmessage.setName("recvMessage Thread");
+    }
+    /**
+     * @apiNote 向所有客户端发信
+     * @param Message 要发信的信息
+     */
+    void SendMessageToAllClient(String Message)
     {
         int i = 0;
         int tmpclientidall = clientIDAll;
         tmpclientidall = tmpclientidall - 1;
         try {
             while (true) {
-                if (clientID != -1)
-                {
-                    if (i == clientID)
-                    {
-                        i = i + 1;
-                        continue;
-                    }
-                }
                 if (i > tmpclientidall) {
                     break;
                 }
@@ -55,62 +73,11 @@ public class newServer {
     }
 
 
-    public newServer(int port) {
-        Runnable recvMessage = () -> {
-            int CurrentClientID = ClientID;//复制当前的SocketID
-            Socket CurrentClientSocket = sockets.get(CurrentClientID);
-            try {
-                logger.info("远程主机地址：" + CurrentClientSocket.getRemoteSocketAddress());
-                DataInputStream in = new DataInputStream(CurrentClientSocket.getInputStream());
-                logger.info(in.readUTF());
-                DataOutputStream out = new DataOutputStream(CurrentClientSocket.getOutputStream());
-                out.writeUTF("服务器连接成功：" + CurrentClientSocket.getLocalSocketAddress());
-                while (true) {
-                    if (CurrentClientSocket.isClosed())
-                    {
-                        logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
-                        sockets.set(CurrentClientID,null);
-                        return;
-                    }
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentClientSocket.getInputStream()));//获取输入流
-                    String ChatMessage;
-                    while ((ChatMessage = reader.readLine()) != null) {
-                        if ("quit".equals(ChatMessage))// 退出登录服务端部分
-                        {
-                            logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "正在退出登录");
-                            sockets.set(CurrentClientID,null);
-                            return;
-                        }
-                        // 读取客户端发送的消息
-                        logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
-                        // 消息转发
-                        SendMessageToAllClient("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage,CurrentClientID);
-                    }
-                }
-            }
-            catch (IOException e)
-            {
-                if (!"Connection reset".equals(e.getMessage()) && !"Socket closed".equals(e.getMessage()))
-                {
-                    logger.log(Level.ERROR,"recvMessage线程出现IOException!");
-                    logger.log(Level.ERROR,"正在关闭Socket并打印报错堆栈！");
-                    if (!CurrentClientSocket.isClosed())
-                    {
-                        try {
-                            CurrentClientSocket.close();
-                        } catch (IOException ex) {
-                            logger.log(Level.ERROR,"无法关闭Socket!");
-                        }
-                    }
-                    e.printStackTrace();
-                }
-                else
-                {
-                    logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
-                    sockets.set(CurrentClientID,null);
-                }
-            }
-        };
+    /**
+     * @apiNote 启动用户登录的线程
+     */
+    private void StartUserAuthThread()
+    {
         Runnable UserAuthThread = () -> {
             while (true)
             {
@@ -133,11 +100,8 @@ public class newServer {
                         }
                     }
                     sockets.add(clientSocket);//添加到数组中
-                    ClientID = clientIDAll;//为临时变量ClientID赋值
+                    StartRecvMessageThread(clientIDAll);//启动RecvMessage线程
                     clientIDAll++;//当前的最大ClientID加1
-                    Thread recvmessage = new Thread(recvMessage);
-                    recvmessage.start();
-                    recvmessage.setName("recvMessage Thread");
                 }
                 catch (IOException e)
                 {
@@ -146,16 +110,16 @@ public class newServer {
                 }
             }
         };
-        try {
-            serverSocket = new ServerSocket(port);
-            /* serverSocket.setSoTimeout(10000); */
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         Thread userAuthThread = new Thread(UserAuthThread);
         userAuthThread.start();
         userAuthThread.setName("UserAuthThread");
-        System.out.print(">");
+    }
+    /**
+     * @apiNote 启动命令系统
+     */
+    private void StartCommandSystem()
+    {
+        logger.info("服务端启动完成");
         Scanner sc = new Scanner(System.in);
         while (true)
         {
@@ -208,9 +172,9 @@ public class newServer {
                             logger.info("此命令的语法为say 信息");
                         }
                     }
-                    logger.info("正在发出信息");
                     // 发送信息
-                    SendMessageToAllClient("服务端广播:"+TheServerWillSay,-1);
+                    SendMessageToAllClient("[Server] "+TheServerWillSay);
+                    logger.info("[Server] "+TheServerWillSay);
                 }
                 case "kick" -> {
                     if (argv.length >= 2) {
@@ -264,5 +228,20 @@ public class newServer {
                 default -> logger.info("无效的命令！");
             }
         }
+    }
+    /**
+     * @apiNote 服务端main函数
+     * @param port 要开始监听的端口
+     */
+    public newServer(int port) {
+        instance = this;
+        try {
+            serverSocket = new ServerSocket(port);
+            /* serverSocket.setSoTimeout(10000); */
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        StartUserAuthThread();
+        StartCommandSystem();
     }
 }

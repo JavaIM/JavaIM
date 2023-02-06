@@ -7,6 +7,19 @@ import org.apache.logging.log4j.LogManager;
 
 public class Logger {
     public static final org.apache.logging.log4j.Logger logger_root = LogManager.getLogger(Logger.class.getName());//配置文件没配置Log的class名字，所以用默认的Root
+
+    public void info(String msg, Object... params)
+    {
+        System.out.print("\b");
+        //java.util.logging.Logger.getGlobal().info(msg);
+        logger_root.info(msg,params);
+        try {
+            Thread.sleep(30);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.print(">");
+    }
     public void info(String msg)
     {
         System.out.print("\b");
