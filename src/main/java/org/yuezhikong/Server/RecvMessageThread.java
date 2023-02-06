@@ -2,51 +2,66 @@ package org.yuezhikong.Server;
 
 import org.apache.logging.log4j.Level;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
 import java.util.List;
 
 class RecvMessageThread extends Thread{
-    private final int clientid;
-    private final List<Socket> sockets;
+    private final int CurrentClientID;
+    //private final List<Socket> sockets;
+    private final List<user> Users;
     public static final Logger logger = new Logger();
 
     /**
      * @apiNote 用于给recvMessage线程传参
      * @param ClientID 客户端ID
      */
-    public RecvMessageThread(int ClientID, List<Socket> socketList)
+    public RecvMessageThread(int ClientID, List<user> users)
     {
-        clientid = ClientID;
-        sockets = socketList;
+        CurrentClientID = ClientID;
+        Users = users;
     }
 
     @Override
     public void run() {
         super.run();
-        int CurrentClientID = clientid;//复制当前的SocketID
-        Socket CurrentClientSocket = sockets.get(CurrentClientID);
+        user CurrentClientClass = Users.get(CurrentClientID);
+        Socket CurrentClientSocket = CurrentClientClass.GetUserSocket();
         try {
             logger.info("远程主机地址：" + CurrentClientSocket.getRemoteSocketAddress());
             DataInputStream in = new DataInputStream(CurrentClientSocket.getInputStream());
+
+            //logger.info("密文："+input);
+            //String RSADecode = RSA.decrypt(input,privatekey);
+            //logger.info("RSA解密后，decode前："+RSADecode);
+            //logger.info("decode后："+java.net.URLDecoder.decode(RSADecode, StandardCharsets.UTF_8));
+            CurrentClientClass.SetUserPublicKey(java.net.URLDecoder.decode(in.readUTF(),StandardCharsets.UTF_8));
+
             logger.info(in.readUTF());
             DataOutputStream out = new DataOutputStream(CurrentClientSocket.getOutputStream());
             out.writeUTF("服务器连接成功：" + CurrentClientSocket.getLocalSocketAddress());
+            PrivateKey privatekey = RSA.loadPrivateKeyFromFile("Private.key");
             while (true) {
                 if (CurrentClientSocket.isClosed())
                 {
                     logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
-                    sockets.set(CurrentClientID,null);
+                    CurrentClientClass.UserDisconnect();
                     return;
                 }
                 BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentClientSocket.getInputStream()));//获取输入流
                 String ChatMessage;
                 while ((ChatMessage = reader.readLine()) != null) {
+                    // 解密信息
+                    ChatMessage = RSA.decrypt(ChatMessage,privatekey);
+                    ChatMessage = java.net.URLDecoder.decode(ChatMessage, StandardCharsets.UTF_8);
                     if ("quit".equals(ChatMessage))// 退出登录服务端部分
                     {
                         logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "正在退出登录");
-                        sockets.set(CurrentClientID,null);
+                        CurrentClientClass.UserDisconnect();
                         return;
                     }
                     // 读取客户端发送的消息
@@ -75,8 +90,10 @@ class RecvMessageThread extends Thread{
             else
             {
                 logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
-                sockets.set(CurrentClientID,null);
+                CurrentClientClass.UserDisconnect();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
