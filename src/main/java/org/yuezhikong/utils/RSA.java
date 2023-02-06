@@ -48,7 +48,7 @@ public class RSA {
      * @param filePath  : 文件路径
      * @return : 公钥
      */
-    private static PublicKey loadPublicKeyFromFile(String algorithm, String filePath) throws Exception {
+    public static PublicKey loadPublicKeyFromFile(String algorithm, String filePath) throws Exception {
         // 将文件内容转为字符串
         String keyString = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
  
@@ -82,7 +82,7 @@ public class RSA {
      * @param filePath  : 文件路径
      * @return : 私钥
      */
-    private static PrivateKey loadPrivateKeyFromFile(String algorithm, String filePath) throws Exception {
+    public static PrivateKey loadPrivateKeyFromFile(String algorithm, String filePath) throws Exception {
         // 将文件内容转为字符串
         String keyString = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
         return loadPrivateKeyFromString(algorithm, keyString);
@@ -117,7 +117,7 @@ public class RSA {
      * @param maxEncryptSize : 最大加密长度(需要根据实际情况进行调整)
      * @return : 密文
      */
-    private static String encrypt(String algorithm, String input, Key key, int maxEncryptSize) throws Exception {
+    public static String encrypt(String algorithm, String input, Key key, int maxEncryptSize) throws Exception {
         // 获取Cipher对象
         Cipher cipher = Cipher.getInstance(algorithm);
         // 初始化模式(加密)和密钥
@@ -143,7 +143,7 @@ public class RSA {
      * @param maxDecryptSize : 最大解密长度(需要根据实际情况进行调整)
      * @return : 原文
      */
-    private static String decrypt(String algorithm, String encrypted, Key key, int maxDecryptSize) throws Exception {
+    public static String decrypt(String algorithm, String encrypted, Key key, int maxDecryptSize) throws Exception {
         // 获取Cipher对象
         Cipher cipher = Cipher.getInstance(algorithm);
         // 初始化模式(解密)和密钥
