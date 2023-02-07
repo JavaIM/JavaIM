@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
@@ -17,6 +18,7 @@ import org.yuezhikong.utils.RSA;
 import static org.yuezhikong.config.GetRSA_Mode;
 
 public class newServer {
+    public static final org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
     public static final Logger logger = new Logger();
     private final List<user> Users = new ArrayList<>();
     //private final List<Socket> sockets = new ArrayList<>();
@@ -121,9 +123,20 @@ public class newServer {
                     Message = RSA.encrypt(Message, UserPublicKey);
                 }
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(sendsocket.getOutputStream()));
-                writer.write(Message);
-                writer.newLine();
-                writer.flush();
+                try {
+                    writer.write(Message);
+                    writer.newLine();
+                    writer.flush();
+                }
+                catch (IOException e)
+                {
+                    if ("Broken pipe".equals(e.getMessage()))
+                    {
+                        Users.get(i).UserDisconnect();
+                        i = i + 1;
+                        continue;
+                    }
+                }
                 if (i == tmpclientidall) {
                     break;
                 }
@@ -131,7 +144,20 @@ public class newServer {
             }
         } catch (IOException e) {
             logger.log(Level.ERROR, "SendMessage时出现IOException!");
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                e.printStackTrace();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -173,7 +199,20 @@ public class newServer {
                 catch (IOException e)
                 {
                     logger.log(Level.ERROR,"在accept时发生IOException");
-                    e.printStackTrace();
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    e.printStackTrace(pw);
+                    pw.flush();
+                    sw.flush();
+                    Logger.logger_root.debug(sw.toString());
+                    pw.close();
+                    try {
+                        sw.close();
+                    }
+                    catch (IOException ex)
+                    {
+                        e.printStackTrace();
+                    }
                 }
             }
         };
@@ -245,6 +284,23 @@ public class newServer {
                     logger.info("[Server] "+TheServerWillSay);
                 }
                 case "quit" -> System.exit(0);
+                case "debug" -> {
+                    if (argv.length >= 1)
+                    {
+                        if (argv[0].equals("on"))
+                        {
+                            config.Debug_Mode = true;
+                        }
+                        else if (argv[0].equals("off"))
+                        {
+                            config.Debug_Mode = false;
+                        }
+                        else
+                        {
+                            logger.info("命令语法不正确，正确的语法为debug <on/off>");
+                        }
+                    }
+                }
                 case "kick" -> {
                     if (argv.length >= 2) {
                         String IpAddress = argv[0];
@@ -254,6 +310,23 @@ public class newServer {
                         }
                         catch (NumberFormatException e)
                         {
+                            if (config.GetDebugMode())
+                            {
+                                StringWriter sw = new StringWriter();
+                                PrintWriter pw = new PrintWriter(sw);
+                                e.printStackTrace(pw);
+                                pw.flush();
+                                sw.flush();
+                                Logger.logger_root.debug(sw.toString());
+                                pw.close();
+                                try {
+                                    sw.close();
+                                }
+                                catch (IOException ex)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
                             logger.info("输入的命令语法不正确，请检查后再输入");
                             continue;
                         }
@@ -289,7 +362,20 @@ public class newServer {
                                 }
                             } catch (IOException e) {
                                 logger.log(Level.ERROR, "遍历用户时出现IOException!");
-                                e.printStackTrace();
+                                StringWriter sw = new StringWriter();
+                                PrintWriter pw = new PrintWriter(sw);
+                                e.printStackTrace(pw);
+                                pw.flush();
+                                sw.flush();
+                                Logger.logger_root.debug(sw.toString());
+                                pw.close();
+                                try {
+                                    sw.close();
+                                }
+                                catch (IOException ex)
+                                {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     }
@@ -309,7 +395,20 @@ public class newServer {
             serverSocket = new ServerSocket(port);
             /* serverSocket.setSoTimeout(10000); */
         } catch (IOException e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            Logger.logger_root.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                e.printStackTrace();
+            }
         }
         StartUserAuthThread();
         StartCommandSystem();

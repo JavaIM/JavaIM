@@ -37,7 +37,10 @@ public class Client {
                 try {
                     privateKey = RSAKey.privateKey;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    if (!"Socket closed".equals(e.getMessage()))
+                    {
+                        e.printStackTrace();
+                    }
                     System.exit(-1);
                 }
             }

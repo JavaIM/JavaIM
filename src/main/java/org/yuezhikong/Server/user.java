@@ -1,5 +1,6 @@
 package org.yuezhikong.Server;
 
+import java.io.IOException;
 import java.net.Socket;
 import static org.yuezhikong.config.GetRSA_Mode;
 
@@ -26,6 +27,12 @@ public class user {
     }
     public void UserDisconnect()
     {
+        try {
+            UserSocket.close();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
         UserSocket = null;
         UserPublicKey = null;
     }
