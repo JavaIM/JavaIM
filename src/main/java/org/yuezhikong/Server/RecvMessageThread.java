@@ -7,8 +7,10 @@ import org.yuezhikong.utils.RSA;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.security.PrivateKey;
 import java.util.List;
+import java.util.Objects;
+
+import static org.yuezhikong.config.GetRSA_Mode;
 
 class RecvMessageThread extends Thread{
     private final int CurrentClientID;
@@ -34,17 +36,18 @@ class RecvMessageThread extends Thread{
         try {
             logger.info("远程主机地址：" + CurrentClientSocket.getRemoteSocketAddress());
             DataInputStream in = new DataInputStream(CurrentClientSocket.getInputStream());
-
-            //logger.info("密文："+input);
-            //String RSADecode = RSA.decrypt(input,privatekey);
-            //logger.info("RSA解密后，decode前："+RSADecode);
-            //logger.info("decode后："+java.net.URLDecoder.decode(RSADecode, StandardCharsets.UTF_8));
-            CurrentClientClass.SetUserPublicKey(java.net.URLDecoder.decode(in.readUTF(),StandardCharsets.UTF_8));
-
+            String privateKey = null;
+            if (GetRSA_Mode()) {
+                //logger.info("密文："+input);
+                //String RSADecode = RSA.decrypt(input,privatekey);
+                //logger.info("RSA解密后，decode前："+RSADecode);
+                //logger.info("decode后："+java.net.URLDecoder.decode(RSADecode, StandardCharsets.UTF_8));
+                privateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey;
+                CurrentClientClass.SetUserPublicKey(java.net.URLDecoder.decode(in.readUTF(), StandardCharsets.UTF_8));
+            }
             logger.info(in.readUTF());
             DataOutputStream out = new DataOutputStream(CurrentClientSocket.getOutputStream());
             out.writeUTF("服务器连接成功：" + CurrentClientSocket.getLocalSocketAddress());
-            PrivateKey privatekey = RSA.loadPrivateKeyFromFile("Private.key");
             while (true) {
                 if (CurrentClientSocket.isClosed())
                 {
@@ -56,7 +59,9 @@ class RecvMessageThread extends Thread{
                 String ChatMessage;
                 while ((ChatMessage = reader.readLine()) != null) {
                     // 解密信息
-                    ChatMessage = RSA.decrypt(ChatMessage,privatekey);
+                    if (GetRSA_Mode()) {
+                        ChatMessage = RSA.decrypt(ChatMessage,privateKey);
+                    }
                     ChatMessage = java.net.URLDecoder.decode(ChatMessage, StandardCharsets.UTF_8);
                     if ("quit".equals(ChatMessage))// 退出登录服务端部分
                     {

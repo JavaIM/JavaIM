@@ -1,6 +1,7 @@
 package org.yuezhikong;
 
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.codec.binary.Base64;
+import org.yuezhikong.utils.KeyData;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
 
@@ -8,22 +9,37 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
+import java.util.Objects;
+
+import static org.yuezhikong.config.GetRSA_Mode;
 
 public class Client {
     //public static final Logger logger = LogManager.getLogger(Client.class);
     public static final Logger logger = new Logger();
     private Socket client;
+    private final KeyData RSAKey;
 
     public Client(String serverName, int port) {
+        {
+            if (!(new File("ServerPublicKey.key").exists()))
+            {
+                Logger.logger_root.fatal("在运行目录下未找到ServerPublicKey.key");
+                Logger.logger_root.fatal("此文件为服务端公钥文件，用于保证通信安全");
+                Logger.logger_root.fatal("由于此文件缺失，客户端即将停止运行");
+                System.exit(-1);
+            }
+        }
+        RSAKey = RSA.generateKeyToReturn();
         Runnable recvmessage = () ->
         {
             PrivateKey privateKey = null;
-            try {
-                privateKey = RSA.loadPrivateKeyFromFile("pri.key");
-            } catch (Exception e)
-            {
-                e.printStackTrace();
-                System.exit(-1);
+            if (GetRSA_Mode()) {
+                try {
+                    privateKey = RSAKey.privateKey;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(-1);
+                }
             }
             while (true)
             {
@@ -39,8 +55,9 @@ public class Client {
                     }
                     if (privateKey != null)
                     {
-                        msg = java.net.URLDecoder.decode(RSA.decrypt(msg,privateKey),StandardCharsets.UTF_8);
+                        msg = RSA.decrypt(msg,privateKey);
                     }
+                    msg = java.net.URLDecoder.decode(msg,StandardCharsets.UTF_8);
                     logger.info(msg);
                 }
                 catch (IOException e)
@@ -64,16 +81,16 @@ public class Client {
             logger.info("远程主机地址：" + client.getRemoteSocketAddress());
             OutputStream outToServer = client.getOutputStream();
             DataOutputStream out = new DataOutputStream(outToServer);
-
-            java.security.PublicKey ServerPublicKey = RSA.loadPublicKeyFromFile("ServerPublicKey.key");
-            out.writeUTF(java.net.URLEncoder.encode(FileUtils.readFileToString(new File("pub.key"), StandardCharsets.UTF_8),StandardCharsets.UTF_8));
-            //out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode("你", StandardCharsets.UTF_8),ServerPublicKey));
-
+            String ServerPublicKey = null;
+            if (GetRSA_Mode()) {
+                ServerPublicKey = Objects.requireNonNull(RSA.loadPublicKeyFromFile("ServerPublicKey.key")).PublicKey;
+                out.writeUTF(java.net.URLEncoder.encode(Base64.encodeBase64String(RSAKey.publicKey.getEncoded()), StandardCharsets.UTF_8));
+                //out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode("你", StandardCharsets.UTF_8),ServerPublicKey));
+            }
             out.writeUTF("Hello from " + client.getLocalSocketAddress());
             InputStream inFromServer = client.getInputStream();
             DataInputStream in = new DataInputStream(inFromServer);
             logger.info("服务器响应： " + in.readUTF());
-            RSA.generateKeyToFile("pub.key","pri.key");
             Thread thread = new Thread(recvmessage);
             thread.start();
             thread.setName("RecvMessage Thread");
@@ -98,7 +115,9 @@ public class Client {
                 System.out.print(">");
                 // 加密信息
                 input = java.net.URLEncoder.encode(input, StandardCharsets.UTF_8);
-                input = RSA.encrypt(input, ServerPublicKey);
+                if (GetRSA_Mode()) {
+                    input = RSA.encrypt(input, ServerPublicKey);
+                }
                 // 发送消息给服务器
                 writer.write(input);
                 writer.newLine();

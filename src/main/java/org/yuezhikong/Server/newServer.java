@@ -5,14 +5,16 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+
 import org.apache.logging.log4j.Level;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
+
+import static org.yuezhikong.config.GetRSA_Mode;
 
 public class newServer {
     public static final Logger logger = new Logger();
@@ -104,17 +106,20 @@ public class newServer {
                     break;
                 }
                 Socket sendsocket = Users.get(i).GetUserSocket();
-                PublicKey UserPublicKey = Users.get(i).GetUserPublicKey();
-                if (UserPublicKey == null)
-                {
-                    i = i + 1;
-                    continue;
-                }
                 if (sendsocket == null) {
                     i = i + 1;
                     continue;
                 }
-                Message = RSA.encrypt(Message,UserPublicKey);
+                if (GetRSA_Mode()) {
+                    String UserPublicKey = Users.get(i).GetUserPublicKey();
+                    if (UserPublicKey == null) {
+                        i = i + 1;
+                        continue;
+                    }
+                    Message = inputMessage;
+                    Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
+                    Message = RSA.encrypt(Message, UserPublicKey);
+                }
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(sendsocket.getOutputStream()));
                 writer.write(Message);
                 writer.newLine();
@@ -212,6 +217,7 @@ public class newServer {
                     logger.info("kick ip 端口");
                     logger.info("say 信息");
                     logger.info("help 查看帮助");
+                    logger.info("quit 退出程序");
                     logger.info("多余的空格将会被忽略");
                 }
                 case "say" -> {
@@ -238,6 +244,7 @@ public class newServer {
                     SendMessageToAllClient("[Server] "+TheServerWillSay);
                     logger.info("[Server] "+TheServerWillSay);
                 }
+                case "quit" -> System.exit(0);
                 case "kick" -> {
                     if (argv.length >= 2) {
                         String IpAddress = argv[0];
