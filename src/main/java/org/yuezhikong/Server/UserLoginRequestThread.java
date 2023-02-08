@@ -1,7 +1,6 @@
 package org.yuezhikong.Server;
 
 import cn.hutool.crypto.SecureUtil;
-import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.MySQL;
 
@@ -35,17 +34,18 @@ public class UserLoginRequestThread extends Thread{
             PreparedStatement ps = mySQLConnection.prepareStatement(sql);
             ps.setString(1,Username);
             ResultSet rs = ps.executeQuery();
-            String sait = "Not";
-            String sha256 = Passwd;
+            String salt;
+            String sha256;
             while (rs.next())
             {
-                sait = rs.getString("sait");
-                sha256 = SecureUtil.sha256(Passwd + sait);
+                salt = rs.getString("salt");
+                sha256 = SecureUtil.sha256(Passwd + salt);
                 if (rs.getString("Passwd").equals(sha256))
                 {
                     RequestReturn = true;
                     Username = rs.getString("UserName");
                     RequestUser.UserLogin(Username);
+                    return;
                 }
             }
             RequestReturn = false;
