@@ -1,19 +1,12 @@
 package org.yuezhikong.Server;
 
 
-import cn.hutool.crypto.SecureUtil;
-import org.apache.maven.plugin.logging.Log;
-import org.yuezhikong.config;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
-import org.yuezhikong.utils.DataBase.MySQL;
 import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
 
-import static org.yuezhikong.Server.newServer.logger;
 import static org.yuezhikong.Server.newServer.logger_log4j;
 import static org.yuezhikong.config.GetRSA_Mode;
 
@@ -23,7 +16,7 @@ public class UserLogin{
      * @param user 发信的目标用户
      * @param inputMessage 发信的信息
      */
-    private void SendMessageToUser(user user,String inputMessage)
+    private static void SendMessageToUser(user user,String inputMessage)
     {
         String Message = inputMessage;
         try {
@@ -65,7 +58,7 @@ public class UserLogin{
      * @throws NullPointerException 用户的某些信息读取出NULL
      * @apiNote 虽然在执行的期间，就会写入到user.class中，但也请您根据返回值做是否踢出登录等的处理
      */
-    public boolean WhetherTheUserIsAllowedToLogin(user LoginUser) throws UserAlreadyLoggedInException,NullPointerException {
+    public static boolean WhetherTheUserIsAllowedToLogin(user LoginUser) throws UserAlreadyLoggedInException,NullPointerException {
         if (LoginUser.GetUserLogined())
         {
             throw new UserAlreadyLoggedInException("This User Is Logined!");

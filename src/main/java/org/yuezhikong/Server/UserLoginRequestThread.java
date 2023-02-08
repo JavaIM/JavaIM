@@ -37,32 +37,18 @@ public class UserLoginRequestThread extends Thread{
             ResultSet rs = ps.executeQuery();
             String sait = "Not";
             String sha256 = Passwd;
-            if (rs.next()) {
+            while (rs.next())
+            {
                 sait = rs.getString("sait");
                 sha256 = SecureUtil.sha256(Passwd + sait);
+                if (rs.getString("Passwd").equals(sha256))
+                {
+                    RequestReturn = true;
+                    Username = rs.getString("UserName");
+                    RequestUser.UserLogin(Username);
+                }
             }
-            if (sait.equals("Not"))
-            {
-                RequestReturn = false;
-                return;
-            }
-            if (sha256.equals(Passwd))
-            {
-                RequestReturn = false;
-                return;
-            }
-            sql = "select * from UserData where UserName = ? and Passwd = ? and sait = ?";
-            ps = mySQLConnection.prepareStatement(sql);
-            ps.setString(1,Username);
-            ps.setString(2,sha256);
-            ps.setString(3,sait);
-            rs = ps.executeQuery();
-            if (rs.next())
-            {
-                RequestReturn = true;
-                Username = rs.getString("UserName");
-                RequestUser.UserLogin(Username);
-            }
+            RequestReturn = false;
         }
         catch (ClassNotFoundException e)
         {

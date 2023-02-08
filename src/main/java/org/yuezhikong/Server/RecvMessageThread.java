@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
-import static org.yuezhikong.config.GetRSA_Mode;
+import static org.yuezhikong.config.*;
 
 class RecvMessageThread extends Thread{
     private final int CurrentClientID;
@@ -48,6 +48,13 @@ class RecvMessageThread extends Thread{
             logger.info(in.readUTF());
             DataOutputStream out = new DataOutputStream(CurrentClientSocket.getOutputStream());
             out.writeUTF("服务器连接成功：" + CurrentClientSocket.getLocalSocketAddress());
+            if (GetEnableLoginSystem())
+            {
+                if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass)))
+                {
+                    CurrentClientClass.UserDisconnect();
+                }
+            }
             while (true) {
                 if (CurrentClientSocket.isClosed())
                 {

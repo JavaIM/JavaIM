@@ -3,6 +3,8 @@ package org.yuezhikong;
 public class config {
     //最大客户端数量，输入-1代表禁用
     private static final int MAX_CLIENT = -1;
+    //是否启用登录系统
+    private static final boolean EnableLoginSystem = true;
     //调试模式
     public static boolean Debug_Mode = false;
     //是否允许自动释放依赖
@@ -20,16 +22,14 @@ public class config {
     private static final String MySQLDataBaseUser = "";
     //MySQL数据库密码
     private static final String MySQLDataBasePasswd = "";
+    public static boolean GetEnableLoginSystem() { return EnableLoginSystem; }
     public static String GetMySQLDataBaseHost() { return MySQLDataBaseHost; }
     public static String GetMySQLDataBasePort() { return MySQLDataBasePort; }
     public static String GetMySQLDataBaseName() { return MySQLDataBaseName; }
     public static String GetMySQLDataBaseUser() { return MySQLDataBaseUser; }
     public static String GetMySQLDataBasePasswd() { return MySQLDataBasePasswd; }
     public static boolean GetRSA_Mode (){ return Test_RSA_Mode; }
-    public static int getMaxClient()
-    {
-        return MAX_CLIENT;
-    }
+    public static int getMaxClient() { return MAX_CLIENT; }
     public static boolean GetDebugMode() { return Debug_Mode; }
     public static boolean GetAutoSaveDependencyMode() { return Auto_Save_Dependency; }
 }
