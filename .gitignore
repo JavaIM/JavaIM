@@ -8,6 +8,7 @@ target/
 ### Log ###
 *.gz
 *.log
+logs
 
 ### build目录 ###
 out/
@@ -16,6 +17,7 @@ out/
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea
 *.iws
 *.iml
 *.ipr
