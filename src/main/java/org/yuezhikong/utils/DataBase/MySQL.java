@@ -27,7 +27,7 @@ public class MySQL {
                     " (" +
                     " UserName varchar(255)," +
                     " Passwd varchar(255)," +
-                    " sait varchar(255)" +
+                    " salt varchar(255)" +
                     " );";
             PreparedStatement ps = MySQLConnection.prepareStatement(sql);
             ps.executeUpdate();

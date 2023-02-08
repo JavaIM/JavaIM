@@ -77,25 +77,25 @@ public class UserLogin{
                     throw new NullPointerException();
                 }
                 int Select = Integer.parseInt(UserSelect);
+                SendMessageToUser(LoginUser,"请输入您的用户名");
+                String UserName;
+                reader = new BufferedReader(new InputStreamReader(LoginUser.GetUserSocket().getInputStream()));//获取输入流
+                UserName = reader.readLine();
+                if (UserName == null)
+                {
+                    throw new NullPointerException();
+                }
+                SendMessageToUser(LoginUser,"请输入您的密码");
+                String Password;
+                reader = new BufferedReader(new InputStreamReader(LoginUser.GetUserSocket().getInputStream()));//获取输入流
+                Password = reader.readLine();
+                if (Password == null)
+                {
+                    throw new NullPointerException();
+                }
+                //上方为请求用户输入用户名、密码
                 if (Select == 1)//登录
                 {
-                    SendMessageToUser(LoginUser,"请输入您的用户名");
-                    String UserName;
-                    reader = new BufferedReader(new InputStreamReader(LoginUser.GetUserSocket().getInputStream()));//获取输入流
-                    UserName = reader.readLine();
-                    if (UserName == null)
-                    {
-                        throw new NullPointerException();
-                    }
-                    SendMessageToUser(LoginUser,"请输入您的密码");
-                    String Password;
-                    reader = new BufferedReader(new InputStreamReader(LoginUser.GetUserSocket().getInputStream()));//获取输入流
-                    Password = reader.readLine();
-                    if (Password == null)
-                    {
-                        throw new NullPointerException();
-                    }
-                    //上方为请求用户输入用户名、密码
                     //下方为SQL处理
                     UserLoginRequestThread loginRequestThread = new UserLoginRequestThread(LoginUser,UserName,Password);
                     loginRequestThread.start();
@@ -109,10 +109,16 @@ public class UserLogin{
                 }
                 else if (Select == 2)//注册
                 {
-                    //延后
-                    SendMessageToUser(LoginUser,"正在开发中");
-                    SendMessageToUser(LoginUser,"给您带来的不便，敬请谅解");
-                    return false;
+                    //下方为SQL处理
+                    UserRegisterRequestThread RegisterRequestThread = new UserRegisterRequestThread(LoginUser,UserName,Password);
+                    RegisterRequestThread.start();
+                    RegisterRequestThread.setName("UserRegisterThread");
+                    RegisterRequestThread.join();
+                    if (!RegisterRequestThread.GetReturn())
+                    {
+                        SendMessageToUser(LoginUser,"抱歉，您的本次登录被拒绝");
+                    }
+                    return RegisterRequestThread.GetReturn();
                 }
                 else
                 {
