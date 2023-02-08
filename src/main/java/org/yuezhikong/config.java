@@ -13,15 +13,15 @@ public class config {
     private static final boolean Test_RSA_Mode = true;
 
     //MySQL数据库地址
-    private static final String MySQLDataBaseHost = "";
+    private static final String MySQLDataBaseHost = "127.0.0.1";
     //MySQL数据库端口
-    private static final String MySQLDataBasePort = "";
+    private static final String MySQLDataBasePort = "3306";
     //MySQL数据库名称
-    private static final String MySQLDataBaseName = "";
+    private static final String MySQLDataBaseName = "JavaIM";
     //MySQL数据库用户
-    private static final String MySQLDataBaseUser = "";
+    private static final String MySQLDataBaseUser = "JavaIM";
     //MySQL数据库密码
-    private static final String MySQLDataBasePasswd = "";
+    private static final String MySQLDataBasePasswd = "JavaIM";
     public static boolean GetEnableLoginSystem() { return EnableLoginSystem; }
     public static String GetMySQLDataBaseHost() { return MySQLDataBaseHost; }
     public static String GetMySQLDataBasePort() { return MySQLDataBasePort; }

@@ -6,6 +6,7 @@ import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import static org.yuezhikong.Server.newServer.logger_log4j;
 import static org.yuezhikong.config.GetRSA_Mode;
@@ -65,10 +66,12 @@ public class UserLogin{
         }
         else
         {
-            SendMessageToUser(LoginUser,"在进入之前，您必须先登录/注册");
-            SendMessageToUser(LoginUser,"输入1进行登录");
-            SendMessageToUser(LoginUser,"输入2进行注册");
             try {
+                SendMessageToUser(LoginUser,"在进入之前，您必须先登录/注册");
+                Thread.sleep(250);
+                SendMessageToUser(LoginUser,"输入1进行登录");
+                Thread.sleep(250);
+                SendMessageToUser(LoginUser,"输入2进行注册");
                 String UserSelect;
                 BufferedReader reader = new BufferedReader(new InputStreamReader(LoginUser.GetUserSocket().getInputStream()));//获取输入流
                 UserSelect = reader.readLine();
@@ -76,6 +79,10 @@ public class UserLogin{
                 {
                     throw new NullPointerException();
                 }
+                if (GetRSA_Mode()) {
+                    UserSelect = RSA.decrypt(UserSelect,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                }
+                UserSelect = java.net.URLDecoder.decode(UserSelect, StandardCharsets.UTF_8);
                 int Select = Integer.parseInt(UserSelect);
                 SendMessageToUser(LoginUser,"请输入您的用户名");
                 String UserName;
@@ -85,6 +92,10 @@ public class UserLogin{
                 {
                     throw new NullPointerException();
                 }
+                if (GetRSA_Mode()) {
+                    UserName = RSA.decrypt(UserName,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                }
+                UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
                 SendMessageToUser(LoginUser,"请输入您的密码");
                 String Password;
                 reader = new BufferedReader(new InputStreamReader(LoginUser.GetUserSocket().getInputStream()));//获取输入流
@@ -93,6 +104,10 @@ public class UserLogin{
                 {
                     throw new NullPointerException();
                 }
+                if (GetRSA_Mode()) {
+                    Password = RSA.decrypt(Password,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                }
+                Password = java.net.URLDecoder.decode(Password, StandardCharsets.UTF_8);
                 //上方为请求用户输入用户名、密码
                 if (Select == 1)//登录
                 {
@@ -105,6 +120,10 @@ public class UserLogin{
                     {
                         SendMessageToUser(LoginUser,"抱歉，您的本次登录被拒绝");
                     }
+                    else
+                    {
+                        SendMessageToUser(LoginUser,"登录成功！");
+                    }
                     return loginRequestThread.GetReturn();
                 }
                 else if (Select == 2)//注册
@@ -116,7 +135,11 @@ public class UserLogin{
                     RegisterRequestThread.join();
                     if (!RegisterRequestThread.GetReturn())
                     {
-                        SendMessageToUser(LoginUser,"抱歉，您的本次登录被拒绝");
+                        SendMessageToUser(LoginUser,"抱歉，您的本次注册被拒绝");
+                    }
+                    else
+                    {
+                        SendMessageToUser(LoginUser,"注册成功！");
                     }
                     return RegisterRequestThread.GetReturn();
                 }

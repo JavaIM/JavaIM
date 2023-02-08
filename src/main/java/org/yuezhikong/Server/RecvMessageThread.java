@@ -58,7 +58,7 @@ class RecvMessageThread extends Thread{
             while (true) {
                 if (CurrentClientSocket.isClosed())
                 {
-                    logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
+                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
                     CurrentClientClass.UserDisconnect();
                     return;
                 }
@@ -72,14 +72,14 @@ class RecvMessageThread extends Thread{
                     ChatMessage = java.net.URLDecoder.decode(ChatMessage, StandardCharsets.UTF_8);
                     if ("quit".equals(ChatMessage))// 退出登录服务端部分
                     {
-                        logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "正在退出登录");
+                        logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "正在退出登录");
                         CurrentClientClass.UserDisconnect();
                         return;
                     }
                     // 读取客户端发送的消息
-                    logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
+                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                     // 消息转发
-                    newServer.GetInstance().SendMessageToAllClient("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
+                    newServer.GetInstance().SendMessageToAllClient("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                 }
             }
         }
@@ -101,7 +101,7 @@ class RecvMessageThread extends Thread{
             }
             else
             {
-                logger.info("客户端[" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
+                logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
                 CurrentClientClass.UserDisconnect();
             }
         } catch (Exception e) {

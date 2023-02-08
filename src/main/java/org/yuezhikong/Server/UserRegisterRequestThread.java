@@ -1,6 +1,7 @@
 package org.yuezhikong.Server;
 
 import cn.hutool.crypto.SecureUtil;
+import com.mysql.cj.jdbc.exceptions.MysqlDataTruncation;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.MySQL;
 
@@ -13,7 +14,7 @@ import java.util.UUID;
 public class UserRegisterRequestThread extends Thread{
     private boolean RequestReturn;
     private final user user;
-    private String Username;
+    private final String Username;
     private final String Passwd;
     public boolean GetReturn() {
         return RequestReturn;
@@ -39,6 +40,7 @@ public class UserRegisterRequestThread extends Thread{
             if (rs.next())
             {
                 RequestReturn = false;
+                mySQLConnection.close();
                 return;
             }
             sql = "INSERT INTO `UserData` (`UserName`, `Passwd`,`salt`) VALUES (?, ?, ?);";
@@ -47,11 +49,11 @@ public class UserRegisterRequestThread extends Thread{
             ps.setString(2,sha256);
             ps.setString(3,salt);
             ps.executeUpdate();
+            mySQLConnection.close();
             RequestReturn = true;
-            Username = rs.getString("UserName");
             user.UserLogin(Username);
         } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
+            user.UserDisconnect();
         }
 
     }

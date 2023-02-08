@@ -56,6 +56,10 @@ public class user {
         {
             e.printStackTrace();
         }
+        catch (NullPointerException ignored)
+        {
+
+        }
         UserSocket = null;
         UserPublicKey = null;
     }

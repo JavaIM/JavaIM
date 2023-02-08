@@ -1,6 +1,7 @@
 package org.yuezhikong.Server;
 
 import cn.hutool.crypto.SecureUtil;
+import com.mysql.cj.MysqlConnection;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.MySQL;
 
@@ -45,9 +46,11 @@ public class UserLoginRequestThread extends Thread{
                     RequestReturn = true;
                     Username = rs.getString("UserName");
                     RequestUser.UserLogin(Username);
+                    mySQLConnection.close();
                     return;
                 }
             }
+            mySQLConnection.close();
             RequestReturn = false;
         }
         catch (ClassNotFoundException e)
