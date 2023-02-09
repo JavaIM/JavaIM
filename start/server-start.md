@@ -32,6 +32,8 @@
 
 ## 第五步 —— 正式构建
 
+再次git 克隆出现的新文件夹
+打开终端(cmd)
 Linux用户请使用
 ```bash
 chmod 777 ./build.sh
