@@ -26,7 +26,17 @@
 
 ## 第三步 —— 根据提示进行运行
 
-请在之前的文件夹中打开终端（Windows系统为cmd） 如果为Linux系统，请在此输入$Java\_Home/bin/java.exe -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar 如果为Windows系统，请在此输入%Java\_Home%\bin\java.exe -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar 根据提示进行输入
+请在之前的文件夹中打开终端（Windows系统为cmd）
+如果是Linux用户，请在这里输入
+```bash
+$Java_Home/bin/java.exe -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
+```
+如果是windows用户，也请在这里输入
+```cmd
+%Java_Home%\bin\java.exe -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
+```
+后续根据提示进行输入
+如果还想打开，只需再次执行第三步即可
 
 ## 第四步 —— 完成
 
