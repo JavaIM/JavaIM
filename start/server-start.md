@@ -32,7 +32,29 @@
 
 ## 第五步 —— 正式构建
 
-返回到git克隆后的文件夹，在此处打开终端（Windows用户请在此处打开cmd），输入chmod 777 ./build.sh（Windows用户请忽略此步），输入./build.sh（Windows用户请输入build.bat） 等待完成后，在终端（cmd）中输入cd target，后输入java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
+Linux用户请使用
+```bash
+chmod 777 ./build.sh
+./build.sh
+cd target
+java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
+```
+后续使用直接
+```bash
+cd target
+java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
+```
+Windows用户请使用
+```cmd
+build.bat
+cd target
+java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
+```
+后续使用直接
+```cmd
+cd target
+java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
+```
 
 ## 第六步 —— 根据程序提示配置
 
