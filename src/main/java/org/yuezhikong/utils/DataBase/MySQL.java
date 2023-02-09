@@ -16,7 +16,6 @@ public class MySQL {
      * @throws ClassNotFoundException 找不到MySQL驱动
      * @throws SQLException 获取MySQL连接时连接失败
      * @return MySQL连接
-     * @apiNote 返回的MySQL连接也会在Class中存一份，如果已经有一个MySQL连接了，会直接返回，而不去创建新的Connection
      */
     public static Connection GetMySQLConnection(String host,String port,String Database,String UserName,String Password) throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.cj.jdbc.Driver");
