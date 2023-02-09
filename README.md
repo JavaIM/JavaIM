@@ -1,4 +1,4 @@
-# 👋 JavaIM Docs
+# JavaIM Docs
 
 这里是JavaIM的文档！
 
@@ -14,10 +14,10 @@
 
 ## 现在开始！
 
-{% content-ref url="start/server-start.md" %}
-[server-start.md](start/server-start.md)
+{% content-ref url="start/install/" %}
+[install](start/install/)
 {% endcontent-ref %}
 
-{% content-ref url="start/client-start.md" %}
-[client-start.md](start/client-start.md)
+{% content-ref url="start/server-start.md" %}
+[server-start.md](start/server-start.md)
 {% endcontent-ref %}
