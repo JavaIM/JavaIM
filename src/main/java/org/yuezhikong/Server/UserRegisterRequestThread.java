@@ -43,7 +43,7 @@ public class UserRegisterRequestThread extends Thread{
                 mySQLConnection.close();
                 return;
             }
-            sql = "INSERT INTO `UserData` (`UserName`, `Passwd`,`salt`) VALUES (?, ?, ?);";
+            sql = "INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`) VALUES (0,?, ?, ?);";
             ps = mySQLConnection.prepareStatement(sql);
             ps.setString(1,Username);
             ps.setString(2,sha256);

@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import static org.yuezhikong.Server.utils.utils.SendMessageToUser;
 import static org.yuezhikong.Server.newServer.logger_log4j;
 
 public class UserLoginRequestThread extends Thread{
@@ -43,8 +44,27 @@ public class UserLoginRequestThread extends Thread{
                 sha256 = SecureUtil.sha256(Passwd + salt);
                 if (rs.getString("Passwd").equals(sha256))
                 {
-                    RequestReturn = true;
                     Username = rs.getString("UserName");
+                    int PermissionLevel = rs.getInt("Permission");
+                    if (PermissionLevel != 0)
+                    {
+                        if (PermissionLevel != 1)
+                        {
+                            if (PermissionLevel != -1)
+                            {
+                                PermissionLevel = 0;
+                            }
+                            else
+                            {
+                                SendMessageToUser(RequestUser,"您的账户已被永久封禁！");
+                                RequestReturn = false;
+                                mySQLConnection.close();
+                                return;
+                            }
+                        }
+                    }
+                    RequestReturn = true;
+                    RequestUser.SetUserPermission(PermissionLevel);
                     RequestUser.UserLogin(Username);
                     mySQLConnection.close();
                     return;

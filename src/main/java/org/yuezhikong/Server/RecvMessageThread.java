@@ -76,10 +76,41 @@ class RecvMessageThread extends Thread{
                         CurrentClientClass.UserDisconnect();
                         return;
                     }
+                    if (CurrentClientClass.GetUserPermission() == -1)//ban人处理
+                    {
+                        logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "被封禁人员，正在被强制退出登录");
+                        CurrentClientClass.UserDisconnect();
+                        return;
+                    }
+                    if (CurrentClientClass.GetUserPermission() == 1)//判定是否为管理员
+                    {
+                        if (ChatMessage.charAt(0) == '/')//判定是否是斜杠打头，如果是，判定为命令
+                        {
+                            String command;//命令
+                            String[] argv;//参数
+                            {
+                                String[] CommandLineFormated = ChatMessage.split("\\s+"); //分割一个或者多个空格
+                                command = CommandLineFormated[0];
+                                argv = new String[CommandLineFormated.length - 1];
+                                int j = 0;//要删除的字符索引
+                                int i = 0;
+                                int k = 0;
+                                while (i < CommandLineFormated.length) {
+                                    if (i != j) {
+                                        argv[k] = CommandLineFormated[i];
+                                        k++;
+                                    }
+                                    i++;
+                                }
+                            }//格式化
+                            RequestCommand.CommandRequest(command,argv,CurrentClientClass);//调用执行
+                            continue;
+                        }
+                    }
                     // 读取客户端发送的消息
                     logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                     // 消息转发
-                    newServer.GetInstance().SendMessageToAllClient("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
+                    org.yuezhikong.Server.utils.utils.SendMessageToAllClient("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage , newServer.GetInstance());
                 }
             }
         }

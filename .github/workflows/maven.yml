@@ -30,9 +30,10 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
       
-    - name: preupload artifact
+    - name: Preupload artifact
       run: mkdir artifact && cp target/JavaIM*.jar artifact
-    - name: upload artifact
+
+    - name: Upload artifact
       uses: actions/upload-artifact@v1
       with:
           name: JavaIM请解压后使用

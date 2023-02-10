@@ -22,6 +22,7 @@ public class MySQL {
         Connection mySQLConnection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + Database + "?autoReconnect=true&failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1&useSSL=false", UserName, Password);
         String sql = "CREATE TABLE if not exists UserData" +
                 " (" +
+                " Permission INT," +//权限等级，目前只有三个等级，-1级：被封禁用户，0级：普通用户，1级：管理员
                 " UserName varchar(255)," +
                 " Passwd varchar(255)," +
                 " salt varchar(255)" +
