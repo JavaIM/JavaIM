@@ -7,12 +7,14 @@ import java.net.Socket;
 import static org.yuezhikong.config.GetRSA_Mode;
 
 public class user {
+    private int PermissionLevel = 0;
     private String UserName = "";
     private boolean UserLogined;
     private Socket UserSocket;
     private final int ClientID;
     private String UserPublicKey;
     private boolean PublicKeyChanged = false;
+
     public user(Socket socket,int clientid)
     {
         UserSocket = socket;
@@ -48,6 +50,15 @@ public class user {
             PublicKeyChanged = true;
         }
     }
+
+    /**
+     * 设置用户权限级别
+     * @param permissionLevel 权限等级
+     */
+    public void SetUserPermission(int permissionLevel)
+    {
+        PermissionLevel = permissionLevel;
+    }
     public void UserDisconnect()
     {
         try {
@@ -66,6 +77,10 @@ public class user {
     public Socket GetUserSocket()
     {
         return UserSocket;
+    }
+    public int GetUserPermission()
+    {
+        return PermissionLevel;
     }
     public int GetUserClientID()
     {

@@ -9,48 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import static org.yuezhikong.Server.newServer.logger_log4j;
+import static org.yuezhikong.Server.utils.utils.SendMessageToUser;
 import static org.yuezhikong.config.GetRSA_Mode;
 
 public class UserLogin{
-    /**
-     * 为指定用户发送消息
-     * @param user 发信的目标用户
-     * @param inputMessage 发信的信息
-     */
-    private static void SendMessageToUser(user user,String inputMessage)
-    {
-        String Message = inputMessage;
-        try {
-            if (GetRSA_Mode()) {
-                String UserPublicKey = user.GetUserPublicKey();
-                if (UserPublicKey == null) {
-                    throw new NullPointerException();
-                }
-                Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
-                Message = RSA.encrypt(Message, UserPublicKey);
-            }
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(user.GetUserSocket().getOutputStream()));
-            writer.write(Message);
-            writer.newLine();
-            writer.flush();
-        } catch (Exception e)
-        {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                e.printStackTrace();
-            }
-        }
-    }
     /**
      * 是否允许用户登录
      * @param LoginUser 请求登录的用户
