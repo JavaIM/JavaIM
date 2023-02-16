@@ -97,6 +97,7 @@ public class Main {
      * @apiNote 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
+        logger.info("欢迎使用JavaIM。本项目遵循GPL-3.0协议，请合法使用，作者不承担任何错误使用所造成的后果。项目地址：https://github.com/QiLechan/JavaIM/");
         if (GetAutoSaveDependencyMode()) { getInstance().saveLibFiles(); }
         logger.info("使用客户端模式请输入1，服务端模式请输入2:");
         Scanner sc = new Scanner(System.in);
