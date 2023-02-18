@@ -5,4 +5,3 @@ RUN apt -y install openjdk-17-jdk
 RUN apt -y install maven
 RUN git clone https://github.com/QiLechan/JavaIM.git
 RUN cd JavaIM && sh build.sh
-RUN cd JavaIM/target && java -jar JavaIM-1.0-SNAPSHOT.jar
