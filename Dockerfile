@@ -1,5 +1,6 @@
 FROM ubuntu
-RUN RUN apt install maven \
+RUN apt update
+RUN apt install maven \
     && RUN apt install openjdk-17-jdk \
     && RUN mvn -B package --file pom.xml \
     && RUN cd target \
