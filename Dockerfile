@@ -1,2 +1,2 @@
 FROM ubuntu
-RUN ls && sh dockerinstall.sh
+RUN apt update && apt install git && apt install wget && git clone https://github.com/QiLechan/JavaIM.git && cd JavaIM && sh dockerinstall.sh
