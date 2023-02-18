@@ -1,6 +1,5 @@
 apt update
 apt -y install git
-apt -y install wget
 apt -y install openjdk-17-jdk
 apt -y install maven
 git clone https://github.com/QiLechan/JavaIM.git
