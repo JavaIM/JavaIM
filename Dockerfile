@@ -1,2 +1,2 @@
 FROM ubuntu
-RUN apt install wget && curl -O https://raw.githubusercontent.com/QiLechan/JavaIM/main/dockerinstall.sh
+RUN apt install wget && wget https://raw.githubusercontent.com/QiLechan/JavaIM/main/dockerinstall.sh && sh dockerinstall.sh
