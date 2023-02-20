@@ -28,6 +28,7 @@ public class newServer {
     private ServerSocket serverSocket = null;
     //服务端实例
     private static newServer instance = null;
+    public org.yuezhikong.Server.utils.time_event timer;
 
     /**
      * 获取客户端总数量
@@ -94,7 +95,7 @@ public class newServer {
      * @apiNote 获取服务端实例
      * @return 服务端实例
      */
-    static newServer GetInstance()
+    public static newServer GetInstance()
     {
         return instance;
     }
@@ -168,6 +169,14 @@ public class newServer {
         userAuthThread.setName("UserAuthThread");
     }
     /**
+     * 启动timer
+     */
+    private void StartTimer()
+    {
+        timer = new org.yuezhikong.Server.utils.time_event();
+        timer.Start();
+    }
+    /**
      * @apiNote 启动命令系统
      */
     private void StartCommandSystem()
@@ -200,6 +209,7 @@ public class newServer {
             if (command.equals("quit"))
             {
                 System.exit(0);
+                timer.cancel();
             }
             CommandRequest("/"+command,argv,null);
         }
@@ -231,6 +241,7 @@ public class newServer {
             }
         }
         StartUserAuthThread();
+        StartTimer();
         StartCommandSystem();
     }
 }

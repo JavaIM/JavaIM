@@ -1,12 +1,18 @@
 package org.yuezhikong.Server;
 
 import org.apache.logging.log4j.Level;
+import org.yuezhikong.config;
+import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -38,10 +44,6 @@ class RecvMessageThread extends Thread{
             DataInputStream in = new DataInputStream(CurrentClientSocket.getInputStream());
             String privateKey = null;
             if (GetRSA_Mode()) {
-                //logger.info("密文："+input);
-                //String RSADecode = RSA.decrypt(input,privatekey);
-                //logger.info("RSA解密后，decode前："+RSADecode);
-                //logger.info("decode后："+java.net.URLDecoder.decode(RSADecode, StandardCharsets.UTF_8));
                 privateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey;
                 CurrentClientClass.SetUserPublicKey(java.net.URLDecoder.decode(in.readUTF(), StandardCharsets.UTF_8));
             }
@@ -107,6 +109,40 @@ class RecvMessageThread extends Thread{
                             continue;
                         }
                     }
+                    //判断禁言是否已结束
+                    if (CurrentClientClass.isMuted())
+                    {
+                        Date date = new Date();
+                        long Time = date.getTime();//获取当前时间毫秒数
+                        if (CurrentClientClass.getMuteTime() <= Time)
+                        {
+                            CurrentClientClass.setMuteTime(0);
+                            CurrentClientClass.setMuted(false);
+                            Runnable SQLUpdateThread = () -> {
+                                try {
+                                    Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                                    String sql = "UPDATE UserData SET UserMuted = 0 and UserMuteTime = 0 where UserName = ?";
+                                    PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+                                    ps.setString(1,CurrentClientClass.GetUserName());
+                                    ps.executeUpdate();
+                                    mySQLConnection.close();
+                                } catch (ClassNotFoundException | SQLException e) {
+                                    e.printStackTrace();
+                                }
+                            };
+                            Thread UpdateThread = new Thread(SQLUpdateThread);
+                            UpdateThread.start();
+                            UpdateThread.setName("SQL Update Thread");
+                            try {
+                                UpdateThread.join();
+                            } catch (InterruptedException e) {
+                                Logger logger = new Logger();
+                                logger.error("发生异常InterruptedException");
+                            }
+                        }
+                    }
+                    if (CurrentClientClass.isMuted())
+                        continue;
                     // 读取客户端发送的消息
                     logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                     // 消息转发

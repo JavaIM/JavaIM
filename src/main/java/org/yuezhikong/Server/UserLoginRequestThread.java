@@ -1,9 +1,8 @@
 package org.yuezhikong.Server;
 
 import cn.hutool.crypto.SecureUtil;
-import com.mysql.cj.MysqlConnection;
 import org.yuezhikong.config;
-import org.yuezhikong.utils.DataBase.MySQL;
+import org.yuezhikong.utils.DataBase.Database;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -31,7 +30,7 @@ public class UserLoginRequestThread extends Thread{
     public void run() {
         super.run();
         try {
-            Connection mySQLConnection = MySQL.GetMySQLConnection(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+            Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
             String sql = "select * from UserData where UserName = ?";
             PreparedStatement ps = mySQLConnection.prepareStatement(sql);
             ps.setString(1,Username);
@@ -62,6 +61,13 @@ public class UserLoginRequestThread extends Thread{
                                 return;
                             }
                         }
+                    }
+                    long muted = rs.getLong("UserMuted");
+                    long MuteTime = rs.getLong("UserMuteTime");
+                    if (muted == 1)
+                    {
+                        RequestUser.setMuteTime(MuteTime);
+                        RequestUser.setMuted(true);
                     }
                     RequestReturn = true;
                     RequestUser.SetUserPermission(PermissionLevel);

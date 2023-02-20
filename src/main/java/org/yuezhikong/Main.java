@@ -94,30 +94,37 @@ public class Main {
         //System.exit(0);
     }
     /**
-     * @apiNote 程序的入口点，程序从这里开始运行至结束
+     * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
-        if (GetAutoSaveDependencyMode()) { getInstance().saveLibFiles(); }
-        logger.info("使用客户端模式请输入1，服务端模式请输入2:");
-        Scanner sc = new Scanner(System.in);
-        int mode = sc.nextInt();
-        if (mode == 1) {
-            Scanner sc2 = new Scanner(System.in);
-            Scanner sc3 = new Scanner(System.in);
-            String serverName;
-            logger.info("请输入要连接的主机:");
-            serverName = sc2.nextLine();
-            logger.info("请输入端口:");
-            int port = Integer.parseInt(sc3.nextLine());
-            new Client(serverName,port);
-        } else if (mode == 2) {
-            Scanner sc4 = new Scanner(System.in);
-            logger.info("请输入监听端口:");
-            int port = Integer.parseInt(sc4.nextLine());
-            new newServer(port);
+        try {
+            if (GetAutoSaveDependencyMode()) {
+                getInstance().saveLibFiles();
+            }
+            logger.info("使用客户端模式请输入1，服务端模式请输入2:");
+            Scanner sc = new Scanner(System.in);
+            int mode = sc.nextInt();
+            if (mode == 1) {
+                Scanner sc2 = new Scanner(System.in);
+                Scanner sc3 = new Scanner(System.in);
+                String serverName;
+                logger.info("请输入要连接的主机:");
+                serverName = sc2.nextLine();
+                logger.info("请输入端口:");
+                int port = Integer.parseInt(sc3.nextLine());
+                new Client(serverName, port);
+            } else if (mode == 2) {
+                Scanner sc4 = new Scanner(System.in);
+                logger.info("请输入监听端口:");
+                int port = Integer.parseInt(sc4.nextLine());
+                new newServer(port);
+            } else {
+                logger.info("输入值错误，请重新运行程序");
+            }
         }
-        else {
-            logger.info("输入值错误，请重新运行程序");
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
     }
 }

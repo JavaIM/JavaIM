@@ -14,8 +14,46 @@ public class user {
     private final int ClientID;
     private String UserPublicKey;
     private boolean PublicKeyChanged = false;
+    private long MuteTime = 0;
+    private boolean Muted = false;
 
-    public user(Socket socket,int clientid)
+    /**
+     * 设置用户是否已被禁言
+     * @param muted 是/否
+     */
+    public void setMuted(boolean muted)
+    {
+        Muted = muted;
+    }
+
+    /**
+     * 设置用户禁言时长
+     * @param muteTime 禁言时长
+     * @apiNote 如果禁言时长为-1，且Muted为true，则认为为永久禁言
+     */
+    public void setMuteTime(long muteTime)
+    {
+        MuteTime = muteTime;
+    }
+
+    /**
+     * 获取用户是否处于禁言状态
+     * @return 是/否
+     */
+    public boolean isMuted() {
+        return Muted;
+    }
+
+    /**
+     * 获取用户禁言时长
+     * @return 禁言时长
+     * @apiNote 如果返回为-1，请将其处理为永久禁言
+     */
+    public long getMuteTime() {
+        return MuteTime;
+    }
+
+    public user(Socket socket, int clientid)
     {
         UserSocket = socket;
         ClientID = clientid;

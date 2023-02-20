@@ -7,6 +7,8 @@ public class config {
     private static final boolean EnableLoginSystem = true;
     //调试模式
     public static boolean Debug_Mode = false;
+    //是否使用SQLITE
+    private static final boolean Use_SQLITE_Mode = true;
     //是否允许自动释放依赖
     private static final boolean Auto_Save_Dependency = false;
     //测试性RSA加密功能
@@ -22,6 +24,8 @@ public class config {
     private static final String MySQLDataBaseUser = "JavaIM";
     //MySQL数据库密码
     private static final String MySQLDataBasePasswd = "JavaIM";
+
+    public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }
     public static boolean GetEnableLoginSystem() { return EnableLoginSystem; }
     public static String GetMySQLDataBaseHost() { return MySQLDataBaseHost; }
     public static String GetMySQLDataBasePort() { return MySQLDataBasePort; }
