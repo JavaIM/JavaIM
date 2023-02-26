@@ -1,19 +1,16 @@
 package org.yuezhikong;
 
 //import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.Server.Server;
 
-import org.yuezhikong.Server.newServer;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Scanner;
 
-import static org.yuezhikong.Server.newServer.logger;
 import static org.yuezhikong.config.GetAutoSaveDependencyMode;
 
 public class Main {
+    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
     private static Main instance;
     private static Main getInstance()
     {
@@ -42,7 +39,21 @@ public class Main {
             catch (Exception e)
             {
                 System.err.println("创建文件夹时出现异常");
-                e.printStackTrace();
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                pw.flush();
+                sw.flush();
+                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                logger_log4j.debug(sw.toString());
+                pw.close();
+                try {
+                    sw.close();
+                }
+                catch (IOException ex)
+                {
+                    ex.printStackTrace();
+                }
                 System.exit(-1);
             }
         }
@@ -59,7 +70,21 @@ public class Main {
             catch (Exception e)
             {
                 System.err.println("创建文件时出现异常");
-                e.printStackTrace();
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                pw.flush();
+                sw.flush();
+                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                logger_log4j.debug(sw.toString());
+                pw.close();
+                try {
+                    sw.close();
+                }
+                catch (IOException ex)
+                {
+                    ex.printStackTrace();
+                }
                 System.exit(-1);
             }
             InputStream inputStream = this.getClass().getResourceAsStream(name);
@@ -79,7 +104,21 @@ public class Main {
             catch (Exception e)
             {
                 System.err.println("创建文件时出现异常");
-                e.printStackTrace();
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                pw.flush();
+                sw.flush();
+                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                logger_log4j.debug(sw.toString());
+                pw.close();
+                try {
+                    sw.close();
+                }
+                catch (IOException ex)
+                {
+                    ex.printStackTrace();
+                }
                 System.exit(-1);
             }
         }
@@ -117,14 +156,28 @@ public class Main {
                 Scanner sc4 = new Scanner(System.in);
                 logger.info("请输入监听端口:");
                 int port = Integer.parseInt(sc4.nextLine());
-                new newServer(port);
+                new Server(port);
             } else {
                 logger.info("输入值错误，请重新运行程序");
             }
         }
         catch (Exception e)
         {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
     }
 }

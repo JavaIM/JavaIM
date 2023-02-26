@@ -1,6 +1,7 @@
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.LoginSystem;
 
 import cn.hutool.crypto.SecureUtil;
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
 
@@ -12,8 +13,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static org.yuezhikong.Server.utils.utils.SendMessageToUser;
-import static org.yuezhikong.Server.newServer.logger_log4j;
+import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
+import static org.yuezhikong.Server.Server.logger_log4j;
 
 public class UserLoginRequestThread extends Thread{
     private boolean RequestReturn = false;
@@ -93,7 +94,7 @@ public class UserLoginRequestThread extends Thread{
             }
             catch (IOException ex)
             {
-                e.printStackTrace();
+                ex.printStackTrace();
             }
             logger_log4j.fatal("ClassNotFoundException，无法找到MySQL驱动");
             logger_log4j.fatal("程序已崩溃");
@@ -114,7 +115,7 @@ public class UserLoginRequestThread extends Thread{
             }
             catch (IOException ex)
             {
-                e.printStackTrace();
+                ex.printStackTrace();
             }
             RequestReturn = false;
         }

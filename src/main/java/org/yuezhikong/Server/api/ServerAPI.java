@@ -1,24 +1,32 @@
-package org.yuezhikong.Server.utils;
+package org.yuezhikong.Server.api;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.jmx.Server;
-import org.yuezhikong.Server.user;
+import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.Server.Server;
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
-import static org.yuezhikong.Server.newServer.logger_log4j;
+import static org.yuezhikong.Server.Server.logger_log4j;
 import static org.yuezhikong.config.GetRSA_Mode;
 
-public class utils {
+/**
+ * 服务端API集合
+ * @author AlexLiuDev233
+ * @version v0.1
+ * @Description 2023年2月25日从org.yuezhikong.Server.utils.utils迁来
+ * @Date 2023年2月25日
+ */
+public interface ServerAPI {
     /**
      * 为指定用户发送消息
      * @param user 发信的目标用户
      * @param inputMessage 发信的信息
      */
-    public static void SendMessageToUser(user user, String inputMessage)
+    static void SendMessageToUser(user user, String inputMessage)
     {
         String Message = inputMessage;
         try {
@@ -41,6 +49,7 @@ public class utils {
             e.printStackTrace(pw);
             pw.flush();
             sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
             logger_log4j.debug(sw.toString());
             pw.close();
             try {
@@ -48,7 +57,7 @@ public class utils {
             }
             catch (IOException ex)
             {
-                e.printStackTrace();
+                ex.printStackTrace();
             }
         }
     }
@@ -57,7 +66,7 @@ public class utils {
      * @param inputMessage 要发信的信息
      * @param ServerInstance 服务器实例
      */
-    public static void SendMessageToAllClient(String inputMessage,org.yuezhikong.Server.newServer ServerInstance)
+    static void SendMessageToAllClient(String inputMessage, Server ServerInstance)
     {
         String Message = inputMessage;
         int i = 0;
@@ -105,12 +114,13 @@ public class utils {
                 i = i + 1;
             }
         } catch (IOException e) {
-            org.yuezhikong.Server.newServer.logger.log(Level.ERROR, "SendMessage时出现IOException!");
+            Server.logger.log(Level.ERROR, "SendMessage时出现IOException!");
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
             pw.flush();
             sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
             logger_log4j.debug(sw.toString());
             pw.close();
             try {
@@ -118,10 +128,24 @@ public class utils {
             }
             catch (IOException ex)
             {
-                e.printStackTrace();
+                ex.printStackTrace();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.LoginSystem;
 
 
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.RSA;
 
@@ -8,8 +9,8 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-import static org.yuezhikong.Server.newServer.logger_log4j;
-import static org.yuezhikong.Server.utils.utils.SendMessageToUser;
+import static org.yuezhikong.Server.Server.logger_log4j;
+import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
 import static org.yuezhikong.config.GetRSA_Mode;
 
 public class UserLogin{
@@ -126,7 +127,7 @@ public class UserLogin{
                 }
                 catch (IOException ex)
                 {
-                    e.printStackTrace();
+                    ex.printStackTrace();
                 }
             }
             catch (NumberFormatException e)

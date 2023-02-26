@@ -1,8 +1,11 @@
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.UserData;
 
+import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.Socket;
 import static org.yuezhikong.config.GetRSA_Mode;
 
@@ -101,13 +104,23 @@ public class user {
     {
         try {
             UserSocket.close();
-        } catch (IOException e)
+        } catch (IOException | NullPointerException e)
         {
-            e.printStackTrace();
-        }
-        catch (NullPointerException ignored)
-        {
-
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
         UserSocket = null;
         UserPublicKey = null;

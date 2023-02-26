@@ -1,6 +1,9 @@
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.Commands;
 
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.Server.Server;
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
@@ -8,6 +11,8 @@ import org.yuezhikong.utils.Logger;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -47,9 +52,23 @@ class CommandLogger
             try {
                 Thread.sleep(25);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                pw.flush();
+                sw.flush();
+                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                logger_log4j.debug(sw.toString());
+                pw.close();
+                try {
+                    sw.close();
+                }
+                catch (IOException ex)
+                {
+                    ex.printStackTrace();
+                }
             }
-            org.yuezhikong.Server.utils.utils.SendMessageToUser(User,Message);
+            org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
         }
     }
     /**
@@ -62,7 +81,7 @@ class CommandLogger
         logger.error(Message);
         if (type == 1)
         {
-            org.yuezhikong.Server.utils.utils.SendMessageToUser(User,Message);
+            org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
         }
     }
 
@@ -77,7 +96,7 @@ class CommandLogger
         logger.log(level,Message);
         if (type == 1)
         {
-            org.yuezhikong.Server.utils.utils.SendMessageToUser(User,Message);
+            org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
         }
     }
 }
@@ -130,7 +149,7 @@ public class RequestCommand {
                 if (argv.length >= 1)
                 {
                     int i = 0;
-                    int tmpclientidall = newServer.GetInstance().getClientIDAll();
+                    int tmpclientidall = Server.GetInstance().getClientIDAll();
                     tmpclientidall = tmpclientidall - 1;
                     boolean found = false;
                     while (true) {
@@ -138,7 +157,7 @@ public class RequestCommand {
                             logger.info("错误，找不到此用户");
                             break;
                         }
-                        user RequestUser = newServer.GetInstance().getUsers().get(i);
+                        user RequestUser = Server.GetInstance().getUsers().get(i);
                         if (RequestUser.GetUserSocket() == null) {
                             i = i + 1;
                             continue;
@@ -172,7 +191,21 @@ public class RequestCommand {
                                 ps.executeUpdate();
                                 mySQLConnection.close();
                             } catch (ClassNotFoundException | SQLException e) {
-                                e.printStackTrace();
+                                StringWriter sw = new StringWriter();
+                                PrintWriter pw = new PrintWriter(sw);
+                                e.printStackTrace(pw);
+                                pw.flush();
+                                sw.flush();
+                                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                                logger_log4j.debug(sw.toString());
+                                pw.close();
+                                try {
+                                    sw.close();
+                                }
+                                catch (IOException ex)
+                                {
+                                    ex.printStackTrace();
+                                }
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -201,7 +234,7 @@ public class RequestCommand {
                         return;
                     }
                     int i = 0;
-                    int tmpclientidall = newServer.GetInstance().getClientIDAll();
+                    int tmpclientidall = Server.GetInstance().getClientIDAll();
                     tmpclientidall = tmpclientidall - 1;
                     boolean found = false;
                     while (true) {
@@ -209,7 +242,7 @@ public class RequestCommand {
                             logger.info("错误，找不到此用户");
                             break;
                         }
-                        user RequestUser = newServer.GetInstance().getUsers().get(i);
+                        user RequestUser = Server.GetInstance().getUsers().get(i);
                         if (RequestUser.GetUserSocket() == null) {
                             i = i + 1;
                             continue;
@@ -241,7 +274,21 @@ public class RequestCommand {
                                 ps.executeUpdate();
                                 mySQLConnection.close();
                             } catch (ClassNotFoundException | SQLException e) {
-                                e.printStackTrace();
+                                StringWriter sw = new StringWriter();
+                                PrintWriter pw = new PrintWriter(sw);
+                                e.printStackTrace(pw);
+                                pw.flush();
+                                sw.flush();
+                                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                                logger_log4j.debug(sw.toString());
+                                pw.close();
+                                try {
+                                    sw.close();
+                                }
+                                catch (IOException ex)
+                                {
+                                    ex.printStackTrace();
+                                }
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -277,7 +324,7 @@ public class RequestCommand {
                     long Time = date.getTime();//获取当前时间毫秒数
                     UserMuteTime = UserMuteTime + Time;
                     int i = 0;
-                    int tmpclientidall = newServer.GetInstance().getClientIDAll();
+                    int tmpclientidall = Server.GetInstance().getClientIDAll();
                     tmpclientidall = tmpclientidall - 1;
                     boolean found = false;
                     while (true) {
@@ -285,7 +332,7 @@ public class RequestCommand {
                             logger.info("错误，找不到此用户");
                             break;
                         }
-                        user RequestUser = newServer.GetInstance().getUsers().get(i);
+                        user RequestUser = Server.GetInstance().getUsers().get(i);
                         if (RequestUser.GetUserSocket() == null) {
                             i = i + 1;
                             continue;
@@ -318,7 +365,21 @@ public class RequestCommand {
                                 ps.executeUpdate();
                                 mySQLConnection.close();
                             } catch (ClassNotFoundException | SQLException e) {
-                                e.printStackTrace();
+                                StringWriter sw = new StringWriter();
+                                PrintWriter pw = new PrintWriter(sw);
+                                e.printStackTrace(pw);
+                                pw.flush();
+                                sw.flush();
+                                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                                logger_log4j.debug(sw.toString());
+                                pw.close();
+                                try {
+                                    sw.close();
+                                }
+                                catch (IOException ex)
+                                {
+                                    ex.printStackTrace();
+                                }
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -338,7 +399,31 @@ public class RequestCommand {
                     logger.info("详细语法请见/help");
                 }
             }
-            case "/quit" -> { System.exit(0); newServer.GetInstance().timer.cancel(); }
+            case "/quit" -> {
+                try {
+                    Field field = Server.GetInstance().getClass().getDeclaredField("ExitSystem");
+                    field.setAccessible(true);
+                    field.set(Server.GetInstance(),true);
+                    field.setAccessible(false);
+
+                    field = Server.GetInstance().getClass().getDeclaredField("userAuthThread");
+                    field.setAccessible(true);
+                    Thread userAuthThread = (Thread) field.get(Server.GetInstance());
+                    field.setAccessible(false);
+
+                    field = Server.GetInstance().getClass().getDeclaredField("serverSocket");
+                    field.setAccessible(true);
+                    ServerSocket ServerSocket = (java.net.ServerSocket) field.get(Server.GetInstance());
+                    field.setAccessible(false);
+                    ServerSocket.close();
+                    userAuthThread.join();
+                    Server.GetInstance().timer.cancel();
+                    System.exit(0);
+                } catch (IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
+                    Server.GetInstance().timer.cancel();
+                    System.exit(0);
+                }
+            }
             case "/say" -> {
                 StringBuilder TheServerWillSay = new StringBuilder();//服务端将要发出的信息
                 {
@@ -360,7 +445,7 @@ public class RequestCommand {
                     }
                 }
                 // 发送信息
-                org.yuezhikong.Server.utils.utils.SendMessageToAllClient("[Server] "+TheServerWillSay,newServer.GetInstance());
+                org.yuezhikong.Server.api.ServerAPI.SendMessageToAllClient("[Server] "+TheServerWillSay, Server.GetInstance());
                 logger.info("[Server] "+TheServerWillSay);
             }
             case "/SetPermission" -> {
@@ -377,7 +462,7 @@ public class RequestCommand {
                         return;
                     }
                     int i = 0;
-                    int tmpclientidall = newServer.GetInstance().getClientIDAll();
+                    int tmpclientidall = Server.GetInstance().getClientIDAll();
                     tmpclientidall = tmpclientidall - 1;
                     boolean found = false;
                     while (true) {
@@ -385,7 +470,7 @@ public class RequestCommand {
                             logger.info("错误，找不到此用户");
                             break;
                         }
-                        user RequestUser = newServer.GetInstance().getUsers().get(i);
+                        user RequestUser = Server.GetInstance().getUsers().get(i);
                         if (RequestUser.GetUserSocket() == null) {
                             i = i + 1;
                             continue;
@@ -413,7 +498,21 @@ public class RequestCommand {
                             ps.executeUpdate();
                             mySQLConnection.close();
                         } catch (ClassNotFoundException | SQLException e) {
-                            e.printStackTrace();
+                            StringWriter sw = new StringWriter();
+                            PrintWriter pw = new PrintWriter(sw);
+                            e.printStackTrace(pw);
+                            pw.flush();
+                            sw.flush();
+                            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                            logger_log4j.debug(sw.toString());
+                            pw.close();
+                            try {
+                                sw.close();
+                            }
+                            catch (IOException ex)
+                            {
+                                ex.printStackTrace();
+                            }
                         }
                     };
                     Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -483,14 +582,15 @@ public class RequestCommand {
                             e.printStackTrace(pw);
                             pw.flush();
                             sw.flush();
-                            Logger.logger_root.debug(sw.toString());
+                            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                            logger_log4j.debug(sw.toString());
                             pw.close();
                             try {
                                 sw.close();
                             }
                             catch (IOException ex)
                             {
-                                e.printStackTrace();
+                                ex.printStackTrace();
                             }
                         }
                         logger.info("输入的命令语法不正确，请检查后再输入");
@@ -498,7 +598,7 @@ public class RequestCommand {
                     }
                     {
                         int i = 0;
-                        int tmpclientidall = newServer.GetInstance().getClientIDAll();
+                        int tmpclientidall = Server.GetInstance().getClientIDAll();
                         tmpclientidall = tmpclientidall - 1;
                         try {
                             while (true) {
@@ -506,7 +606,7 @@ public class RequestCommand {
                                     logger.info("错误，找不到此用户");
                                     break;
                                 }
-                                Socket sendsocket = newServer.GetInstance().getUsers().get(i).GetUserSocket();
+                                Socket sendsocket = Server.GetInstance().getUsers().get(i).GetUserSocket();
                                 if (sendsocket == null) {
                                     i = i + 1;
                                     continue;
@@ -533,14 +633,15 @@ public class RequestCommand {
                             e.printStackTrace(pw);
                             pw.flush();
                             sw.flush();
-                            Logger.logger_root.debug(sw.toString());
+                            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                            logger_log4j.debug(sw.toString());
                             pw.close();
                             try {
                                 sw.close();
                             }
                             catch (IOException ex)
                             {
-                                e.printStackTrace();
+                                ex.printStackTrace();
                             }
                         }
                     }

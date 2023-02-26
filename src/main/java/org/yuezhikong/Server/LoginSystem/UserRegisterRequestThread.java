@@ -1,6 +1,7 @@
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.LoginSystem;
 
 import cn.hutool.crypto.SecureUtil;
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
 
@@ -12,7 +13,7 @@ import java.util.UUID;
 
 public class UserRegisterRequestThread extends Thread{
     private boolean RequestReturn;
-    private final user user;
+    private final org.yuezhikong.Server.UserData.user user;
     private final String Username;
     private final String Passwd;
     public boolean GetReturn() {
