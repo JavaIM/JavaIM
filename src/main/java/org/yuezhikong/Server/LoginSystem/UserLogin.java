@@ -115,20 +115,7 @@ public class UserLogin{
             }
             catch (IOException e)
             {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                pw.flush();
-                sw.flush();
-                logger_log4j.debug(sw.toString());
-                pw.close();
-                try {
-                    sw.close();
-                }
-                catch (IOException ex)
-                {
-                    ex.printStackTrace();
-                }
+                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
             }
             catch (NumberFormatException e)
             {

@@ -5,9 +5,11 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,20 +66,7 @@ public class Server {
                 }
                 catch (Exception e)
                 {
-                    StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    e.printStackTrace(pw);
-                    pw.flush();
-                    sw.flush();
-                    logger_log4j.debug(sw.toString());
-                    pw.close();
-                    try {
-                        sw.close();
-                    }
-                    catch (IOException ex)
-                    {
-                        ex.printStackTrace();
-                    }
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
             else
@@ -88,20 +77,7 @@ public class Server {
                 }
                 catch (Exception e)
                 {
-                    StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    e.printStackTrace(pw);
-                    pw.flush();
-                    sw.flush();
-                    logger_log4j.debug(sw.toString());
-                    pw.close();
-                    try {
-                        sw.close();
-                    }
-                    catch (IOException ex)
-                    {
-                        ex.printStackTrace();
-                    }
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
         }
@@ -115,20 +91,7 @@ public class Server {
                 }
                 catch (Exception e)
                 {
-                    StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    e.printStackTrace(pw);
-                    pw.flush();
-                    sw.flush();
-                    logger_log4j.debug(sw.toString());
-                    pw.close();
-                    try {
-                        sw.close();
-                    }
-                    catch (IOException ex)
-                    {
-                        ex.printStackTrace();
-                    }
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
         }
@@ -205,20 +168,7 @@ public class Server {
                         break;
                     }
                     logger.log(Level.ERROR,"在accept时发生IOException");
-                    StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    e.printStackTrace(pw);
-                    pw.flush();
-                    sw.flush();
-                    logger_log4j.debug(sw.toString());
-                    pw.close();
-                    try {
-                        sw.close();
-                    }
-                    catch (IOException ex)
-                    {
-                        ex.printStackTrace();
-                    }
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
         };
@@ -266,18 +216,20 @@ public class Server {
             //command就是命令类型
             if (command.equals("quit"))
             {
-                ExitSystem = true;
-                try {
-                    userAuthThread.join();
-                } catch (InterruptedException ignore) {
-                    timer.cancel();
-                    System.exit(0);
-                }
-                timer.cancel();
-                System.exit(0);
+                break;
             }
             CommandRequest("/"+command,argv,null);
         }
+        ExitSystem = true;
+        try {
+            userAuthThread.join();
+        } catch (InterruptedException e) {
+            SaveStackTrace.saveStackTrace(e);
+            timer.cancel();
+            PluginManager.getInstance("/plugins").OnProgramExit(1);
+        }
+        timer.cancel();
+        PluginManager.getInstance("/plugins").OnProgramExit(0);
     }
     /**
      * @apiNote 服务端main函数
@@ -290,23 +242,12 @@ public class Server {
             serverSocket = new ServerSocket(port);
             /* serverSocket.setSoTimeout(10000); */
         } catch (IOException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
         }
         StartUserAuthThread();
         StartTimer();
+        //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
+        PluginManager.getInstance("/plugins");
         StartCommandSystem();
     }
 }

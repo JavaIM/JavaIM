@@ -4,13 +4,13 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
-import static org.yuezhikong.Server.Server.logger_log4j;
 import static org.yuezhikong.config.GetRSA_Mode;
 
 /**
@@ -115,37 +115,20 @@ public interface ServerAPI {
             }
         } catch (IOException e) {
             Server.logger.log(Level.ERROR, "SendMessage时出现IOException!");
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+        }
+    }
+    /**
+     * 解除某用户的禁言（插件专用）
+     */
+    static void UnMuteUser(user UnMuteUser)
+    {
+        if (!PluginManager.getInstance("/plugins").OnUserUnMute(UnMuteUser,UnMuteType.PLUGIN_UNMUTE))
+        {
+            UnMuteUser.setMuted(false);
+            UnMuteUser.setMuteTime(0);
         }
     }
 }

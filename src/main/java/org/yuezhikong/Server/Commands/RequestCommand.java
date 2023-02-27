@@ -4,6 +4,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
@@ -52,21 +53,7 @@ class CommandLogger
             try {
                 Thread.sleep(25);
             } catch (InterruptedException e) {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                pw.flush();
-                sw.flush();
-                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                logger_log4j.debug(sw.toString());
-                pw.close();
-                try {
-                    sw.close();
-                }
-                catch (IOException ex)
-                {
-                    ex.printStackTrace();
-                }
+                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
             }
             org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
         }
@@ -191,21 +178,7 @@ public class RequestCommand {
                                 ps.executeUpdate();
                                 mySQLConnection.close();
                             } catch (ClassNotFoundException | SQLException e) {
-                                StringWriter sw = new StringWriter();
-                                PrintWriter pw = new PrintWriter(sw);
-                                e.printStackTrace(pw);
-                                pw.flush();
-                                sw.flush();
-                                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                                logger_log4j.debug(sw.toString());
-                                pw.close();
-                                try {
-                                    sw.close();
-                                }
-                                catch (IOException ex)
-                                {
-                                    ex.printStackTrace();
-                                }
+                                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -274,21 +247,7 @@ public class RequestCommand {
                                 ps.executeUpdate();
                                 mySQLConnection.close();
                             } catch (ClassNotFoundException | SQLException e) {
-                                StringWriter sw = new StringWriter();
-                                PrintWriter pw = new PrintWriter(sw);
-                                e.printStackTrace(pw);
-                                pw.flush();
-                                sw.flush();
-                                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                                logger_log4j.debug(sw.toString());
-                                pw.close();
-                                try {
-                                    sw.close();
-                                }
-                                catch (IOException ex)
-                                {
-                                    ex.printStackTrace();
-                                }
+                                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -365,21 +324,7 @@ public class RequestCommand {
                                 ps.executeUpdate();
                                 mySQLConnection.close();
                             } catch (ClassNotFoundException | SQLException e) {
-                                StringWriter sw = new StringWriter();
-                                PrintWriter pw = new PrintWriter(sw);
-                                e.printStackTrace(pw);
-                                pw.flush();
-                                sw.flush();
-                                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                                logger_log4j.debug(sw.toString());
-                                pw.close();
-                                try {
-                                    sw.close();
-                                }
-                                catch (IOException ex)
-                                {
-                                    ex.printStackTrace();
-                                }
+                                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -418,10 +363,10 @@ public class RequestCommand {
                     ServerSocket.close();
                     userAuthThread.join();
                     Server.GetInstance().timer.cancel();
-                    System.exit(0);
+                    PluginManager.getInstance("/plugins").OnProgramExit(0);
                 } catch (IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
                     Server.GetInstance().timer.cancel();
-                    System.exit(0);
+                    PluginManager.getInstance("/plugins").OnProgramExit(1);
                 }
             }
             case "/say" -> {
@@ -498,21 +443,7 @@ public class RequestCommand {
                             ps.executeUpdate();
                             mySQLConnection.close();
                         } catch (ClassNotFoundException | SQLException e) {
-                            StringWriter sw = new StringWriter();
-                            PrintWriter pw = new PrintWriter(sw);
-                            e.printStackTrace(pw);
-                            pw.flush();
-                            sw.flush();
-                            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                            logger_log4j.debug(sw.toString());
-                            pw.close();
-                            try {
-                                sw.close();
-                            }
-                            catch (IOException ex)
-                            {
-                                ex.printStackTrace();
-                            }
+                            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                         }
                     };
                     Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -577,21 +508,7 @@ public class RequestCommand {
                     {
                         if (config.GetDebugMode())
                         {
-                            StringWriter sw = new StringWriter();
-                            PrintWriter pw = new PrintWriter(sw);
-                            e.printStackTrace(pw);
-                            pw.flush();
-                            sw.flush();
-                            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                            logger_log4j.debug(sw.toString());
-                            pw.close();
-                            try {
-                                sw.close();
-                            }
-                            catch (IOException ex)
-                            {
-                                ex.printStackTrace();
-                            }
+                            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                         }
                         logger.info("输入的命令语法不正确，请检查后再输入");
                         return;
@@ -628,21 +545,6 @@ public class RequestCommand {
                             }
                         } catch (IOException e) {
                             logger.log(Level.ERROR, "遍历用户时出现IOException!");
-                            StringWriter sw = new StringWriter();
-                            PrintWriter pw = new PrintWriter(sw);
-                            e.printStackTrace(pw);
-                            pw.flush();
-                            sw.flush();
-                            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                            logger_log4j.debug(sw.toString());
-                            pw.close();
-                            try {
-                                sw.close();
-                            }
-                            catch (IOException ex)
-                            {
-                                ex.printStackTrace();
-                            }
                         }
                     }
                 }

@@ -5,6 +5,7 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -61,21 +62,7 @@ public class timer extends TimerTask
                                 ps.executeUpdate();
                                 mySQLConnection.close();
                             } catch (ClassNotFoundException | SQLException e) {
-                                StringWriter sw = new StringWriter();
-                                PrintWriter pw = new PrintWriter(sw);
-                                e.printStackTrace(pw);
-                                pw.flush();
-                                sw.flush();
-                                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                                logger_log4j.debug(sw.toString());
-                                pw.close();
-                                try {
-                                    sw.close();
-                                }
-                                catch (IOException ex)
-                                {
-                                    ex.printStackTrace();
-                                }
+                                SaveStackTrace.saveStackTrace(e);
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -86,6 +73,7 @@ public class timer extends TimerTask
                         } catch (InterruptedException e) {
                             Logger logger = new Logger();
                             logger.error("发生异常InterruptedException");
+                            SaveStackTrace.saveStackTrace(e);
                         }
                     }
                 }

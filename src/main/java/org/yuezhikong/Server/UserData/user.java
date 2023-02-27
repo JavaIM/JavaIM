@@ -106,21 +106,7 @@ public class user {
             UserSocket.close();
         } catch (IOException | NullPointerException e)
         {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
         }
         UserSocket = null;
         UserPublicKey = null;

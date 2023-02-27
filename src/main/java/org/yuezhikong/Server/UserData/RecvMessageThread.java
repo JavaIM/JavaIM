@@ -7,6 +7,7 @@ import org.yuezhikong.Server.LoginSystem.UserLogin;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.DataBase.Database;
@@ -172,21 +173,7 @@ public class RecvMessageThread extends Thread{
                                     ps.executeUpdate();
                                     mySQLConnection.close();
                                 } catch (ClassNotFoundException | SQLException e) {
-                                    StringWriter sw = new StringWriter();
-                                    PrintWriter pw = new PrintWriter(sw);
-                                    e.printStackTrace(pw);
-                                    pw.flush();
-                                    sw.flush();
-                                    org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                                    logger_log4j.debug(sw.toString());
-                                    pw.close();
-                                    try {
-                                        sw.close();
-                                    }
-                                    catch (IOException ex)
-                                    {
-                                        ex.printStackTrace();
-                                    }
+                                    org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                                 }
                             };
                             Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -201,6 +188,9 @@ public class RecvMessageThread extends Thread{
                         }
                     }
                     if (CurrentClientClass.isMuted())
+                        continue;
+                    //插件处理
+                    if (PluginManager.getInstance("/plugins").OnUserChat(CurrentClientClass,ChatMessage))
                         continue;
                     // 读取客户端发送的消息
                     logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
@@ -223,21 +213,7 @@ public class RecvMessageThread extends Thread{
                         logger.log(Level.ERROR,"无法关闭Socket!");
                     }
                 }
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                pw.flush();
-                sw.flush();
-                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                logger_log4j.debug(sw.toString());
-                pw.close();
-                try {
-                    sw.close();
-                }
-                catch (IOException ex)
-                {
-                    ex.printStackTrace();
-                }
+                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
             }
             else
             {
@@ -245,21 +221,7 @@ public class RecvMessageThread extends Thread{
                 CurrentClientClass.UserDisconnect();
             }
         } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
         }
     }
 }
