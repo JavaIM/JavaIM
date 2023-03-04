@@ -1,21 +1,25 @@
-# Security Policy
+# 安全策略
+非必要情况，请勿回退版本，回退可能导致程序故障
 
-## Supported Versions
+## 支持的版本
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
-| Version | Supported          |
+正式版
+| 版本 | 是否受支持          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| 1.1.x   | :white_check_mark: |
+| 1.0.x   | :x:                |
 
-## Reporting a Vulnerability
+BETA版
+| 版本 | 是否受支持 |
+| ------- | ------------------ |
+| Latest Build(最新构建) | :warning:|
+| v1.1.1-pre1 | :white_check_mark: |
 
-Use this section to tell people how to report a vulnerability.
+注：
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+:warning: 代表受支持但不建议使用
+
+:white_check_mark: 受支持的
+
+:x: 不受支持的
+
