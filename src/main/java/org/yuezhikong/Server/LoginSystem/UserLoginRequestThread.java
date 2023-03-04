@@ -71,7 +71,7 @@ public class UserLoginRequestThread extends Thread{
                         RequestUser.setMuted(true);
                     }
                     RequestReturn = true;
-                    RequestUser.SetUserPermission(PermissionLevel);
+                    RequestUser.SetUserPermission(PermissionLevel,true);
                     RequestUser.UserLogin(Username);
                     mySQLConnection.close();
                     return;

@@ -19,10 +19,6 @@ import java.util.TimerTask;
 
 public class timer extends TimerTask
 {
-    @Override
-    public boolean cancel() {
-        return super.cancel();
-    }
 
     public void Start() {
         Timer timer = new Timer(true);

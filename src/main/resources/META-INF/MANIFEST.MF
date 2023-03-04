@@ -1,4 +1,9 @@
 Manifest-Version: 1.0
-Class-Path: libs/org/apache/logging/log4j/log4j-api-2.19.0.jar libs/org/apache/logging/log4j/core/log4j-core-2.19.0.jar libs/org/apache/commons/io/commons-io-2.11.0.jar libs/org/apache/commons/codec/commons-codec-1.15.jar
+Implementation-Title: JavaIM
+Implementation-Vendor: QiLechan And AlexLiuDev233
+Created-By: Maven JAR Plugin 3.3.0
+Multi-Release: true
 Main-Class: org.yuezhikong.Main
 
+Name: org.yuezhikong
+Sealed: true

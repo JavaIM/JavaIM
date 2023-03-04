@@ -15,6 +15,8 @@ import static org.yuezhikong.config.GetRSA_Mode;
 
 /**
  * 服务端API集合
+ * 建议插件仅调用本API或UserData包下的user class
+ * 其他class不要直接调用！更不要用反射骗自己！
  * @author AlexLiuDev233
  * @version v0.1
  * @Description 2023年2月25日从org.yuezhikong.Server.utils.utils迁来
@@ -118,17 +120,6 @@ public interface ServerAPI {
             org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
         } catch (Exception e) {
             org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
-        }
-    }
-    /**
-     * 解除某用户的禁言（插件专用）
-     */
-    static void UnMuteUser(user UnMuteUser)
-    {
-        if (!PluginManager.getInstance("/plugins").OnUserUnMute(UnMuteUser,UnMuteType.PLUGIN_UNMUTE))
-        {
-            UnMuteUser.setMuted(false);
-            UnMuteUser.setMuteTime(0);
         }
     }
 }

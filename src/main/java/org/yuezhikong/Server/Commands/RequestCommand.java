@@ -363,10 +363,12 @@ public class RequestCommand {
                     ServerSocket.close();
                     userAuthThread.join();
                     Server.GetInstance().timer.cancel();
-                    PluginManager.getInstance("/plugins").OnProgramExit(0);
+                    System.exit(0);
+                    //PluginManager.getInstance("./plugins").OnProgramExit(0);
                 } catch (IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
                     Server.GetInstance().timer.cancel();
-                    PluginManager.getInstance("/plugins").OnProgramExit(1);
+                    System.exit(1);
+                    //PluginManager.getInstance("./plugins").OnProgramExit(1);
                 }
             }
             case "/say" -> {
@@ -421,7 +423,7 @@ public class RequestCommand {
                             continue;
                         }
                         if (RequestUser.GetUserName().equals(argv[1])) {
-                            RequestUser.SetUserPermission(PermissionLevel);
+                            RequestUser.SetUserPermission(PermissionLevel,false);
                             found = true;
                         }
                         if (i == tmpclientidall) {

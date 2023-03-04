@@ -190,8 +190,8 @@ public class RecvMessageThread extends Thread{
                     if (CurrentClientClass.isMuted())
                         continue;
                     //插件处理
-                    if (PluginManager.getInstance("/plugins").OnUserChat(CurrentClientClass,ChatMessage))
-                        continue;
+                    //if (PluginManager.getInstance("./plugins").OnUserChat(CurrentClientClass,ChatMessage))
+                    //    continue;
                     // 读取客户端发送的消息
                     logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                     // 消息转发

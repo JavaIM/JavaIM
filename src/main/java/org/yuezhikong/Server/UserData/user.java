@@ -1,12 +1,11 @@
 package org.yuezhikong.Server.UserData;
 
-import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.Socket;
+
 import static org.yuezhikong.config.GetRSA_Mode;
 
 public class user {
@@ -27,6 +26,31 @@ public class user {
     public void setMuted(boolean muted)
     {
         Muted = muted;
+        /*
+        if (!muted) {
+            if (!PluginManager.getInstance("./plugins").OnUserUnMute(this))
+            {
+                Muted = false;
+            }
+            else
+            {
+                org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                logger.info("插件系统阻止了解除禁言操作！");
+            }
+        }
+        else
+        {
+            if (!PluginManager.getInstance("./plugins").OnUserMute(this))
+            {
+                Muted = true;
+            }
+            else
+            {
+                org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                logger.info("插件系统阻止了禁言操作");
+            }
+        }
+        */
     }
 
     /**
@@ -95,10 +119,27 @@ public class user {
     /**
      * 设置用户权限级别
      * @param permissionLevel 权限等级
+     * @param IsItARefresh 是否是刷新权限
      */
-    public void SetUserPermission(int permissionLevel)
+    public void SetUserPermission(int permissionLevel,boolean IsItARefresh)
     {
         PermissionLevel = permissionLevel;
+        /*
+        if (!IsItARefresh)//如果不是刷新登录
+        {
+            if (!PluginManager.getInstance("./plugins").OnUserPermissionChange(this,permissionLevel))//通知插件系统，发生权限更改
+            {
+                PermissionLevel = permissionLevel;//如果插件系统没有阻止操作，则进行设定
+            }
+            else
+            {
+                org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                logger.info("插件系统阻止了权限更改操作！");
+            }
+        }
+        else
+            PermissionLevel = permissionLevel;
+         */
     }
     public void UserDisconnect()
     {

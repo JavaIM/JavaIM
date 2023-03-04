@@ -69,9 +69,7 @@
                 <version>3.3.0</version>
                 <configuration>
                     <archive>
-                        <manifestEntries>
-                            <Multi-Release>true</Multi-Release>
-                        </manifestEntries>
+                        <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                     <finalName>JavaIM-1.0-SNAPSHOT</finalName>
                 </configuration>

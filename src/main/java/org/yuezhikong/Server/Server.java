@@ -226,10 +226,12 @@ public class Server {
         } catch (InterruptedException e) {
             SaveStackTrace.saveStackTrace(e);
             timer.cancel();
-            PluginManager.getInstance("/plugins").OnProgramExit(1);
+            System.exit(1);
+            //PluginManager.getInstance("./plugins").OnProgramExit(1);
         }
         timer.cancel();
-        PluginManager.getInstance("/plugins").OnProgramExit(0);
+        System.exit(0);
+        //PluginManager.getInstance("./plugins").OnProgramExit(0);
     }
     /**
      * @apiNote 服务端main函数
@@ -247,7 +249,7 @@ public class Server {
         StartUserAuthThread();
         StartTimer();
         //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
-        PluginManager.getInstance("/plugins");
+        PluginManager.getInstance("./plugins");
         StartCommandSystem();
     }
 }

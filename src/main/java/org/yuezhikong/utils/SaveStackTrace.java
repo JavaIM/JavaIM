@@ -16,7 +16,7 @@ public class SaveStackTrace {
      * 保存到debug.log的方法
      * @param e 发生的异常
      */
-    public static void saveStackTrace(Exception e)
+    public static void saveStackTrace(Throwable e)
     {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
