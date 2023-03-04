@@ -3,6 +3,7 @@ package org.yuezhikong;
 //import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.Server.Server;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.*;
 import java.util.Scanner;
@@ -38,22 +39,7 @@ public class Main {
             }
             catch (Exception e)
             {
-                System.err.println("创建文件夹时出现异常");
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                pw.flush();
-                sw.flush();
-                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                logger_log4j.debug(sw.toString());
-                pw.close();
-                try {
-                    sw.close();
-                }
-                catch (IOException ex)
-                {
-                    ex.printStackTrace();
-                }
+                SaveStackTrace.saveStackTrace(e);
                 System.exit(-1);
             }
         }
@@ -70,21 +56,7 @@ public class Main {
             catch (Exception e)
             {
                 System.err.println("创建文件时出现异常");
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                pw.flush();
-                sw.flush();
-                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                logger_log4j.debug(sw.toString());
-                pw.close();
-                try {
-                    sw.close();
-                }
-                catch (IOException ex)
-                {
-                    ex.printStackTrace();
-                }
+                SaveStackTrace.saveStackTrace(e);
                 System.exit(-1);
             }
             InputStream inputStream = this.getClass().getResourceAsStream(name);
@@ -104,21 +76,7 @@ public class Main {
             catch (Exception e)
             {
                 System.err.println("创建文件时出现异常");
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                pw.flush();
-                sw.flush();
-                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                logger_log4j.debug(sw.toString());
-                pw.close();
-                try {
-                    sw.close();
-                }
-                catch (IOException ex)
-                {
-                    ex.printStackTrace();
-                }
+                SaveStackTrace.saveStackTrace(e);
                 System.exit(-1);
             }
         }
@@ -163,21 +121,7 @@ public class Main {
         }
         catch (Exception e)
         {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
         }
     }
 }
