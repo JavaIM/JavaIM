@@ -95,6 +95,7 @@ public class Main {
      */
     public static void main(String[] args) {
         try {
+            logger.info("欢迎使用JavaIM。本项目遵循GPL-3.0协议，请合法使用，作者不承担任何错误使用所造成的后果。项目地址：https://github.com/QiLechan/JavaIM/");
             if (GetAutoSaveDependencyMode()) {
                 getInstance().saveLibFiles();
             }
