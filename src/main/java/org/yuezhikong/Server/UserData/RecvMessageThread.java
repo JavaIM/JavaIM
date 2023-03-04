@@ -1,23 +1,37 @@
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.UserData;
 
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.Server.Commands.RequestCommand;
+import org.yuezhikong.Server.LoginSystem.UserLogin;
+import org.yuezhikong.Server.Server;
+import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.config;
+import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
+import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
 import static org.yuezhikong.config.*;
 
-class RecvMessageThread extends Thread{
+public class RecvMessageThread extends Thread{
     private final int CurrentClientID;
     //private final List<Socket> sockets;
     private final List<user> Users;
     public static final Logger logger = new Logger();
-
     /**
      * @apiNote 用于给recvMessage线程传参
      * @param ClientID 客户端ID
@@ -38,10 +52,6 @@ class RecvMessageThread extends Thread{
             DataInputStream in = new DataInputStream(CurrentClientSocket.getInputStream());
             String privateKey = null;
             if (GetRSA_Mode()) {
-                //logger.info("密文："+input);
-                //String RSADecode = RSA.decrypt(input,privatekey);
-                //logger.info("RSA解密后，decode前："+RSADecode);
-                //logger.info("decode后："+java.net.URLDecoder.decode(RSADecode, StandardCharsets.UTF_8));
                 privateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey;
                 CurrentClientClass.SetUserPublicKey(java.net.URLDecoder.decode(in.readUTF(), StandardCharsets.UTF_8));
             }
@@ -50,10 +60,48 @@ class RecvMessageThread extends Thread{
             out.writeUTF("服务器连接成功：" + CurrentClientSocket.getLocalSocketAddress());
             if (GetEnableLoginSystem())
             {
-                if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass)))
-                {
-                    CurrentClientClass.UserDisconnect();
+                try {
+                    if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass))) {
+                        CurrentClientClass.UserDisconnect();
+                    } else {
+                        logger.info("用户登录完成！他的用户名为：" + CurrentClientClass.GetUserName());
+                    }
                 }
+                catch (UserAlreadyLoggedInException e)
+                {
+                    ServerAPI.SendMessageToUser(CurrentClientClass,"您的账户已经登录过了！");
+                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
+                    CurrentClientClass.UserDisconnect();
+                    return;
+                }
+                catch (NullPointerException e)
+                {
+                    ServerAPI.SendMessageToUser(CurrentClientClass,"来来来，你给我解释一下，你是怎么做到发的信息是null的？");
+                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
+                    CurrentClientClass.UserDisconnect();
+                    return;
+                }
+            }
+            else
+            {
+                ServerAPI.SendMessageToUser(CurrentClientClass,"在进入之前，您必须设置用户名");
+                Thread.sleep(250);
+                ServerAPI.SendMessageToUser(CurrentClientClass,"请输入您的用户名：");
+                String UserName;
+                BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentClientSocket.getInputStream()));//获取输入流
+                UserName = reader.readLine();
+                if (UserName == null)
+                {
+                    ServerAPI.SendMessageToUser(CurrentClientClass,"来来来，你给我解释一下，你是怎么做到发的信息是null的？");
+                    CurrentClientClass.UserDisconnect();
+                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
+                    return;
+                }
+                if (GetRSA_Mode()) {
+                    UserName = RSA.decrypt(UserName,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                }
+                UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
+                CurrentClientClass.UserLogin(UserName);
             }
             while (true) {
                 if (CurrentClientSocket.isClosed())
@@ -107,10 +155,47 @@ class RecvMessageThread extends Thread{
                             continue;
                         }
                     }
+                    //判断禁言是否已结束
+                    if (CurrentClientClass.isMuted())
+                    {
+                        Date date = new Date();
+                        long Time = date.getTime();//获取当前时间毫秒数
+                        if (CurrentClientClass.getMuteTime() <= Time)
+                        {
+                            CurrentClientClass.setMuteTime(0);
+                            CurrentClientClass.setMuted(false);
+                            Runnable SQLUpdateThread = () -> {
+                                try {
+                                    Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                                    String sql = "UPDATE UserData SET UserMuted = 0 and UserMuteTime = 0 where UserName = ?";
+                                    PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+                                    ps.setString(1,CurrentClientClass.GetUserName());
+                                    ps.executeUpdate();
+                                    mySQLConnection.close();
+                                } catch (ClassNotFoundException | SQLException e) {
+                                    org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+                                }
+                            };
+                            Thread UpdateThread = new Thread(SQLUpdateThread);
+                            UpdateThread.start();
+                            UpdateThread.setName("SQL Update Thread");
+                            try {
+                                UpdateThread.join();
+                            } catch (InterruptedException e) {
+                                Logger logger = new Logger();
+                                logger.error("发生异常InterruptedException");
+                            }
+                        }
+                    }
+                    if (CurrentClientClass.isMuted())
+                        continue;
+                    //插件处理
+                    //if (PluginManager.getInstance("./plugins").OnUserChat(CurrentClientClass,ChatMessage))
+                    //    continue;
                     // 读取客户端发送的消息
                     logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                     // 消息转发
-                    org.yuezhikong.Server.utils.utils.SendMessageToAllClient("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage , newServer.GetInstance());
+                    org.yuezhikong.Server.api.ServerAPI.SendMessageToAllClient("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage , Server.GetInstance());
                 }
             }
         }
@@ -128,7 +213,7 @@ class RecvMessageThread extends Thread{
                         logger.log(Level.ERROR,"无法关闭Socket!");
                     }
                 }
-                e.printStackTrace();
+                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
             }
             else
             {
@@ -136,7 +221,7 @@ class RecvMessageThread extends Thread{
                 CurrentClientClass.UserDisconnect();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
         }
     }
 }

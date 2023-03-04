@@ -4,9 +4,12 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -23,7 +26,21 @@ public class RSA {
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
             return null;
         }
     }
@@ -37,7 +54,21 @@ public class RSA {
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
             return null;
         }
     }
@@ -65,7 +96,21 @@ public class RSA {
             FileUtils.writeStringToFile(new File(PrivateKeyFile), privateKeyString, StandardCharsets.UTF_8);
         } catch (IOException e)
         {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
     }
 

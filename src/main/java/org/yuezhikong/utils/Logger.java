@@ -3,6 +3,10 @@ package org.yuezhikong.utils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 //import java.util.logging.Level;
 
 public class Logger {
@@ -16,7 +20,21 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
         System.out.print(">");
     }
@@ -28,7 +46,21 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
         System.out.print(">");
     }
@@ -40,7 +72,21 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
         System.out.print(">");
     }
@@ -52,7 +98,21 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
         System.out.print(">");
     }
@@ -64,7 +124,21 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            pw.flush();
+            sw.flush();
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug(sw.toString());
+            pw.close();
+            try {
+                sw.close();
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
         }
         System.out.print(">");
     }

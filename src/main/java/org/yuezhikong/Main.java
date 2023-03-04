@@ -1,19 +1,17 @@
 package org.yuezhikong;
 
 //import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.Server.Server;
+import org.yuezhikong.utils.SaveStackTrace;
 
-import org.yuezhikong.Server.newServer;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Scanner;
 
-import static org.yuezhikong.Server.newServer.logger;
 import static org.yuezhikong.config.GetAutoSaveDependencyMode;
 
 public class Main {
+    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
     private static Main instance;
     private static Main getInstance()
     {
@@ -41,8 +39,7 @@ public class Main {
             }
             catch (Exception e)
             {
-                System.err.println("创建文件夹时出现异常");
-                e.printStackTrace();
+                SaveStackTrace.saveStackTrace(e);
                 System.exit(-1);
             }
         }
@@ -59,7 +56,7 @@ public class Main {
             catch (Exception e)
             {
                 System.err.println("创建文件时出现异常");
-                e.printStackTrace();
+                SaveStackTrace.saveStackTrace(e);
                 System.exit(-1);
             }
             InputStream inputStream = this.getClass().getResourceAsStream(name);
@@ -79,7 +76,7 @@ public class Main {
             catch (Exception e)
             {
                 System.err.println("创建文件时出现异常");
-                e.printStackTrace();
+                SaveStackTrace.saveStackTrace(e);
                 System.exit(-1);
             }
         }
@@ -94,31 +91,38 @@ public class Main {
         //System.exit(0);
     }
     /**
-     * @apiNote 程序的入口点，程序从这里开始运行至结束
+     * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
-        System.out.println("欢迎使用JavaIM。本项目遵循GPL-3.0协议，请合法使用，作者不承担任何错误使用所造成的后果。项目地址：https://github.com/QiLechan/JavaIM/");
-        if (GetAutoSaveDependencyMode()) { getInstance().saveLibFiles(); }
-        logger.info("使用客户端模式请输入1，服务端模式请输入2:");
-        Scanner sc = new Scanner(System.in);
-        int mode = sc.nextInt();
-        if (mode == 1) {
-            Scanner sc2 = new Scanner(System.in);
-            Scanner sc3 = new Scanner(System.in);
-            String serverName;
-            logger.info("请输入要连接的主机:");
-            serverName = sc2.nextLine();
-            logger.info("请输入端口:");
-            int port = Integer.parseInt(sc3.nextLine());
-            new Client(serverName,port);
-        } else if (mode == 2) {
-            Scanner sc4 = new Scanner(System.in);
-            logger.info("请输入监听端口:");
-            int port = Integer.parseInt(sc4.nextLine());
-            new newServer(port);
+        try {
+            logger.info("欢迎使用JavaIM。本项目遵循GPL-3.0协议，请合法使用，作者不承担任何错误使用所造成的后果。项目地址：https://github.com/QiLechan/JavaIM/");
+            if (GetAutoSaveDependencyMode()) {
+                getInstance().saveLibFiles();
+            }
+            logger.info("使用客户端模式请输入1，服务端模式请输入2:");
+            Scanner sc = new Scanner(System.in);
+            int mode = sc.nextInt();
+            if (mode == 1) {
+                Scanner sc2 = new Scanner(System.in);
+                Scanner sc3 = new Scanner(System.in);
+                String serverName;
+                logger.info("请输入要连接的主机:");
+                serverName = sc2.nextLine();
+                logger.info("请输入端口:");
+                int port = Integer.parseInt(sc3.nextLine());
+                new Client(serverName, port);
+            } else if (mode == 2) {
+                Scanner sc4 = new Scanner(System.in);
+                logger.info("请输入监听端口:");
+                int port = Integer.parseInt(sc4.nextLine());
+                new Server(port);
+            } else {
+                logger.info("输入值错误，请重新运行程序");
+            }
         }
-        else {
-            logger.info("输入值错误，请重新运行程序");
+        catch (Exception e)
+        {
+            SaveStackTrace.saveStackTrace(e);
         }
     }
 }

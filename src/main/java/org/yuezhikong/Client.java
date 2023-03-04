@@ -1,6 +1,7 @@
 package org.yuezhikong;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.utils.KeyData;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
@@ -39,7 +40,21 @@ public class Client {
                 } catch (Exception e) {
                     if (!"Socket closed".equals(e.getMessage()))
                     {
-                        e.printStackTrace();
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        e.printStackTrace(pw);
+                        pw.flush();
+                        sw.flush();
+                        org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                        logger_log4j.debug(sw.toString());
+                        pw.close();
+                        try {
+                            sw.close();
+                        }
+                        catch (IOException ex)
+                        {
+                            ex.printStackTrace();
+                        }
                     }
                     System.exit(-1);
                 }
@@ -65,9 +80,23 @@ public class Client {
                 }
                 catch (IOException e)
                 {
-                    if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage()) &&!"Socket is closed".equals(e.getMessage())) {
+                    if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage()) && !"Socket is closed".equals(e.getMessage()))  {
                         logger.warning("发生I/O错误");
-                        e.printStackTrace();
+                        StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw);
+                        e.printStackTrace(pw);
+                        pw.flush();
+                        sw.flush();
+                        org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                        logger_log4j.debug(sw.toString());
+                        pw.close();
+                        try {
+                            sw.close();
+                        }
+                        catch (IOException ex)
+                        {
+                            ex.printStackTrace();
+                        }
                     }
                     else
                     {
@@ -87,13 +116,15 @@ public class Client {
             String ServerPublicKey = null;
             if (GetRSA_Mode()) {
                 ServerPublicKey = Objects.requireNonNull(RSA.loadPublicKeyFromFile("ServerPublicKey.key")).PublicKey;
-                out.writeUTF(java.net.URLEncoder.encode(Base64.encodeBase64String(RSAKey.publicKey.getEncoded()), StandardCharsets.UTF_8));
+                String ClientRSAKey = java.net.URLEncoder.encode(Base64.encodeBase64String(RSAKey.publicKey.getEncoded()), StandardCharsets.UTF_8);
+                out.writeUTF(ClientRSAKey);
                 //out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode("你", StandardCharsets.UTF_8),ServerPublicKey));
             }
-            out.writeUTF("Hello from " + client.getLocalSocketAddress());
+            //后续握手过程还需测试RSA！
+            out.writeUTF("Hello from " + client.getLocalSocketAddress());//通讯握手开始
             InputStream inFromServer = client.getInputStream();
             DataInputStream in = new DataInputStream(inFromServer);
-            logger.info("服务器响应： " + in.readUTF());
+            logger.info("服务器响应： " + in.readUTF());//握手结束
             Thread thread = new Thread(recvmessage);
             thread.start();
             thread.setName("RecvMessage Thread");
@@ -132,7 +163,21 @@ public class Client {
         {
             if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage())) {
                 logger.warning("发生I/O错误");
-                e.printStackTrace();
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                pw.flush();
+                sw.flush();
+                org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+                logger_log4j.debug(sw.toString());
+                pw.close();
+                try {
+                    sw.close();
+                }
+                catch (IOException ex)
+                {
+                    ex.printStackTrace();
+                }
             }
             else
             {

@@ -3,9 +3,13 @@ package org.yuezhikong.Server;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.Server.UserData.RecvMessageThread;
+import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.config;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,9 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import static org.yuezhikong.Server.RequestCommand.CommandRequest;
+import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
 
-public class newServer {
+public class Server {
+    private Thread userAuthThread;
+    private boolean ExitSystem = false;
     public static final org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
     public static final Logger logger = new Logger();
     private final List<user> Users = new ArrayList<>();
@@ -27,7 +33,8 @@ public class newServer {
     private int clientIDAll = 0;
     private ServerSocket serverSocket = null;
     //服务端实例
-    private static newServer instance = null;
+    private static Server instance = null;
+    public org.yuezhikong.Server.timer timer;
 
     /**
      * 获取客户端总数量
@@ -59,7 +66,7 @@ public class newServer {
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
             else
@@ -70,7 +77,7 @@ public class newServer {
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
         }
@@ -84,7 +91,7 @@ public class newServer {
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
         }
@@ -94,7 +101,7 @@ public class newServer {
      * @apiNote 获取服务端实例
      * @return 服务端实例
      */
-    static newServer GetInstance()
+    public static Server GetInstance()
     {
         return instance;
     }
@@ -121,7 +128,18 @@ public class newServer {
             {
                 try {
                     assert serverSocket != null;
+                    if (ExitSystem)
+                    {
+                        serverSocket.close();
+                        break;
+                    }
                     Socket clientSocket = serverSocket.accept();//接受客户端Socket请求
+                    if (ExitSystem)
+                    {
+                        serverSocket.close();
+                        clientSocket.close();
+                        break;
+                    }
                     if (config.getMaxClient() >= 0)//检查是否已到最大
                     {
                         //说下这里的逻辑
@@ -145,27 +163,26 @@ public class newServer {
                 }
                 catch (IOException e)
                 {
-                    logger.log(Level.ERROR,"在accept时发生IOException");
-                    StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    e.printStackTrace(pw);
-                    pw.flush();
-                    sw.flush();
-                    Logger.logger_root.debug(sw.toString());
-                    pw.close();
-                    try {
-                        sw.close();
-                    }
-                    catch (IOException ex)
+                    if (e.getMessage().equals("Socket closed"))
                     {
-                        e.printStackTrace();
+                        break;
                     }
+                    logger.log(Level.ERROR,"在accept时发生IOException");
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
         };
-        Thread userAuthThread = new Thread(UserAuthThread);
+        userAuthThread = new Thread(UserAuthThread);
         userAuthThread.start();
         userAuthThread.setName("UserAuthThread");
+    }
+    /**
+     * 启动timer
+     */
+    private void StartTimer()
+    {
+        timer = new timer();
+        timer.Start();
     }
     /**
      * @apiNote 启动命令系统
@@ -199,38 +216,40 @@ public class newServer {
             //command就是命令类型
             if (command.equals("quit"))
             {
-                System.exit(0);
+                break;
             }
             CommandRequest("/"+command,argv,null);
         }
+        ExitSystem = true;
+        try {
+            userAuthThread.join();
+        } catch (InterruptedException e) {
+            SaveStackTrace.saveStackTrace(e);
+            timer.cancel();
+            System.exit(1);
+            //PluginManager.getInstance("./plugins").OnProgramExit(1);
+        }
+        timer.cancel();
+        System.exit(0);
+        //PluginManager.getInstance("./plugins").OnProgramExit(0);
     }
     /**
      * @apiNote 服务端main函数
      * @param port 要开始监听的端口
      */
-    public newServer(int port) {
+    public Server(int port) {
         instance = this;
         RSA_KeyAutogenerate();
         try {
             serverSocket = new ServerSocket(port);
             /* serverSocket.setSoTimeout(10000); */
         } catch (IOException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            Logger.logger_root.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                e.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
         }
         StartUserAuthThread();
+        StartTimer();
+        //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
+        PluginManager.getInstance("./plugins");
         StartCommandSystem();
     }
 }

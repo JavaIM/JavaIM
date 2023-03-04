@@ -1,9 +1,9 @@
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.LoginSystem;
 
 import cn.hutool.crypto.SecureUtil;
-import com.mysql.cj.MysqlConnection;
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.config;
-import org.yuezhikong.utils.DataBase.MySQL;
+import org.yuezhikong.utils.DataBase.Database;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -13,8 +13,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static org.yuezhikong.Server.utils.utils.SendMessageToUser;
-import static org.yuezhikong.Server.newServer.logger_log4j;
+import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
+import static org.yuezhikong.Server.Server.logger_log4j;
 
 public class UserLoginRequestThread extends Thread{
     private boolean RequestReturn = false;
@@ -31,7 +31,7 @@ public class UserLoginRequestThread extends Thread{
     public void run() {
         super.run();
         try {
-            Connection mySQLConnection = MySQL.GetMySQLConnection(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+            Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
             String sql = "select * from UserData where UserName = ?";
             PreparedStatement ps = mySQLConnection.prepareStatement(sql);
             ps.setString(1,Username);
@@ -63,8 +63,15 @@ public class UserLoginRequestThread extends Thread{
                             }
                         }
                     }
+                    long muted = rs.getLong("UserMuted");
+                    long MuteTime = rs.getLong("UserMuteTime");
+                    if (muted == 1)
+                    {
+                        RequestUser.setMuteTime(MuteTime);
+                        RequestUser.setMuted(true);
+                    }
                     RequestReturn = true;
-                    RequestUser.SetUserPermission(PermissionLevel);
+                    RequestUser.SetUserPermission(PermissionLevel,true);
                     RequestUser.UserLogin(Username);
                     mySQLConnection.close();
                     return;
@@ -87,7 +94,7 @@ public class UserLoginRequestThread extends Thread{
             }
             catch (IOException ex)
             {
-                e.printStackTrace();
+                ex.printStackTrace();
             }
             logger_log4j.fatal("ClassNotFoundException，无法找到MySQL驱动");
             logger_log4j.fatal("程序已崩溃");
@@ -96,20 +103,7 @@ public class UserLoginRequestThread extends Thread{
         }
         catch (SQLException e)
         {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                e.printStackTrace();
-            }
+            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
             RequestReturn = false;
         }
     }

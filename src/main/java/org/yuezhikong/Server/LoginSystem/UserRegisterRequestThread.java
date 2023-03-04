@@ -1,9 +1,9 @@
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.LoginSystem;
 
 import cn.hutool.crypto.SecureUtil;
-import com.mysql.cj.jdbc.exceptions.MysqlDataTruncation;
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.config;
-import org.yuezhikong.utils.DataBase.MySQL;
+import org.yuezhikong.utils.DataBase.Database;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public class UserRegisterRequestThread extends Thread{
     private boolean RequestReturn;
-    private final user user;
+    private final org.yuezhikong.Server.UserData.user user;
     private final String Username;
     private final String Passwd;
     public boolean GetReturn() {
@@ -32,7 +32,7 @@ public class UserRegisterRequestThread extends Thread{
         String salt = UUID.randomUUID().toString();
         String sha256 = SecureUtil.sha256(Passwd + salt);
         try {
-            Connection mySQLConnection = MySQL.GetMySQLConnection(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+            Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
             String sql = "select * from UserData where UserName = ?";
             PreparedStatement ps = mySQLConnection.prepareStatement(sql);
             ps.setString(1,Username);
