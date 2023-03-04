@@ -7,6 +7,7 @@ import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.config;
+import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -17,6 +18,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -244,6 +249,27 @@ public class Server {
             serverSocket = new ServerSocket(port);
             /* serverSocket.setSoTimeout(10000); */
         } catch (IOException e) {
+            SaveStackTrace.saveStackTrace(e);
+        }
+        Runnable SQLUpdateThread = () -> {
+            try {
+                Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                String sql = "UPDATE UserData SET UserLogged = 0 where UserLogged = 1;";
+                PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+                ps.executeUpdate();
+            }
+            catch (Exception e)
+            {
+                SaveStackTrace.saveStackTrace(e);
+            }
+        };
+        Thread UpdateThread = new Thread(SQLUpdateThread);
+        UpdateThread.start();
+        UpdateThread.setName("SQL Update Thread");
+        try {
+            UpdateThread.join();
+        } catch (InterruptedException e) {
+            logger.error("发生异常InterruptedException");
             SaveStackTrace.saveStackTrace(e);
         }
         StartUserAuthThread();

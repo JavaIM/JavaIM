@@ -32,24 +32,24 @@ public class UserRegisterRequestThread extends Thread{
         String salt = UUID.randomUUID().toString();
         String sha256 = SecureUtil.sha256(Passwd + salt);
         try {
-            Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+            Connection DatabaseConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
             String sql = "select * from UserData where UserName = ?";
-            PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+            PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
             ps.setString(1,Username);
             ResultSet rs  = ps.executeQuery();
             if (rs.next())
             {
                 RequestReturn = false;
-                mySQLConnection.close();
+                DatabaseConnection.close();
                 return;
             }
             sql = "INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`) VALUES (0,?, ?, ?);";
-            ps = mySQLConnection.prepareStatement(sql);
+            ps = DatabaseConnection.prepareStatement(sql);
             ps.setString(1,Username);
             ps.setString(2,sha256);
             ps.setString(3,salt);
             ps.executeUpdate();
-            mySQLConnection.close();
+            DatabaseConnection.close();
             RequestReturn = true;
             user.UserLogin(Username);
         } catch (ClassNotFoundException | SQLException e) {

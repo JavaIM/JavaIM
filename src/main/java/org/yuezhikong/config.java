@@ -1,8 +1,10 @@
 package org.yuezhikong;
 
-public class config {
+public final class config {
     //最大客户端数量，输入-1代表禁用
     private static final int MAX_CLIENT = -1;
+    //目前最新的Database协议版本
+    private static final int TheLatestDatabaseProtocolVersion = 2;
     //是否启用登录系统
     private static final boolean EnableLoginSystem = true;
     //调试模式
@@ -26,6 +28,7 @@ public class config {
     private static final String MySQLDataBasePasswd = "JavaIM";
 
     public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }
+    public static int GetDatabaseProtocolVersion() { return TheLatestDatabaseProtocolVersion; }
     public static boolean GetEnableLoginSystem() { return EnableLoginSystem; }
     public static String GetMySQLDataBaseHost() { return MySQLDataBaseHost; }
     public static String GetMySQLDataBasePort() { return MySQLDataBasePort; }

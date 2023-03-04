@@ -51,12 +51,12 @@ public class timer extends TimerTask
                         ProcessUser.setMuted(false);
                         Runnable SQLUpdateThread = () -> {
                             try {
-                                Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                                Connection DatabaseConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
                                 String sql = "UPDATE UserData SET UserMuted = 0 and UserMuteTime = 0 where UserName = ?";
-                                PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+                                PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
                                 ps.setString(1,ProcessUser.GetUserName());
                                 ps.executeUpdate();
-                                mySQLConnection.close();
+                                DatabaseConnection.close();
                             } catch (ClassNotFoundException | SQLException e) {
                                 SaveStackTrace.saveStackTrace(e);
                             }

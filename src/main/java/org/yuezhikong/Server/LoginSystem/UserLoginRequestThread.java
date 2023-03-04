@@ -40,6 +40,10 @@ public class UserLoginRequestThread extends Thread{
             String sha256;
             while (rs.next())
             {
+                if (rs.getInt("UserLogged") == 1)
+                {
+                    break;
+                }
                 salt = rs.getString("salt");
                 sha256 = SecureUtil.sha256(Passwd + salt);
                 if (rs.getString("Passwd").equals(sha256))
@@ -73,6 +77,10 @@ public class UserLoginRequestThread extends Thread{
                     RequestReturn = true;
                     RequestUser.SetUserPermission(PermissionLevel,true);
                     RequestUser.UserLogin(Username);
+                    sql = "UPDATE UserData SET UserLogged = 1 where UserName = ?;";
+                    ps = mySQLConnection.prepareStatement(sql);
+                    ps.setString(1,Username);
+                    ps.executeUpdate();
                     mySQLConnection.close();
                     return;
                 }
