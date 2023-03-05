@@ -1,19 +1,18 @@
 package org.yuezhikong;
 
 //import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.*;
 import java.util.Scanner;
 
-import static org.yuezhikong.config.GetAutoSaveDependencyMode;
+import static org.yuezhikong.CodeDynamicConfig.GetAutoSaveDependencyMode;
 
 public class Main {
     private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
     private static Main instance;
-    private static Main getInstance()
+    public static Main getInstance()
     {
         if (instance == null)
         {
@@ -26,7 +25,7 @@ public class Main {
      * @param name 需要从jar中释放的文件在jar中的路径路径
      * @param dir 需要释放到的文件夹
      */
-    private void saveJarFiles(String name,String dir) {
+    public void saveJarFiles(String name,String dir) {
         File JarOnDir = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getFile()).getParentFile();
         File LibsDir = new File(JarOnDir.getPath()+dir);
         if (!LibsDir.exists()) {// 父目录不存在时先创建

@@ -1,15 +1,11 @@
 package org.yuezhikong.Server;
 
-import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.SaveStackTrace;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -51,7 +47,7 @@ public class timer extends TimerTask
                         ProcessUser.setMuted(false);
                         Runnable SQLUpdateThread = () -> {
                             try {
-                                Connection DatabaseConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                                Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                 String sql = "UPDATE UserData SET UserMuted = 0 and UserMuteTime = 0 where UserName = ?";
                                 PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
                                 ps.setString(1,ProcessUser.GetUserName());

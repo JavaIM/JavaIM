@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.util.Objects;
 
-import static org.yuezhikong.config.GetRSA_Mode;
+import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
 
 public class Client {
     //public static final Logger logger = LogManager.getLogger(Client.class);

@@ -4,14 +4,13 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.RSA;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
-import static org.yuezhikong.config.GetRSA_Mode;
+import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
 
 /**
  * 服务端API集合

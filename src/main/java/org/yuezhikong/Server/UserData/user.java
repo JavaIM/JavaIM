@@ -1,12 +1,11 @@
 package org.yuezhikong.Server.UserData;
 
-import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
 import java.io.IOException;
 import java.net.Socket;
 
-import static org.yuezhikong.config.GetRSA_Mode;
+import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
 
 public class user {
     private int PermissionLevel = 0;

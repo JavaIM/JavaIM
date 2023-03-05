@@ -1,8 +1,8 @@
 package org.yuezhikong.Server.LoginSystem;
 
 import cn.hutool.crypto.SecureUtil;
+import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class UserLoginRequestThread extends Thread{
     public void run() {
         super.run();
         try {
-            Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+            Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
             String sql = "select * from UserData where UserName = ?";
             PreparedStatement ps = mySQLConnection.prepareStatement(sql);
             ps.setString(1,Username);

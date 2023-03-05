@@ -1,6 +1,6 @@
 package org.yuezhikong.utils.DataBase;
 
-import org.yuezhikong.config;
+import org.yuezhikong.CodeDynamicConfig;
 
 import java.sql.*;
 
@@ -17,7 +17,7 @@ public class Database {
      * @return 数据库连接
      */
     public static Connection Init(String host, String port, String Database, String UserName, String Password) throws ClassNotFoundException, SQLException {
-        if (!config.GetSQLITEMode()) {
+        if (!CodeDynamicConfig.GetSQLITEMode()) {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection DatabaseConnection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + Database + "?autoReconnect=true&failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1&useSSL=false", UserName, Password);
             String sql =
@@ -50,7 +50,7 @@ public class Database {
                         "`UserLogged`" +
                         ") VALUES (?,?, ?, ?,?,?, ?,?);";
                 ps = DatabaseConnection.prepareStatement(sql);
-                ps.setInt(1,config.GetDatabaseProtocolVersion());
+                ps.setInt(1, CodeDynamicConfig.GetDatabaseProtocolVersion());
                 ps.setLong(2,rs.getLong("UserMuted"));
                 ps.setLong(3,rs.getLong("UserMuteTime"));
                 ps.setLong(4,rs.getLong("Permission"));
@@ -95,7 +95,7 @@ public class Database {
                         "`UserLogged`" +
                         ") VALUES (?,?, ?, ?,?,?, ?,?);";
                 ps = DatabaseConnection.prepareStatement(sql);
-                ps.setInt(1,config.GetDatabaseProtocolVersion());
+                ps.setInt(1, CodeDynamicConfig.GetDatabaseProtocolVersion());
                 ps.setLong(2,rs.getLong("UserMuted"));
                 ps.setLong(3,rs.getLong("UserMuteTime"));
                 ps.setLong(4,rs.getLong("Permission"));

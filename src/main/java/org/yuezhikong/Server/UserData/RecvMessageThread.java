@@ -1,14 +1,11 @@
 package org.yuezhikong.Server.UserData;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Commands.RequestCommand;
 import org.yuezhikong.Server.LoginSystem.UserLogin;
 import org.yuezhikong.Server.Server;
-import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.PluginManager;
-import org.yuezhikong.config;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
@@ -24,8 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
-import static org.yuezhikong.config.*;
+import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class RecvMessageThread extends Thread{
     private final int CurrentClientID;
@@ -166,7 +162,7 @@ public class RecvMessageThread extends Thread{
                             CurrentClientClass.setMuted(false);
                             Runnable SQLUpdateThread = () -> {
                                 try {
-                                    Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                                    Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                     String sql = "UPDATE UserData SET UserMuted = 0 and UserMuteTime = 0 where UserName = ?";
                                     PreparedStatement ps = mySQLConnection.prepareStatement(sql);
                                     ps.setString(1,CurrentClientClass.GetUserName());

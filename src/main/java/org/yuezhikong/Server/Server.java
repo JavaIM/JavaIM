@@ -3,27 +3,27 @@ package org.yuezhikong.Server;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.Main;
 import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.PluginManager;
-import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.Scanner;
 
 import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
@@ -145,7 +145,7 @@ public class Server {
                         clientSocket.close();
                         break;
                     }
-                    if (config.getMaxClient() >= 0)//检查是否已到最大
+                    if (CodeDynamicConfig.getMaxClient() >= 0)//检查是否已到最大
                     {
                         //说下这里的逻辑
                         //客户端ID 客户端数量
@@ -154,7 +154,7 @@ public class Server {
                         //2 3
                         //假如限制为3
                         //那么就需要检测接下来要写入的ID是不是2或者大于2，如果是，那就是超过了
-                        if (clientIDAll >= config.getMaxClient() -1)
+                        if (clientIDAll >= CodeDynamicConfig.getMaxClient() -1)
                         {
                             clientSocket.close();
                             continue;
@@ -253,7 +253,7 @@ public class Server {
         }
         Runnable SQLUpdateThread = () -> {
             try {
-                Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                 String sql = "UPDATE UserData SET UserLogged = 0 where UserLogged = 1;";
                 PreparedStatement ps = mySQLConnection.prepareStatement(sql);
                 ps.executeUpdate();
@@ -276,6 +276,40 @@ public class Server {
         StartTimer();
         //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
         PluginManager.getInstance("./plugins");
+        File ConfigFile = new File("./Server.properties");
+        if (!ConfigFile.isFile())
+            System.exit(-1);
+        if (!ConfigFile.exists()) {
+            Main.getInstance().saveJarFiles("/Server.properties", "/");
+        }
+        if (!ConfigFile.canRead())
+            System.exit(-1);
+        try {
+            Properties config = new Properties();
+            InputStream stream = new FileInputStream(ConfigFile);
+            config.load(stream);
+            try {
+                CodeDynamicConfig.MAX_CLIENT = Integer.parseInt(config.getProperty("MAX_CLIENT","-1"));
+                CodeDynamicConfig.EnableLoginSystem = Boolean.parseBoolean(config.getProperty("EnableLoginSystem","true"));
+                CodeDynamicConfig.Use_SQLITE_Mode = Boolean.parseBoolean(config.getProperty("Database.Use_SQLITE_Mode","false"));
+                CodeDynamicConfig.MySQLDataBaseHost = config.getProperty("Database.MySQL.MySQLDataBaseHost","");
+                CodeDynamicConfig.MySQLDataBasePort = config.getProperty("Database.MySQL.MySQLDataBasePort","");
+                CodeDynamicConfig.MySQLDataBaseName = config.getProperty("Database.MySQL.MySQLDataBaseName","");
+                CodeDynamicConfig.MySQLDataBaseUser = config.getProperty("Database.MySQL.MySQLDataBaseUser","");
+                CodeDynamicConfig.MySQLDataBasePasswd = config.getProperty("Database.MySQL.MySQLDataBasePasswd","");
+            }catch (NumberFormatException e)
+            {
+                SaveStackTrace.saveStackTrace(e);
+                logger_log4j.fatal("强制从String转换到int发生错误！");
+                logger_log4j.fatal("请检查您的配置文件！");
+                logger.info("正在退出应用程序");
+                System.exit(-3);
+            }
+            stream.close();
+        } catch (IOException e) {
+            SaveStackTrace.saveStackTrace(e);
+            System.exit(-2);
+        }
         StartCommandSystem();
     }
 }
