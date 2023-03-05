@@ -1,17 +1,12 @@
 package org.yuezhikong.Server.Commands;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.PluginManager;
-import org.yuezhikong.config;
 import org.yuezhikong.utils.DataBase.Database;
-import org.yuezhikong.utils.Logger;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -171,7 +166,7 @@ public class RequestCommand {
                     {
                         Runnable SQLUpdateThread = () -> {
                             try {
-                                Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                                Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                 String sql = "UPDATE UserData SET UserMuted = 0 and UserMuteTime = 0 where UserName = ?";
                                 PreparedStatement ps = mySQLConnection.prepareStatement(sql);
                                 ps.setString(1,argv[0]);
@@ -239,7 +234,7 @@ public class RequestCommand {
                     {
                         Runnable SQLUpdateThread = () -> {
                             try {
-                                Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                                Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                 String sql = "UPDATE UserData SET UserMuted = 1 UserMuteTime = ? where UserName = ?";
                                 PreparedStatement ps = mySQLConnection.prepareStatement(sql);
                                 ps.setInt(1, UserMuteTime);
@@ -316,7 +311,7 @@ public class RequestCommand {
                         long finalUserMuteTime = UserMuteTime;//由于java要求lambda表达式要求必须为final或有效final，只能如此
                         Runnable SQLUpdateThread = () -> {
                             try {
-                                Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                                Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                 String sql = "UPDATE UserData SET UserMuted = 1 and UserMuteTime = ? where UserName = ?";
                                 PreparedStatement ps = mySQLConnection.prepareStatement(sql);
                                 ps.setLong(1, finalUserMuteTime);
@@ -437,7 +432,7 @@ public class RequestCommand {
                     }
                     Runnable SQLUpdateThread = () -> {
                         try {
-                            Connection mySQLConnection = Database.Init(config.GetMySQLDataBaseHost(), config.GetMySQLDataBasePort(), config.GetMySQLDataBaseName(), config.GetMySQLDataBaseUser(), config.GetMySQLDataBasePasswd());
+                            Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                             String sql = "UPDATE UserData SET Permission=? where UserName = ?";
                             PreparedStatement ps = mySQLConnection.prepareStatement(sql);
                             ps.setInt(1,PermissionLevel);
@@ -478,27 +473,6 @@ public class RequestCommand {
                     logger.info("此命令的语法为：/SetPermission <权限等级> <用户名>");
                 }
             }
-            case "/debug" -> {
-                if (argv.length >= 1)
-                {
-                    if (argv[0].equals("on"))
-                    {
-                        config.Debug_Mode = true;
-                    }
-                    else if (argv[0].equals("off"))
-                    {
-                        config.Debug_Mode = false;
-                    }
-                    else
-                    {
-                        logger.info("命令语法不正确，正确的语法为debug <on/off>");
-                    }
-                }
-                else
-                {
-                    logger.info("此命令的语法为：/debug <on/off>");
-                }
-            }
             case "/kick" -> {
                 if (argv.length >= 2) {
                     String IpAddress = argv[0];
@@ -508,7 +482,7 @@ public class RequestCommand {
                     }
                     catch (NumberFormatException e)
                     {
-                        if (config.GetDebugMode())
+                        if (CodeDynamicConfig.GetDebugMode())
                         {
                             org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                         }

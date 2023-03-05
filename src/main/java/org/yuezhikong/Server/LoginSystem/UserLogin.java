@@ -9,9 +9,8 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-import static org.yuezhikong.Server.Server.logger_log4j;
 import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
-import static org.yuezhikong.config.GetRSA_Mode;
+import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
 
 public class UserLogin{
     /**
