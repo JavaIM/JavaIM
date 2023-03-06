@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">JavaIM</string>
+    <string name="IPAddress">请输入您连接的服务器IP地址：</string>
+    <string name="Port">请输入服务器的端口：</string>
+    <string name="ConnectButton">连接</string>
+    <string name="UserInput">请输入文本：</string>
+    <string name="Error1">IP地址为空，为不可接受内容</string>
+    <string name="Error2">端口为空，为不可接受内容</string>
+    <string name="Error3">发生异常IOException</string>
+    <string name="Error4">端口不是数字</string>
+    <string name="Error5">错误，未找到服务端公钥文件，将无法发送信息，请将服务端公钥文件放到外置存储/JavaIMFiles，并改名为ServerPublicKey.key</string>
+    <string name="Error6">错误，未连接到任何服务器</string>
+    <string name="SendButton">发送</string>
+</resources>
