@@ -11,4 +11,5 @@
     <string name="Error5">错误，未找到服务端公钥文件，将无法发送信息，请将服务端公钥文件放到外置存储/JavaIMFiles，并改名为ServerPublicKey.key</string>
     <string name="Error6">错误，未连接到任何服务器</string>
     <string name="SendButton">发送</string>
+    <string name="DisconnectButton">关闭连接</string>
 </resources>

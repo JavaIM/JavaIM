@@ -46,6 +46,16 @@ public class MainActivity extends AppCompatActivity {
     }
     @SuppressLint("SetTextI18n")
     public void Connect(View view) {
+        ((TextView)findViewById(R.id.Error)).setText("");
+        if (socket == null)
+        {
+            Session = false;
+        }
+        else {
+            if (socket.isClosed()) {
+                Session = false;
+            }
+        }
         EditText IPAddressText = findViewById (R.id.IPAddress);
         String IPAddress = IPAddressText.getText().toString();
         if (IPAddress.isEmpty())
@@ -62,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (!Session)
         {
+            ((TextView)findViewById(R.id.ChatLog)).setText("");
             Session = true;
             Runnable NetworkThread = () ->
             {
@@ -180,6 +191,16 @@ public class MainActivity extends AppCompatActivity {
 
     //用户按下发送按钮
     public void Send(View view) {
+        ((TextView)findViewById(R.id.Error)).setText("");
+        if (socket == null)
+        {
+            Session = false;
+        }
+        else {
+            if (socket.isClosed()) {
+                Session = false;
+            }
+        }
         EditText UserMessageText = findViewById (R.id.UserSendMessage);
         String UserMessage = UserMessageText.getText().toString();
         if (!Session)
@@ -220,7 +241,6 @@ public class MainActivity extends AppCompatActivity {
                         TextView ErrorOutput = findViewById(R.id.Error);
                         ErrorOutput.setText(R.string.Error5);
                     });
-                    Session = false;
                     return;
                 }
                 String ServerPublicKey = Objects.requireNonNull(RSA.loadPublicKeyFromFile(ServerPublicKeyFile.getAbsolutePath())).PublicKey;
@@ -237,6 +257,49 @@ public class MainActivity extends AppCompatActivity {
             Thread NetWorkThread = new Thread(NetworkThreadRunnable);
             NetWorkThread.start();
             NetWorkThread.setName("Network Thread");
+        }
+    }
+
+    public void Disconnect(View view) {
+        ((TextView)findViewById(R.id.Error)).setText("");
+        if (socket == null)
+        {
+            Session = false;
+        }
+        else {
+            if (socket.isClosed()) {
+                Session = false;
+            }
+        }
+        if (Session)
+        {
+            Session = false;
+            Runnable NetworkThread = () ->
+            {
+                try {
+                    BufferedWriter writer = null;
+                    try {
+                        writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    if (writer == null)
+                    {
+                        socket.close();
+                        return;
+                    }
+                    writer.write("quit\n");
+                    writer.newLine();
+                    writer.flush();
+                    writer.close();
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            };
+            Thread NetworKThread = new Thread(NetworkThread);
+            NetworKThread.start();
+            NetworKThread.setName("Network Thread");
         }
     }
 }
