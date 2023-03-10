@@ -272,10 +272,6 @@ public class Server {
             logger.error("发生异常InterruptedException");
             SaveStackTrace.saveStackTrace(e);
         }
-        StartUserAuthThread();
-        StartTimer();
-        //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
-        PluginManager.getInstance("./plugins");
         File ConfigFile = new File("./Server.properties");
         if (!ConfigFile.isFile())
             System.exit(-1);
@@ -310,6 +306,10 @@ public class Server {
             SaveStackTrace.saveStackTrace(e);
             System.exit(-2);
         }
+        StartUserAuthThread();
+        StartTimer();
+        //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
+        PluginManager.getInstance("./plugins");
         StartCommandSystem();
     }
 }
