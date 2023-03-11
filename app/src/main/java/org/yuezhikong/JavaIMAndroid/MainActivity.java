@@ -2,15 +2,18 @@ package org.yuezhikong.JavaIMAndroid;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -36,12 +39,22 @@ public class MainActivity extends AppCompatActivity {
     private KeyData RSAKey;
     private boolean Session = false;
     private Socket socket;
+    public static String ServerAddr = "";
+    public static int ServerPort = 0;
+    class GoToSettingActivityListen implements View.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            ChangeToSettingActivity(v);
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         TextView ChatLog = findViewById(R.id.ChatLog);
         ChatLog.setMovementMethod(ScrollingMovementMethod.getInstance());
+        Button GoToSettingActivityButton = findViewById(R.id.button4);
+        GoToSettingActivityButton.setOnClickListener(new GoToSettingActivityListen());
         requestPermission();
     }
     @SuppressLint("SetTextI18n")
@@ -56,16 +69,19 @@ public class MainActivity extends AppCompatActivity {
                 Session = false;
             }
         }
-        EditText IPAddressText = findViewById (R.id.IPAddress);
-        String IPAddress = IPAddressText.getText().toString();
+        String IPAddress = ServerAddr;
         if (IPAddress.isEmpty())
         {
             TextView ErrorOutput = findViewById(R.id.Error);
             ErrorOutput.setText(R.string.Error1);
         }
-        EditText PortText = findViewById(R.id.Port);
-        String port = PortText.getText().toString();
-        if (port.isEmpty())
+        int port = ServerPort;
+        if (port <= 0)
+        {
+            TextView ErrorOutput = findViewById(R.id.Error);
+            ErrorOutput.setText(R.string.Error2);
+        }
+        if (port > 65535)
         {
             TextView ErrorOutput = findViewById(R.id.Error);
             ErrorOutput.setText(R.string.Error2);
@@ -78,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
             {
                 try {
                     // 创建Socket对象 & 指定服务端的IP 及 端口号
-                    socket = new Socket(IPAddress, Integer.parseInt(port));
+                    socket = new Socket(IPAddress, port);
                     //获取文件
                     /*
                     File Storage = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/JavaIMFiles");
@@ -166,11 +182,6 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(()->{
                         TextView ErrorOutput = findViewById(R.id.Error);
                         ErrorOutput.setText(R.string.Error3);
-                    });
-                } catch (NumberFormatException e) {
-                    runOnUiThread(()->{
-                        TextView ErrorOutput = findViewById(R.id.Error);
-                        ErrorOutput.setText(R.string.Error4);
                     });
                 }
             };
@@ -302,4 +313,32 @@ public class MainActivity extends AppCompatActivity {
             NetworKThread.setName("Network Thread");
         }
     }
+    public void ChangeToSettingActivity(View view) {
+        String tmpServerAddr;
+        int tmpServerPort;
+        //处理当前已经记录的Addr和Port
+        if (ServerAddr == null)
+        {
+            tmpServerAddr = "";
+        }
+        else
+        {
+            tmpServerAddr = ServerAddr;
+        }
+        tmpServerPort = ServerPort;
+        //开始创建新Activity过程
+        Intent intent=new Intent();
+        intent.setClass(MainActivity.this, SettingActivity.class);
+        //开始向新Activity发送老Addr和Port，以便填充到编辑框
+        Bundle bundle = new Bundle();
+        bundle.putString("ServerAddr",tmpServerAddr);
+        bundle.putInt("ServerPort",tmpServerPort);
+        //从Bundle put到intent
+        intent.putExtras(bundle);
+        //设置 如果这个activity已经启动了，就不产生新的activity，而只是把这个activity实例加到栈顶
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        //启动Activity
+        startActivity(intent);
+    }
+
 }
