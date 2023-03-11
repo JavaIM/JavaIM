@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.method.ScrollingMovementMethod;
+import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,6 +20,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.util.Base64;
+import androidx.appcompat.widget.Toolbar;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -56,6 +58,21 @@ public class MainActivity extends AppCompatActivity {
         Button GoToSettingActivityButton = findViewById(R.id.button4);
         GoToSettingActivityButton.setOnClickListener(new GoToSettingActivityListen());
         requestPermission();
+        Toolbar toolbar = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            toolbar = findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+            toolbar.setTitle("JavaIM");//标题
+            setSupportActionBar(toolbar);
+            /**toolbar.setNavigationOnClickListener(v -> finish());
+            toolbar.setOnMenuItemClickListener((Toolbar.OnMenuItemClickListener) this);
+             */
+        }
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return  true;
     }
     @SuppressLint("SetTextI18n")
     public void Connect(View view) {
