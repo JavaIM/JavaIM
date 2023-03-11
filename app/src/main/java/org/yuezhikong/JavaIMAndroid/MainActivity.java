@@ -234,6 +234,19 @@ public class MainActivity extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                if (".about".equals(input))
+                {
+                    TextView SocketOutput = findViewById(R.id.ChatLog);
+                    runOnUiThread(()->{
+                        SocketOutput.setText(SocketOutput.getText() + "JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）\r\n");
+                        SocketOutput.setText(SocketOutput.getText() + "主仓库位于：https://github.com/QiLechan/JavaIM\r\n");
+                        SocketOutput.setText(SocketOutput.getText() + "主要开发者名单：\r\n");
+                        SocketOutput.setText(SocketOutput.getText() + "QiLechan（柒楽）\r\n");
+                        SocketOutput.setText(SocketOutput.getText() + "AlexLiuDev233 （阿白）\r\n");
+                        SocketOutput.setText(SocketOutput.getText() + "仓库启用了不允许协作者直接推送到主分支，需审核后再提交\r\n");
+                        SocketOutput.setText(SocketOutput.getText() + "因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性\r\n");
+                    });
+                }
                 // 加密信息
                 String input = UserMessageFinal;
                 try {
