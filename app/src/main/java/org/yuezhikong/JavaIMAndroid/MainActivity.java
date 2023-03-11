@@ -227,14 +227,15 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             final String UserMessageFinal = UserMessage;
-            Runnable NetworkThreadRunnable = ()->{
+            @SuppressLint("SetTextI18n") Runnable NetworkThreadRunnable = ()->{
                 BufferedWriter writer = null;
                 try {
                     writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                if (".about".equals(input))
+                boolean clientcommand = false;
+                if (".about".equals(UserMessageFinal))
                 {
                     TextView SocketOutput = findViewById(R.id.ChatLog);
                     runOnUiThread(()->{
@@ -246,36 +247,39 @@ public class MainActivity extends AppCompatActivity {
                         SocketOutput.setText(SocketOutput.getText() + "仓库启用了不允许协作者直接推送到主分支，需审核后再提交\r\n");
                         SocketOutput.setText(SocketOutput.getText() + "因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性\r\n");
                     });
+                    clientcommand = true;
                 }
-                // 加密信息
-                String input = UserMessageFinal;
-                try {
-                    input = java.net.URLEncoder.encode(input, "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                //获取文件
-                File Storage = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/JavaIMFiles");
-                if (!Storage.exists()) {
-                    Storage.mkdir();
-                }
-                File ServerPublicKeyFile = new File(Storage.getAbsolutePath() + "/ServerPublicKey.key");
-                if (!ServerPublicKeyFile.exists()) {
-                    runOnUiThread(()->{
-                        TextView ErrorOutput = findViewById(R.id.Error);
-                        ErrorOutput.setText(R.string.Error5);
-                    });
-                    return;
-                }
-                String ServerPublicKey = Objects.requireNonNull(RSA.loadPublicKeyFromFile(ServerPublicKeyFile.getAbsolutePath())).PublicKey;
-                input = RSA.encrypt(input, ServerPublicKey);
-                // 发送消息给服务器
-                try {
-                    Objects.requireNonNull(writer).write(input);
-                    writer.newLine();
-                    writer.flush();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if (!clientcommand) {
+                    // 加密信息
+                    String input = UserMessageFinal;
+                    try {
+                        input = java.net.URLEncoder.encode(input, "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    //获取文件
+                    File Storage = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/JavaIMFiles");
+                    if (!Storage.exists()) {
+                        Storage.mkdir();
+                    }
+                    File ServerPublicKeyFile = new File(Storage.getAbsolutePath() + "/ServerPublicKey.key");
+                    if (!ServerPublicKeyFile.exists()) {
+                        runOnUiThread(() -> {
+                            TextView ErrorOutput = findViewById(R.id.Error);
+                            ErrorOutput.setText(R.string.Error5);
+                        });
+                        return;
+                    }
+                    String ServerPublicKey = Objects.requireNonNull(RSA.loadPublicKeyFromFile(ServerPublicKeyFile.getAbsolutePath())).PublicKey;
+                    input = RSA.encrypt(input, ServerPublicKey);
+                    // 发送消息给服务器
+                    try {
+                        Objects.requireNonNull(writer).write(input);
+                        writer.newLine();
+                        writer.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             };
             Thread NetWorkThread = new Thread(NetworkThreadRunnable);
