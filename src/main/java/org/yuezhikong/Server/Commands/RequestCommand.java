@@ -4,6 +4,7 @@ import org.apache.logging.log4j.Level;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.DataBase.Database;
 
 import java.io.IOException;
@@ -375,11 +376,15 @@ public class RequestCommand {
                     userAuthThread.join();
                     Server.GetInstance().timer.cancel();
                     System.exit(0);
-                    //PluginManager.getInstance("./plugins").OnProgramExit(0);
+                    if (CodeDynamicConfig.GetPluginSystemMode()) {
+                        PluginManager.getInstance("./plugins").OnProgramExit(0);
+                    }
                 } catch (IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
                     Server.GetInstance().timer.cancel();
                     System.exit(1);
-                    //PluginManager.getInstance("./plugins").OnProgramExit(1);
+                    if (CodeDynamicConfig.GetPluginSystemMode()) {
+                        PluginManager.getInstance("./plugins").OnProgramExit(1);
+                    }
                 }
             }
             case "/say" -> {

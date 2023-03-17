@@ -1,6 +1,5 @@
 package org.yuezhikong.Server.plugin.CustomClassLoader;
 
-import org.yuezhikong.Main;
 import org.yuezhikong.Server.plugin.Plugin;
 
 import java.io.File;
@@ -11,11 +10,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Properties;
 
-public final class EditedURLClassLoader extends URLClassLoader {
+public final class PluginJavaLoader extends URLClassLoader {
     public final Plugin ThisPlugin;
-    public EditedURLClassLoader(ClassLoader parent, File s) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public PluginJavaLoader(ClassLoader parent, File s) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         super(new URL[]{s.toURI().toURL()}, parent);
-        this.addURL(Main.class.getProtectionDomain().getCodeSource().getLocation());
         InputStream propertiesStream = this.getResourceAsStream("PluginManifest.properties");
         Properties properties = new Properties();
         properties.load(propertiesStream);

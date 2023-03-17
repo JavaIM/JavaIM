@@ -1,8 +1,9 @@
 package org.yuezhikong.Server.plugin;
 
+import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.CustomClassLoader.EditedURLClassLoader;
+import org.yuezhikong.Server.plugin.CustomClassLoader.PluginJavaLoader;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
@@ -22,14 +23,17 @@ public class PluginManager {
     private static PluginManager Instance;
 
     public static PluginManager getInstance(String DirName) {
-        /*
-        if (Instance == null)
+        if (CodeDynamicConfig.GetPluginSystemMode())
         {
-            Instance = new PluginManager(DirName);
+            if (Instance == null)
+            {
+                Instance = new PluginManager(DirName);
+            }
+            return Instance;
         }
-        return Instance;
-         */
-        return null;
+        else {
+            return null;
+        }
     }
 
     /**
@@ -89,7 +93,7 @@ public class PluginManager {
         }
         for (File s : PluginFileList) {
             try {
-                EditedURLClassLoader classLoader = new EditedURLClassLoader(null,s);
+                PluginJavaLoader classLoader = new PluginJavaLoader(ClassLoader.getSystemClassLoader(),s);
                 classLoader.ThisPlugin.OnLoad(Server.GetInstance());
                 PluginList.add(classLoader.ThisPlugin);
                 NumberOfPlugins = NumberOfPlugins + 1;
@@ -102,12 +106,14 @@ public class PluginManager {
                     logger.error("1：插件内没有清单文件PluginManifest.properties");
                     logger.error("2：输入流InputStream异常，一般如果是此原因，是您文件权限导致的");
                     logger.error("3：插件内清单文件注册的主类无效");
-                    logger.error("4：任何未定义行为");
-                    logger.error("具体原因请看logs/debug.log内内容，看最近信息，如果是");
+                    logger.error("4：未根据插件要求进行继承");
+                    logger.error("具体原因请看logs/debug.log内内容");
+                    logger.error("如果下方报错原因为：");
                     logger.error("ClassNotFoundException则代表主类无效");
                     logger.error("IOException代表输入流InputStream异常");
+                    logger.error("ClassCastException代表未根据要求继承");
                     logger.error("NullPointerException代表无清单文件或输入流InputStream无效");
-                    logger.error("其他错误代表出现异常，请联系开发者排查");
+                    logger.error("其他错误代表出现错误，请联系开发者排查");
                     logger.error("当前原因为："+e.getClass().getName()+" "+e.getMessage());
                     logger.error("请自行分辨原因");
                     SaveStackTrace.saveStackTrace(e);
@@ -146,7 +152,10 @@ public class PluginManager {
             return false;
         }
         for (Plugin plugin : PluginList) {
-            plugin.OnChat(ChatUser,Message,Server.GetInstance());
+            if (plugin.OnChat(ChatUser,Message,Server.GetInstance()))
+            {
+                Block = true;
+            }
         }
         return Block;
     }
@@ -164,7 +173,10 @@ public class PluginManager {
             return false;
         }
         for (Plugin plugin : PluginList) {
-            plugin.OnUserUnMuted(UnMuteUser,Server.GetInstance());
+            if (plugin.OnUserUnMuted(UnMuteUser,Server.GetInstance()))
+            {
+                Block = true;
+            }
         }
         return Block;
     }
@@ -182,7 +194,10 @@ public class PluginManager {
             return false;
         }
         for (Plugin plugin : PluginList) {
-            plugin.OnUserPermissionEdit(PermissionChangeUser,NewPermissionLevel,Server.GetInstance());
+            if (plugin.OnUserPermissionEdit(PermissionChangeUser,NewPermissionLevel,Server.GetInstance()))
+            {
+                Block = true;
+            }
         }
         return Block;
     }
@@ -200,7 +215,10 @@ public class PluginManager {
             return false;
         }
         for (Plugin plugin : PluginList) {
-            plugin.OnUserMuted(MuteUser,Server.GetInstance());
+            if (plugin.OnUserMuted(MuteUser,Server.GetInstance()))
+            {
+                Block = true;
+            }
         }
         return Block;
     }

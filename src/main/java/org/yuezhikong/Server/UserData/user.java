@@ -1,9 +1,12 @@
 package org.yuezhikong.Server.UserData;
 
+import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Objects;
 
 import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
 
@@ -22,34 +25,28 @@ public class user {
      * 设置用户是否已被禁言
      * @param muted 是/否
      */
-    public void setMuted(boolean muted)
-    {
-        Muted = muted;
-        /*
-        if (!muted) {
-            if (!PluginManager.getInstance("./plugins").OnUserUnMute(this))
-            {
-                Muted = false;
-            }
-            else
-            {
-                org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
-                logger.info("插件系统阻止了解除禁言操作！");
+    public void setMuted(boolean muted) {
+        if (CodeDynamicConfig.GetPluginSystemMode()) {
+            if (!muted) {
+                if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserUnMute(this)) {
+                    Muted = false;
+                } else {
+                    org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                    logger.info("插件系统阻止了解除禁言操作！");
+                }
+            } else {
+                if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserMute(this)) {
+                    Muted = true;
+                } else {
+                    org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                    logger.info("插件系统阻止了禁言操作");
+                }
             }
         }
         else
         {
-            if (!PluginManager.getInstance("./plugins").OnUserMute(this))
-            {
-                Muted = true;
-            }
-            else
-            {
-                org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
-                logger.info("插件系统阻止了禁言操作");
-            }
+            Muted = muted;
         }
-        */
     }
 
     /**
@@ -122,23 +119,23 @@ public class user {
      */
     public void SetUserPermission(int permissionLevel,boolean IsItARefresh)
     {
-        PermissionLevel = permissionLevel;
-        /*
-        if (!IsItARefresh)//如果不是刷新登录
-        {
-            if (!PluginManager.getInstance("./plugins").OnUserPermissionChange(this,permissionLevel))//通知插件系统，发生权限更改
+        if (CodeDynamicConfig.GetPluginSystemMode()) {
+            if (!IsItARefresh)//如果不是刷新登录
             {
-                PermissionLevel = permissionLevel;//如果插件系统没有阻止操作，则进行设定
-            }
-            else
-            {
-                org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
-                logger.info("插件系统阻止了权限更改操作！");
-            }
+                if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserPermissionChange(this, permissionLevel))//通知插件系统，发生权限更改
+                {
+                    PermissionLevel = permissionLevel;//如果插件系统没有阻止操作，则进行设定
+                } else {
+                    org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                    logger.info("插件系统阻止了权限更改操作！");
+                }
+            } else
+                PermissionLevel = permissionLevel;
         }
         else
+        {
             PermissionLevel = permissionLevel;
-         */
+        }
     }
     public void UserDisconnect()
     {

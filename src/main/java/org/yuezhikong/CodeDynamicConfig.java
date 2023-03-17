@@ -10,10 +10,12 @@ public final class CodeDynamicConfig {
     private static final boolean Auto_Save_Dependency = false;
     //RSA加密功能
     private static final boolean RSA_Mode = true;
+    //插件系统
+    private static final boolean PluginSystem = true;
 
     //动态区，可动态通过配置文件修改
     //最大客户端数量，输入-1代表禁用
-    public static int MAX_CLIENT;
+    public static int MAX_CLIENT = -1;
     //是否启用登录系统
     public static boolean EnableLoginSystem = true;
     //是否使用SQLITE
@@ -29,6 +31,7 @@ public final class CodeDynamicConfig {
     //MySQL数据库密码
     public static String MySQLDataBasePasswd = "JavaIM";
 
+    public static boolean GetPluginSystemMode() { return PluginSystem; }
     public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }
     public static int GetDatabaseProtocolVersion() { return TheLatestDatabaseProtocolVersion; }
     public static boolean GetEnableLoginSystem() { return EnableLoginSystem; }
