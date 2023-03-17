@@ -4,20 +4,21 @@ import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 
 /**
- * 建议所有插件都继承本class！
- * 或根据其声明写入类似处理函数
+ * 所有插件都必须事项本接口！
+ * 否则，插件将无法被加载
  * 建议插件不要直接调用内部class，而是使用API进行修改
  * 目前API仍不完善，后续会添加API
  * @author AlexLiuDev233
  * @Date 2023/02/27
  */
-public abstract class Plugin {
+@SuppressWarnings("unused")
+public interface Plugin {
     /**
      * 插件的入口点，请继承本class后通过@Override注解重写本方法！
      * 否则，您的插件将不会发生任何行为！
      * @param ServerInstance 服务端实例
      */
-    public abstract void OnLoad(Server ServerInstance);
+    void OnLoad(Server ServerInstance);
 
     /**
      * 当插件被卸载时
@@ -25,7 +26,7 @@ public abstract class Plugin {
      * 建议I/O操作每次执行都重新打开Stream，而不是被保存着，且每次执行完后都进行销毁
      * @param ServerInstance 服务端实例
      */
-    public abstract void OnUnLoad(Server ServerInstance);
+    void OnUnLoad(Server ServerInstance);
 
     /**
      * 当发生聊天时
@@ -35,7 +36,7 @@ public abstract class Plugin {
      * @param ServerInstance 服务端实例
      * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
      */
-    public boolean OnChat(user RequestUser, String Message, Server ServerInstance)
+    default boolean OnChat(user RequestUser, String Message, Server ServerInstance)
     {
         return false;
     }
@@ -47,7 +48,7 @@ public abstract class Plugin {
      * @param ServerInstance 服务端实例
      * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
      */
-    public boolean OnUserPermissionEdit(user RequestUser,int NewPermissionLevel,Server ServerInstance)
+    default boolean OnUserPermissionEdit(user RequestUser,int NewPermissionLevel,Server ServerInstance)
     {
         return false;
     }
@@ -58,7 +59,7 @@ public abstract class Plugin {
      * @param ServerInstance 服务端实例
      * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
      */
-    public boolean OnUserMuted(user RequestUser,Server ServerInstance)
+    default boolean OnUserMuted(user RequestUser,Server ServerInstance)
     {
         return false;
     }
@@ -69,7 +70,7 @@ public abstract class Plugin {
      * @param ServerInstance 服务端实例
      * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
      */
-    public boolean OnUserUnMuted(user RequestUser,Server ServerInstance)
+    default boolean OnUserUnMuted(user RequestUser,Server ServerInstance)
     {
         return false;
     }

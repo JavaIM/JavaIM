@@ -6,6 +6,7 @@ import org.yuezhikong.Server.Commands.RequestCommand;
 import org.yuezhikong.Server.LoginSystem.UserLogin;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
@@ -186,8 +187,10 @@ public class RecvMessageThread extends Thread{
                     if (CurrentClientClass.isMuted())
                         continue;
                     //插件处理
-                    //if (PluginManager.getInstance("./plugins").OnUserChat(CurrentClientClass,ChatMessage))
-                    //    continue;
+                    if (CodeDynamicConfig.GetPluginSystemMode()) {
+                        if (Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserChat(CurrentClientClass,ChatMessage))
+                            continue;
+                    }
                     // 读取客户端发送的消息
                     logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                     // 消息转发

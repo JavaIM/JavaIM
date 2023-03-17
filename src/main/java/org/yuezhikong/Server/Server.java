@@ -4,7 +4,6 @@ package org.yuezhikong.Server;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.Main;
 import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.PluginManager;
@@ -14,16 +13,13 @@ import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Scanner;
 
 import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
@@ -232,11 +228,15 @@ public class Server {
             SaveStackTrace.saveStackTrace(e);
             timer.cancel();
             System.exit(1);
-            //PluginManager.getInstance("./plugins").OnProgramExit(1);
+            if (CodeDynamicConfig.GetPluginSystemMode()) {
+                PluginManager.getInstance("./plugins").OnProgramExit(1);
+            }
         }
         timer.cancel();
         System.exit(0);
-        //PluginManager.getInstance("./plugins").OnProgramExit(0);
+        if (CodeDynamicConfig.GetPluginSystemMode()) {
+            PluginManager.getInstance("./plugins").OnProgramExit(0);
+        }
     }
     /**
      * @apiNote 服务端main函数
@@ -272,6 +272,7 @@ public class Server {
             logger.error("发生异常InterruptedException");
             SaveStackTrace.saveStackTrace(e);
         }
+        /*
         File ConfigFile = new File("./Server.properties");
         if (!ConfigFile.isFile())
             System.exit(-1);
@@ -306,6 +307,7 @@ public class Server {
             SaveStackTrace.saveStackTrace(e);
             System.exit(-2);
         }
+         */
         StartUserAuthThread();
         StartTimer();
         //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
