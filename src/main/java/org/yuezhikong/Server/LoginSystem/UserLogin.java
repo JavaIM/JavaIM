@@ -1,8 +1,11 @@
 package org.yuezhikong.Server.LoginSystem;
 
 
+import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
+import org.yuezhikong.utils.CustomExceptions.UserNotFoundException;
 import org.yuezhikong.utils.RSA;
 
 import java.io.*;
@@ -28,6 +31,7 @@ public class UserLogin{
         }
         else
         {
+
             try {
                 SendMessageToUser(LoginUser,"在进入之前，您必须先登录/注册");
                 Thread.sleep(250);
@@ -71,6 +75,18 @@ public class UserLogin{
                 }
                 Password = java.net.URLDecoder.decode(Password, StandardCharsets.UTF_8);
                 //上方为请求用户输入用户名、密码
+                boolean ThisUserNameIsNotLogin = false;
+                try {
+                    ServerAPI.GetUserByUserName(UserName, Server.GetInstance());
+                } catch (UserNotFoundException e)
+                {
+                    ThisUserNameIsNotLogin = true;
+                }
+                if (!ThisUserNameIsNotLogin)
+                {
+                    throw new UserAlreadyLoggedInException("This User Is Logined!");
+                }
+                //上方为处理此用户是否已登录
                 if (Select == 1)//登录
                 {
                     //下方为SQL处理
