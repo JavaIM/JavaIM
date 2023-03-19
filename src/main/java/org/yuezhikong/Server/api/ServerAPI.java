@@ -1,13 +1,15 @@
 package org.yuezhikong.Server.api;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.utils.CustomExceptions.UserNotFoundException;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
@@ -106,6 +108,36 @@ public interface ServerAPI {
             org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
         } catch (Exception e) {
             org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+        }
+    }
+
+    /**
+     * 获取用户User Data Class
+     * @param UserName 用户名
+     * @param ServerInstance 服务器实例
+     * @return 用户User Data Class
+     * @exception UserNotFoundException 无法根据指定的用户名找到用户时抛出此异常
+     */
+    static user GetUserByUserName(String UserName, Server ServerInstance) throws UserNotFoundException {
+        int i = 0;
+        int tmpclientidall = ServerInstance.getClientIDAll();
+        tmpclientidall = tmpclientidall - 1;
+        while (true) {
+            if (i > tmpclientidall) {
+                throw new UserNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
+            }
+            user RequestUser = Server.GetInstance().getUsers().get(i);
+            if (RequestUser.GetUserSocket() == null) {
+                i = i + 1;
+                continue;
+            }
+            if (RequestUser.GetUserName().equals(UserName)) {
+                return RequestUser;
+            }
+            if (i == tmpclientidall) {
+                throw new UserNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
+            }
+            i = i + 1;
         }
     }
 }

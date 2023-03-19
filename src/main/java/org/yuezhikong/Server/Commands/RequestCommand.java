@@ -4,8 +4,11 @@ import org.apache.logging.log4j.Level;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.utils.CustomExceptions.UserNotFoundException;
 import org.yuezhikong.utils.DataBase.Database;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -147,40 +150,8 @@ public class RequestCommand {
             case "/unmute" -> {
                 if (argv.length >= 1)
                 {
-                    int i = 0;
-                    int tmpclientidall = Server.GetInstance().getClientIDAll();
-                    tmpclientidall = tmpclientidall - 1;
-                    boolean found = false;
-                    while (true) {
-                        if (i > tmpclientidall) {
-                            logger.info("错误，找不到此用户");
-                            break;
-                        }
-                        user RequestUser = Server.GetInstance().getUsers().get(i);
-                        if (RequestUser.GetUserSocket() == null) {
-                            i = i + 1;
-                            continue;
-                        }
-                        if (RequestUser.GetUserName().equals(argv[0])) {
-                            RequestUser.setMuted(false);
-                            RequestUser.setMuteTime(0);
-                            found = true;
-                        }
-                        if (i == tmpclientidall) {
-                            if (!found)
-                            {
-                                logger.info("错误，找不到此用户");
-                            }
-                            else
-                            {
-                                logger.info("已成功解除禁言！");
-                            }
-                            break;
-                        }
-                        i = i + 1;
-                    }
-                    if (found)
-                    {
+                    try {
+                        user RequestUser = ServerAPI.GetUserByUserName(argv[0], Server.GetInstance());
                         Runnable SQLUpdateThread = () -> {
                             try {
                                 Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
@@ -201,6 +172,10 @@ public class RequestCommand {
                         } catch (InterruptedException e) {
                             logger.error("发生异常InterruptedException");
                         }
+                    } catch(UserNotFoundException e)
+                    {
+                        logger.info("此用户不存在");
+                        SaveStackTrace.saveStackTrace(e);
                     }
                 }
             }
