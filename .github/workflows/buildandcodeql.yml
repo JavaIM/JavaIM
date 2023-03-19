@@ -14,7 +14,7 @@ name: "CodeQL And Build"
 on:
   push:
     branches: [ "main" ]
-  pull_request_target:
+  pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
   schedule:
@@ -25,6 +25,7 @@ jobs:
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
+      pull-requests: write
       actions: read
       contents: read
       security-events: write
@@ -78,3 +79,10 @@ jobs:
       uses: github/codeql-action/analyze@v2
       with:
         category: "/language:${{matrix.language}}"
+    - name: Add PR Comment
+      uses: mshick/add-pr-comment@v2
+      with:
+          message: |
+            **Github Action已完成CodeQL和Build，并已通过**
+            **详情请查看Pull Request Check**
+
