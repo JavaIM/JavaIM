@@ -1,6 +1,6 @@
 # JavaIM
 
-[![status](https://img.shields.io/github/actions/workflow/status/QiLechan/JavaIM/maven.yml?style=for-the-badge)](https://github.com/QiLechan/JavaIM/actions)
+[![status](https://img.shields.io/github/actions/workflow/status/QiLechan/JavaIM/buildandcodeql.yml?style=for-the-badge)](https://github.com/QiLechan/JavaIM/actions)
 [
 ![Latest Tag](https://img.shields.io/github/v/tag/QiLechan/JavaIM?label=LATEST%20TAG&style=for-the-badge)
 ![GitHub Releases (by Asset)](https://img.shields.io/github/downloads/QiLechan/JavaIM/latest/total?style=for-the-badge)
