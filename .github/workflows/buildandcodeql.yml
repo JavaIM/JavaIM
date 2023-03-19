@@ -79,10 +79,16 @@ jobs:
       uses: github/codeql-action/analyze@v2
       with:
         category: "/language:${{matrix.language}}"
+        
     - name: Add PR Comment
       uses: mshick/add-pr-comment@v2
       with:
+          if: always()
           message: |
             **Github Action已完成CodeQL和Build，并已通过**
             **详情请查看Pull Request Check**
+          message-failure: |
+            **Github Action已完成CodeQL和Build，不通过！**
+            **详情请查看Pull Request Check**
+          
 
