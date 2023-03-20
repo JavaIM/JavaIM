@@ -20,7 +20,7 @@
             <version>1.0-SNAPSHOT</version>
             <scope>system</scope>
             <!-- JavaIM本地依赖位置 -->
-            <systemPath>${project.basedir}/dep/JavaIM.jar</systemPath>
+            <systemPath>${pom.basedir}/dep/JavaIM.jar</systemPath>
         </dependency>
     </dependencies>
 </project>
