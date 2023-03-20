@@ -1,9 +1,9 @@
-#JavaIM示例插件项目
-##开发者食用方法
+# JavaIM示例插件项目
+## 开发者食用方法
 将JavaIM最新Jar文件改名为JavaIM.jar放到示例插件项目下的dep文件夹
 
 然后根据正常java开发进行开发
-###如果您要重构项目名称，请进行以下修改
+### 如果您要重构项目名称，请进行以下修改
 打开pom.xml 找到
 
     <groupId>org.example</groupId>
