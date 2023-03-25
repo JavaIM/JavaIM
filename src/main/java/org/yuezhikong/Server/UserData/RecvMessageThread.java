@@ -1,5 +1,7 @@
 package org.yuezhikong.Server.UserData;
 
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import org.apache.logging.log4j.Level;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Commands.RequestCommand;
@@ -12,6 +14,7 @@ import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
 
+import javax.crypto.SecretKey;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +24,7 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import static org.yuezhikong.CodeDynamicConfig.*;
 
@@ -38,6 +42,11 @@ public class RecvMessageThread extends Thread{
         CurrentClientID = ClientID;
         Users = users;
     }
+    private static byte[] Sha256ByteSubByte(byte[] src){
+        byte[]bs=new byte[32];
+        System.arraycopy(src, 0, bs, 0, 32);
+        return bs;
+    }
 
     @Override
     public void run() {
@@ -45,15 +54,30 @@ public class RecvMessageThread extends Thread{
         user CurrentClientClass = Users.get(CurrentClientID);
         Socket CurrentClientSocket = CurrentClientClass.GetUserSocket();
         try {
+            //开始握手
             logger.info("远程主机地址：" + CurrentClientSocket.getRemoteSocketAddress());
+            //获取InputStream流
             DataInputStream in = new DataInputStream(CurrentClientSocket.getInputStream());
+            //获取OutputStream流
+            DataOutputStream out = new DataOutputStream(CurrentClientSocket.getOutputStream());
             String privateKey = null;
-            if (GetRSA_Mode()) {
+            if (GetRSA_Mode()) {//根据RSA模式，决定是否进行RSA握手
                 privateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey;
                 CurrentClientClass.SetUserPublicKey(java.net.URLDecoder.decode(in.readUTF(), StandardCharsets.UTF_8));
+                out.writeUTF(RSA.encrypt("Hello,Client! This Message By Server RSA System",CurrentClientClass.GetUserPublicKey()));
+                logger.info("正在连接的客户端响应："+RSA.decrypt(in.readUTF(),privateKey));
+                if (isAES_Mode())
+                {
+                    String RandomByClient = java.net.URLDecoder.decode(RSA.decrypt(in.readUTF(),privateKey),StandardCharsets.UTF_8);
+                    String RandomByServer = UUID.randomUUID().toString();
+                    out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode(RandomByServer, StandardCharsets.UTF_8),CurrentClientClass.GetUserPublicKey()));
+                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Sha256ByteSubByte(SecureUtil.sha256(RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8)));
+                    CurrentClientClass.SetUserAES(cn.hutool.crypto.SecureUtil.aes(key.getEncoded()));
+                    out.writeUTF(CurrentClientClass.GetUserAES().encryptBase64("Hello,Client! This Message By Server AES System"));
+                    logger.info("正在连接的客户端响应："+CurrentClientClass.GetUserAES().decryptStr(in.readUTF()));
+                }
             }
             logger.info(in.readUTF());
-            DataOutputStream out = new DataOutputStream(CurrentClientSocket.getOutputStream());
             out.writeUTF("服务器连接成功：" + CurrentClientSocket.getLocalSocketAddress());
             if (GetEnableLoginSystem())
             {
@@ -95,7 +119,13 @@ public class RecvMessageThread extends Thread{
                     return;
                 }
                 if (GetRSA_Mode()) {
-                    UserName = RSA.decrypt(UserName,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                    if (isAES_Mode())
+                    {
+                        UserName = CurrentClientClass.GetUserAES().decryptStr(UserName);
+                    }
+                    else {
+                        UserName = RSA.decrypt(UserName, Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                    }
                 }
                 UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
                 CurrentClientClass.UserLogin(UserName);
@@ -112,7 +142,13 @@ public class RecvMessageThread extends Thread{
                 while ((ChatMessage = reader.readLine()) != null) {
                     // 解密信息
                     if (GetRSA_Mode()) {
-                        ChatMessage = RSA.decrypt(ChatMessage,privateKey);
+                        if (isAES_Mode())
+                        {
+                            ChatMessage = CurrentClientClass.GetUserAES().decryptStr(ChatMessage);
+                        }
+                        else {
+                            ChatMessage = RSA.decrypt(ChatMessage, privateKey);
+                        }
                     }
                     ChatMessage = java.net.URLDecoder.decode(ChatMessage, StandardCharsets.UTF_8);
                     if ("quit".equals(ChatMessage))// 退出登录服务端部分

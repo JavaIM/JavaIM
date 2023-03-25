@@ -14,6 +14,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
+import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
 
 /**
  * 服务端API集合
@@ -40,7 +41,13 @@ public interface ServerAPI {
                     throw new NullPointerException();
                 }
                 Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
-                Message = RSA.encrypt(Message, UserPublicKey);
+                if (isAES_Mode())
+                {
+                    Message = user.GetUserAES().encryptBase64(Message);
+                }
+                else {
+                    Message = RSA.encrypt(Message, UserPublicKey);
+                }
             }
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(user.GetUserSocket().getOutputStream()));
             writer.write(Message);
@@ -81,7 +88,13 @@ public interface ServerAPI {
                     }
                     Message = inputMessage;
                     Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
-                    Message = RSA.encrypt(Message, UserPublicKey);
+                    if (isAES_Mode())
+                    {
+                        Message = ServerInstance.getUsers().get(i).GetUserAES().encryptBase64(Message);
+                    }
+                    else {
+                        Message = RSA.encrypt(Message, UserPublicKey);
+                    }
                 }
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(sendsocket.getOutputStream()));
                 try {

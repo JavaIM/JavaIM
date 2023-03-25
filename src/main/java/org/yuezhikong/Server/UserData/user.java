@@ -1,5 +1,6 @@
 package org.yuezhikong.Server.UserData;
 
+import cn.hutool.crypto.symmetric.AES;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
@@ -9,6 +10,7 @@ import java.net.Socket;
 import java.util.Objects;
 
 import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
+import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
 
 public class user {
     private int PermissionLevel = 0;
@@ -20,6 +22,8 @@ public class user {
     private boolean PublicKeyChanged = false;
     private long MuteTime = 0;
     private boolean Muted = false;
+    private AES UserAES;
+    private boolean AESChanged = false;
 
     /**
      * 设置用户是否已被禁言
@@ -110,6 +114,38 @@ public class user {
             UserPublicKey = UserPublickey;
             PublicKeyChanged = true;
         }
+    }
+
+    /**
+     * 设置用户的AES
+     * @param InputUserAES 用户的AES
+     * @throws ModeDisabledException RSA功能/AES功能被禁用时抛出此异常
+     */
+    public void SetUserAES(AES InputUserAES) throws ModeDisabledException {
+        if (!GetRSA_Mode())
+        {
+            throw new ModeDisabledException("RSA Mode Has Disabled!");
+        }
+        else if (!isAES_Mode())
+        {
+            throw new ModeDisabledException("AES Mode Has Disabled!");
+        }
+        else
+        {
+            if (!AESChanged)
+            {
+                UserAES = InputUserAES;
+                AESChanged = true;
+            }
+        }
+    }
+
+    /**
+     * 获取用户的AES
+     * @return 用户的AES
+     */
+    public AES GetUserAES() {
+        return UserAES;
     }
 
     /**

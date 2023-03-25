@@ -1,13 +1,31 @@
+/*
+ * Simplified Chinese (简体中文)
+ *
+ * 版权所有 (C) 2023 QiLechan <qilechan@outlook.com> 和本程序的贡献者
+ *
+ * 本程序是自由软件：你可以再分发之和/或依照由自由软件基金会发布的 GNU 通用公共许可证修改之，无论是版本 3 许可证，还是 3 任何以后版都可以。
+ * 发布该程序是希望它能有用，但是并无保障;甚至连可销售和符合某个特定的目的都不保证。请参看 GNU 通用公共许可证，了解详情。
+ * 你应该随程序获得一份 GNU 通用公共许可证的副本。如果没有，请看 <https://www.gnu.org/licenses/>。
+ * English (英语)
+ *
+ * Copyright (C) 2023 QiLechan <qilechan@outlook.com> and contributors to this program
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or 3 any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.yuezhikong;
 
-//import org.apache.logging.log4j.LogManager;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
-import static org.yuezhikong.CodeDynamicConfig.GetAutoSaveDependencyMode;
+import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Main {
     private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
@@ -89,6 +107,11 @@ public class Main {
         saveJarFiles("/log4j-core-2.19.0.jar","/libs/org/apache/logging/log4j/core/");
         //System.exit(0);
     }
+    public static byte[] subBytes(byte[]src,int begin,int count){
+        byte[]bs=new byte[count];
+        System.arraycopy(src, begin, bs, begin, count);
+        return bs;
+    }
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
@@ -97,6 +120,14 @@ public class Main {
             if (GetAutoSaveDependencyMode()) {
                 getInstance().saveLibFiles();
             }
+            if (isThisVersionIsExpVersion())
+            {
+                logger.info("此版本为实验性版本！不会保证稳定性");
+                logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
+                logger.info("本版本测试性内容列表：");
+                logger.info(getExpVersionText());
+            }
+            logger.info("欢迎来到JavaIM！版本："+getVersion());
             logger.info("使用客户端模式请输入1，服务端模式请输入2:");
             Scanner sc = new Scanner(System.in);
             int mode = sc.nextInt();
