@@ -12,6 +12,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
 import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
 import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
 
@@ -46,7 +47,12 @@ public class UserLogin{
                     throw new NullPointerException();
                 }
                 if (GetRSA_Mode()) {
-                    UserSelect = RSA.decrypt(UserSelect,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                    if (isAES_Mode())
+                    {
+                        UserSelect = LoginUser.GetUserAES().decryptStr(UserSelect);
+                    }
+                    else
+                        UserSelect = RSA.decrypt(UserSelect,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
                 }
                 UserSelect = java.net.URLDecoder.decode(UserSelect, StandardCharsets.UTF_8);
                 int Select = Integer.parseInt(UserSelect);
@@ -59,7 +65,12 @@ public class UserLogin{
                     throw new NullPointerException();
                 }
                 if (GetRSA_Mode()) {
-                    UserName = RSA.decrypt(UserName,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                    if (isAES_Mode())
+                    {
+                        UserName = LoginUser.GetUserAES().decryptStr(UserName);
+                    }
+                    else
+                        UserName = RSA.decrypt(UserName,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
                 }
                 UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
                 SendMessageToUser(LoginUser,"请输入您的密码");
@@ -71,7 +82,13 @@ public class UserLogin{
                     throw new NullPointerException();
                 }
                 if (GetRSA_Mode()) {
-                    Password = RSA.decrypt(Password,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                    if (isAES_Mode())
+                    {
+                        Password = LoginUser.GetUserAES().decryptStr(Password);
+                    }
+                    else {
+                        Password = RSA.decrypt(Password, Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                    }
                 }
                 Password = java.net.URLDecoder.decode(Password, StandardCharsets.UTF_8);
                 //上方为请求用户输入用户名、密码

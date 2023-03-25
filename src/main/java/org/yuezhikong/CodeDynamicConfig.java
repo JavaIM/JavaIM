@@ -2,6 +2,8 @@ package org.yuezhikong;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
+    //本程序版本：
+    private static final String Version = "v1.1.1-pre2";
     //目前最新的Database协议版本
     private static final int TheLatestDatabaseProtocolVersion = 2;
     //调试模式
@@ -12,6 +14,13 @@ public final class CodeDynamicConfig {
     private static final boolean RSA_Mode = true;
     //插件系统
     private static final boolean PluginSystem = true;
+    //本版本为实验性版本
+    private static final boolean ThisVersionIsExpVersion = false;
+    //如果为测试性版本，则信息为：
+    private static final String ExpVersionText = "此版本包括一个测试性AES加密系统," +
+            "此系统有助于解决纯RSA加密造成的卡顿问题";
+    //AES加密系统（依赖于RSA加密系统）
+    private static final boolean AES_Mode = true;
 
     //动态区，可动态通过配置文件修改
     //最大客户端数量，输入-1代表禁用
@@ -44,4 +53,19 @@ public final class CodeDynamicConfig {
     public static int getMaxClient() { return MAX_CLIENT; }
     public static boolean GetDebugMode() { return Debug_Mode; }
     public static boolean GetAutoSaveDependencyMode() { return Auto_Save_Dependency; }
+    public static boolean isThisVersionIsExpVersion() {
+        return ThisVersionIsExpVersion;
+    }
+
+    public static String getVersion() {
+        return Version;
+    }
+
+    public static boolean isAES_Mode() {
+        return AES_Mode;
+    }
+
+    public static String getExpVersionText() {
+        return ExpVersionText;
+    }
 }
