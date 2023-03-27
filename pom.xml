@@ -54,6 +54,11 @@
             <artifactId>maven-jar-plugin</artifactId>
             <version>3.3.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.2.1</version>
+        </dependency>
     </dependencies>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -85,19 +90,25 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <minimizeJar>true</minimizeJar>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <manifestEntries>
-                                        <Main-Class>org.yuezhikong.Main</Main-Class>
-                                        <Build-Number>1</Build-Number>
-                                    </manifestEntries>
-                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <configuration>
+                    <outputDirectory>/absolute/path/to/the/output/directory</outputDirectory>
+                    <finalName>JavaIMSource</finalName>
+                    <attach>false</attach>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-
 </project>
