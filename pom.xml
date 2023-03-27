@@ -109,7 +109,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                        <finalName>JavaIM-Source-OnlyDeveloperUseThisFile</finalName>
+                        <finalName>JavaIM-1.0-</finalName>
                         <attach>false</attach>
                         </configuration>
                     </execution>
