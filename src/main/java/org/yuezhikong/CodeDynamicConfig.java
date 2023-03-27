@@ -8,8 +8,6 @@ public final class CodeDynamicConfig {
     private static final int TheLatestDatabaseProtocolVersion = 2;
     //调试模式
     private static final boolean Debug_Mode = false;
-    //是否允许自动释放依赖
-    private static final boolean Auto_Save_Dependency = false;
     //RSA加密功能
     private static final boolean RSA_Mode = true;
     //插件系统
@@ -52,7 +50,6 @@ public final class CodeDynamicConfig {
     public static boolean GetRSA_Mode (){ return RSA_Mode; }
     public static int getMaxClient() { return MAX_CLIENT; }
     public static boolean GetDebugMode() { return Debug_Mode; }
-    public static boolean GetAutoSaveDependencyMode() { return Auto_Save_Dependency; }
     public static boolean isThisVersionIsExpVersion() {
         return ThisVersionIsExpVersion;
     }

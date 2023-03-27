@@ -99,14 +99,6 @@ public class Main {
         }
     }
 
-    private void saveLibFiles()
-    {
-        saveJarFiles("/commons-codec-1.15.jar","/libs/org/apache/commons/codec");
-        saveJarFiles("/commons-io-2.11.0.jar","/libs/org/apache/commons/io");
-        saveJarFiles("/log4j-api-2.19.0.jar","/libs/org/apache/logging/log4j/");
-        saveJarFiles("/log4j-core-2.19.0.jar","/libs/org/apache/logging/log4j/core/");
-        //System.exit(0);
-    }
     public static byte[] subBytes(byte[]src,int begin,int count){
         byte[]bs=new byte[count];
         System.arraycopy(src, begin, bs, begin, count);
@@ -117,9 +109,6 @@ public class Main {
      */
     public static void main(String[] args) {
         try {
-            if (GetAutoSaveDependencyMode()) {
-                getInstance().saveLibFiles();
-            }
             if (isThisVersionIsExpVersion())
             {
                 logger.info("此版本为实验性版本！不会保证稳定性");
