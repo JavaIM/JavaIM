@@ -90,6 +90,17 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <filters>
+                           <filter>
+                              <artifact>*:*</artifact>
+                                <excludes>
+                                    <exclude>META-INF/*.SF</exclude>
+                                    <exclude>META-INF/*.DSA</exclude>
+                                    <exclude>META-INF/*.RSA</exclude>
+                                    <!-- 排除log4j2插件文件 解决在打成jar包运行时日志无法打印的问题 https://stackoverflow.com/questions/34945438/log4j2-configuration-not-found-when-running-standalone-application-built-by-shad-->
+                                    <exclude>**/Log4j2Plugins.dat</exclude>
+                                </excludes>
+                            </filters>
                             <minimizeJar>true</minimizeJar>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
