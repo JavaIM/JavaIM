@@ -2,6 +2,7 @@ package org.yuezhikong.Server.UserData;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.Level;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Commands.RequestCommand;
@@ -42,11 +43,6 @@ public class RecvMessageThread extends Thread{
         CurrentClientID = ClientID;
         Users = users;
     }
-    private static byte[] Sha256ByteSubByte(byte[] src){
-        byte[]bs=new byte[32];
-        System.arraycopy(src, 0, bs, 0, 32);
-        return bs;
-    }
 
     @Override
     public void run() {
@@ -71,7 +67,10 @@ public class RecvMessageThread extends Thread{
                     String RandomByClient = java.net.URLDecoder.decode(RSA.decrypt(in.readUTF(),privateKey),StandardCharsets.UTF_8);
                     String RandomByServer = UUID.randomUUID().toString();
                     out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode(RandomByServer, StandardCharsets.UTF_8),CurrentClientClass.GetUserPublicKey()));
-                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Sha256ByteSubByte(SecureUtil.sha256(RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8)));
+                    byte[] KeyByte = new byte[32];
+                    byte[] SrcByte = Base64.encodeBase64((RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8));
+                    System.arraycopy(SrcByte,0,KeyByte,0,31);
+                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(),KeyByte);
                     CurrentClientClass.SetUserAES(cn.hutool.crypto.SecureUtil.aes(key.getEncoded()));
                     out.writeUTF(CurrentClientClass.GetUserAES().encryptBase64("Hello,Client! This Message By Server AES System"));
                     logger.info("正在连接的客户端响应："+CurrentClientClass.GetUserAES().decryptStr(in.readUTF()));

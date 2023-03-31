@@ -25,11 +25,6 @@ public class Client {
     private Socket client;
     private final KeyData RSAKey;
     private cn.hutool.crypto.symmetric.AES AES;
-    private static byte[] Sha256ByteSubByte(byte[] src){
-        byte[]bs=new byte[32];
-        System.arraycopy(src, 0, bs, 0, 32);
-        return bs;
-    }
     public Client(String serverName, int port) {
         {
             if (!(new File("ServerPublicKey.key").exists()))
@@ -134,10 +129,13 @@ public class Client {
                     String RandomByClient = UUID.randomUUID().toString();
                     out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode(RandomByClient, StandardCharsets.UTF_8),ServerPublicKey));
                     String RandomByServer = java.net.URLDecoder.decode(RSA.decrypt(in.readUTF(),RSAKey.privateKey),StandardCharsets.UTF_8);
-                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Sha256ByteSubByte(SecureUtil.sha256(RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8)));
+                    byte[] KeyByte = new byte[32];
+                    byte[] SrcByte = Base64.encodeBase64((RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8));
+                    System.arraycopy(SrcByte,0,KeyByte,0,31);
+                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(),KeyByte);
                     AES = cn.hutool.crypto.SecureUtil.aes(key.getEncoded());
                     logger.info("服务器响应："+AES.decryptStr(in.readUTF()));
-                    out.writeUTF(AES.encryptBase64("Hello,Server! This Message By Client AES System!"));
+                    out.writeUTF(AES.encryptBase64("Hello,Server! This Message By Client AES System"));
                 }
                 //out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode("你", StandardCharsets.UTF_8),ServerPublicKey));
             }
