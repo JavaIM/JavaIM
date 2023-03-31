@@ -8,6 +8,8 @@ public final class CodeDynamicConfig {
     private static final int TheLatestDatabaseProtocolVersion = 2;
     //调试模式
     private static final boolean Debug_Mode = false;
+    //About System
+    public static final boolean About_System = true;
     //RSA加密功能
     private static final boolean RSA_Mode = true;
     //插件系统

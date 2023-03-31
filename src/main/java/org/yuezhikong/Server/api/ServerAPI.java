@@ -3,10 +3,10 @@ package org.yuezhikong.Server.api;
 import org.apache.logging.log4j.Level;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.utils.CustomExceptions.UserNotFoundException;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
+import javax.security.auth.login.AccountNotFoundException;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -129,15 +129,15 @@ public interface ServerAPI {
      * @param UserName 用户名
      * @param ServerInstance 服务器实例
      * @return 用户User Data Class
-     * @exception UserNotFoundException 无法根据指定的用户名找到用户时抛出此异常
+     * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
-    static user GetUserByUserName(String UserName, Server ServerInstance) throws UserNotFoundException {
+    static user GetUserByUserName(String UserName, Server ServerInstance) throws AccountNotFoundException {
         int i = 0;
         int tmpclientidall = ServerInstance.getClientIDAll();
         tmpclientidall = tmpclientidall - 1;
         while (true) {
             if (i > tmpclientidall) {
-                throw new UserNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
+                throw new AccountNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
             }
             user RequestUser = Server.GetInstance().getUsers().get(i);
             if (RequestUser.GetUserSocket() == null) {
@@ -148,7 +148,7 @@ public interface ServerAPI {
                 return RequestUser;
             }
             if (i == tmpclientidall) {
-                throw new UserNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
+                throw new AccountNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
             }
             i = i + 1;
         }

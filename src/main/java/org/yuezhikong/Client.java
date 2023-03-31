@@ -17,8 +17,7 @@ import java.security.PrivateKey;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
-import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
+import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Client {
     //public static final Logger logger = LogManager.getLogger(Client.class);
@@ -157,20 +156,22 @@ public class Client {
                 // 等待用户输入信息
                 consoleReader = new BufferedReader(new InputStreamReader(System.in));
                 String input = consoleReader.readLine();
-                if (".about".equals(input))
-                {
-                    logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
-                    logger.info("主仓库位于：https://github.com/QiLechan/JavaIM");
-                    logger.info("主要开发者名单：");
-                    logger.info("QiLechan（柒楽）");
-                    logger.info("AlexLiuDev233 （阿白）");
-                    logger.info("仓库启用了不允许协作者直接推送到主分支，需审核后再提交");
-                    logger.info("因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性");
+                if (About_System) {
+                    if (".about".equals(input)) {
+                        logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
+                        logger.info("主仓库位于：https://github.com/QiLechan/JavaIM");
+                        logger.info("主要开发者名单：");
+                        logger.info("QiLechan（柒楽）");
+                        logger.info("AlexLiuDev233 （阿白）");
+                        logger.info("仓库启用了不允许协作者直接推送到主分支，需审核后再提交");
+                        logger.info("因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性");
+                    }
                 }
-                if (".help".equals(input))
-                {
+                if (".help".equals(input)) {
                     logger.info("客户端命令列表");
-                    logger.info(".about 查看本程序相关信息");
+                    if (About_System) {
+                        logger.info(".about 查看本程序相关信息");
+                    }
                     logger.info(".quit 断开与服务器的连接并终止本程序");
                 }
                 // 检查用户输入是否是.quit

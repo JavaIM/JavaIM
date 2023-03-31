@@ -37,7 +37,7 @@
         <dependency>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
-            <version>3.4.1</version>
+            <version>3.4.0</version>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -82,7 +82,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.4.1</version>
+                <version>3.4.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -91,24 +91,61 @@
                         </goals>
                         <configuration>
                             <filters>
-                           <filter>
-                              <artifact>*:*</artifact>
-                                <excludes>
-                                    <exclude>META-INF/*.SF</exclude>
-                                    <exclude>META-INF/*.DSA</exclude>
-                                    <exclude>META-INF/*.RSA</exclude>
-                                    <!-- 排除log4j2插件文件 解决在打成jar包运行时日志无法打印的问题 https://stackoverflow.com/questions/34945438/log4j2-configuration-not-found-when-running-standalone-application-built-by-shad-->
-                                    <exclude>**/Log4j2Plugins.dat</exclude>
-                                </excludes>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>org/iq80/snappy/**</exclude>
+                                        <exclude>org/slf4j/**</exclude>
+                                        <exclude>org/apache/maven/**</exclude>
+                                        <exclude>org/codehaus/**</exclude>
+                                        <exclude>org/jdom2/**</exclude>
+                                        <exclude>javax/**</exclude>
+                                        <exclude>javax</exclude>
+                                        <exclude>org/tukaani/**</exclude>
+                                        <exclude>org/sonatype/**</exclude>
+                                        <exclude>org/eclipse/**</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/about.html</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>META-INF/maven</exclude>
+                                        <exclude>META-INF/sisu/**</exclude>
+                                        <exclude>META-INF/sisu</exclude>
+                                        <exclude>META-INF/NOTICE.txt</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>about.html</exclude>
+                                        <exclude>*.jar</exclude>
+                                        <exclude>org/vafer/**</exclude>
+                                        <exclude>org/vafer</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>licenses/**</exclude>
+                                        <exclude>licenses</exclude>
+                                        <exclude>LICENSE</exclude>
+                                        <exclude>README</exclude>
+                                        <exclude>org/objectweb/**</exclude>
+                                        <exclude>org/objectweb</exclude>
+                                        <exclude>META-INF/plexus/**</exclude>
+                                        <exclude>META-INF/plexus</exclude>
+                                        <exclude>META-INF/versions/9/module-info.class</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
-                            <minimizeJar>true</minimizeJar>
                             <transformers>
+                                <transformer implementation="io.github.edwgiz.log4j.maven.plugins.shade.transformer.Log4j2PluginCacheFileTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.github.edwgiz</groupId>
+                        <artifactId>log4j-maven-shade-plugin-extensions</artifactId>
+                        <version>2.20.0</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -121,7 +158,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                        <finalName>JavaIM-1.0-</finalName>
+                        <finalName>JavaIM-1.0-source</finalName>
                         <attach>false</attach>
                         </configuration>
                     </execution>
