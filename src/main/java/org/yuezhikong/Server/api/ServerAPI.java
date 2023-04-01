@@ -1,8 +1,11 @@
 package org.yuezhikong.Server.api;
 
+import com.google.gson.Gson;
 import org.apache.logging.log4j.Level;
+import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -27,6 +30,27 @@ import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
  */
 public interface ServerAPI {
     /**
+     * 将消息转换为Protocol
+     * @param Message 原始信息
+     * @param Version 协议版本
+     * @return 转换为Protocol的Json格式
+     */
+    private static String ProtocolRequest(String Message,int Version)
+    {
+        // 将消息根据Protocol封装
+        Gson gson = new Gson();
+        ProtocolData protocolData = new ProtocolData();
+        ProtocolData.MessageHeadBean MessageHead = new ProtocolData.MessageHeadBean();
+        MessageHead.setVersion(Version);
+        MessageHead.setType(1);
+        protocolData.setMessageHead(MessageHead);
+        ProtocolData.MessageBodyBean MessageBody = new ProtocolData.MessageBodyBean();
+        MessageBody.setFileLong(0);
+        MessageBody.setMessage(Message);
+        protocolData.setMessageBody(MessageBody);
+        return gson.toJson(protocolData);
+    }
+    /**
      * 为指定用户发送消息
      * @param user 发信的目标用户
      * @param inputMessage 发信的信息
@@ -34,6 +58,7 @@ public interface ServerAPI {
     static void SendMessageToUser(user user, String inputMessage)
     {
         String Message = inputMessage;
+        Message = ProtocolRequest(Message, CodeDynamicConfig.getProtocolVersion());
         try {
             if (GetRSA_Mode()) {
                 String UserPublicKey = user.GetUserPublicKey();
@@ -66,10 +91,10 @@ public interface ServerAPI {
     static void SendMessageToAllClient(String inputMessage, Server ServerInstance)
     {
         String Message = inputMessage;
+        Message = ProtocolRequest(Message,CodeDynamicConfig.getProtocolVersion());
         int i = 0;
         int tmpclientidall = ServerInstance.getClientIDAll();
         tmpclientidall = tmpclientidall - 1;
-        Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
         try {
             while (true) {
                 if (i > tmpclientidall) {
@@ -86,7 +111,6 @@ public interface ServerAPI {
                         i = i + 1;
                         continue;
                     }
-                    Message = inputMessage;
                     Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
                     if (isAES_Mode())
                     {

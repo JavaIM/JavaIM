@@ -1,0 +1,10 @@
+{
+    "MessageHead": {
+        "Version": 0,
+        "type": 0
+    },
+    "MessageBody": {
+        "Message": "",
+        "FileLong": 0
+    }
+}

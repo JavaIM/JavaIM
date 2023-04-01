@@ -2,6 +2,8 @@ package org.yuezhikong;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
+    //协议版本
+    private static final int ProtocolVersion = 1;
     //本程序版本：
     private static final String Version = "v1.1.1-pre2";
     //目前最新的Database协议版本
@@ -58,6 +60,10 @@ public final class CodeDynamicConfig {
 
     public static String getVersion() {
         return Version;
+    }
+
+    public static int getProtocolVersion() {
+        return ProtocolVersion;
     }
 
     public static boolean isAES_Mode() {

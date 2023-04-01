@@ -2,6 +2,7 @@ package org.yuezhikong.Server.UserData;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.Level;
 import org.yuezhikong.CodeDynamicConfig;
@@ -13,6 +14,7 @@ import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 
 import javax.crypto.SecretKey;
@@ -150,6 +152,19 @@ public class RecvMessageThread extends Thread{
                         }
                     }
                     ChatMessage = java.net.URLDecoder.decode(ChatMessage, StandardCharsets.UTF_8);
+                    // 将信息从Protocol Json中取出
+                    Gson gson = new Gson();
+                    ProtocolData protocolData = gson.fromJson(ChatMessage,ProtocolData.class);
+                    if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                    {
+                        CurrentClientClass.UserDisconnect();
+                    }
+                    // type目前只实现了chat,FileTransfer延后
+                    if (protocolData.getMessageHead().getType() != 1)
+                    {
+                        ServerAPI.SendMessageToUser(CurrentClientClass,"此服务器暂不支持FileTransfer协议");
+                    }
+                    ChatMessage = protocolData.getMessageBody().getMessage();
                     if ("quit".equals(ChatMessage))// 退出登录服务端部分
                     {
                         logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "正在退出登录");
