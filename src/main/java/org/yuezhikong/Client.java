@@ -2,12 +2,11 @@ package org.yuezhikong;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
-import org.yuezhikong.utils.KeyData;
-import org.yuezhikong.utils.Logger;
-import org.yuezhikong.utils.RSA;
-import org.yuezhikong.utils.SaveStackTrace;
+import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.utils.*;
 
 import javax.crypto.SecretKey;
 import java.io.*;
@@ -17,8 +16,7 @@ import java.security.PrivateKey;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
-import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
+import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Client {
     //public static final Logger logger = LogManager.getLogger(Client.class);
@@ -26,11 +24,6 @@ public class Client {
     private Socket client;
     private final KeyData RSAKey;
     private cn.hutool.crypto.symmetric.AES AES;
-    private static byte[] Sha256ByteSubByte(byte[] src){
-        byte[]bs=new byte[32];
-        System.arraycopy(src, 0, bs, 0, 32);
-        return bs;
-    }
     public Client(String serverName, int port) {
         {
             if (!(new File("ServerPublicKey.key").exists()))
@@ -83,6 +76,21 @@ public class Client {
                         }
                     }
                     msg = java.net.URLDecoder.decode(msg,StandardCharsets.UTF_8);
+                    // 将信息从Protocol Json中取出
+                    Gson gson = new Gson();
+                    ProtocolData protocolData = gson.fromJson(msg,ProtocolData.class);
+                    if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                    {
+                        logger.info("此服务器的协议版本与本客户端不相符，正在断开连接");
+                        client.close();
+                        break;
+                    }
+                    // type目前只实现了chat,FileTransfer延后
+                    if (protocolData.getMessageHead().getType() != 1)
+                    {
+                        logger.info("有人想要为您发送一个文件，但是此客户端暂不支持FileTransfer协议");
+                    }
+                    msg = protocolData.getMessageBody().getMessage();
                     logger.info(msg);
                 }
                 catch (IOException e)
@@ -135,10 +143,13 @@ public class Client {
                     String RandomByClient = UUID.randomUUID().toString();
                     out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode(RandomByClient, StandardCharsets.UTF_8),ServerPublicKey));
                     String RandomByServer = java.net.URLDecoder.decode(RSA.decrypt(in.readUTF(),RSAKey.privateKey),StandardCharsets.UTF_8);
-                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Sha256ByteSubByte(SecureUtil.sha256(RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8)));
+                    byte[] KeyByte = new byte[32];
+                    byte[] SrcByte = Base64.encodeBase64((RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8));
+                    System.arraycopy(SrcByte,0,KeyByte,0,31);
+                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(),KeyByte);
                     AES = cn.hutool.crypto.SecureUtil.aes(key.getEncoded());
                     logger.info("服务器响应："+AES.decryptStr(in.readUTF()));
-                    out.writeUTF(AES.encryptBase64("Hello,Server! This Message By Client AES System!"));
+                    out.writeUTF(AES.encryptBase64("Hello,Server! This Message By Client AES System"));
                 }
                 //out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode("你", StandardCharsets.UTF_8),ServerPublicKey));
             }
@@ -157,20 +168,22 @@ public class Client {
                 // 等待用户输入信息
                 consoleReader = new BufferedReader(new InputStreamReader(System.in));
                 String input = consoleReader.readLine();
-                if (".about".equals(input))
-                {
-                    logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
-                    logger.info("主仓库位于：https://github.com/QiLechan/JavaIM");
-                    logger.info("主要开发者名单：");
-                    logger.info("QiLechan（柒楽）");
-                    logger.info("AlexLiuDev233 （阿白）");
-                    logger.info("仓库启用了不允许协作者直接推送到主分支，需审核后再提交");
-                    logger.info("因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性");
+                if (About_System) {
+                    if (".about".equals(input)) {
+                        logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
+                        logger.info("主仓库位于：https://github.com/QiLechan/JavaIM");
+                        logger.info("主要开发者名单：");
+                        logger.info("QiLechan（柒楽）");
+                        logger.info("AlexLiuDev233 （阿白）");
+                        logger.info("仓库启用了不允许协作者直接推送到主分支，需审核后再提交");
+                        logger.info("因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性");
+                    }
                 }
-                if (".help".equals(input))
-                {
+                if (".help".equals(input)) {
                     logger.info("客户端命令列表");
-                    logger.info(".about 查看本程序相关信息");
+                    if (About_System) {
+                        logger.info(".about 查看本程序相关信息");
+                    }
                     logger.info(".quit 断开与服务器的连接并终止本程序");
                 }
                 // 检查用户输入是否是.quit
@@ -183,6 +196,18 @@ public class Client {
                 }
                 // 为控制台补上一个>
                 System.out.print(">");
+                // 将消息根据Protocol封装
+                Gson gson = new Gson();
+                ProtocolData protocolData = new ProtocolData();
+                ProtocolData.MessageHeadBean MessageHead = new ProtocolData.MessageHeadBean();
+                MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                MessageHead.setType(1);
+                protocolData.setMessageHead(MessageHead);
+                ProtocolData.MessageBodyBean MessageBody = new ProtocolData.MessageBodyBean();
+                MessageBody.setFileLong(0);
+                MessageBody.setMessage(input);
+                protocolData.setMessageBody(MessageBody);
+                input = gson.toJson(protocolData);
                 // 加密信息
                 input = java.net.URLEncoder.encode(input, StandardCharsets.UTF_8);
                 if (GetRSA_Mode()) {

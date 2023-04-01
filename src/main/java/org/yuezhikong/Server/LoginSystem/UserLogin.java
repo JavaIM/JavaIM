@@ -1,15 +1,20 @@
 package org.yuezhikong.Server.LoginSystem;
 
 
+import com.google.gson.Gson;
+import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
-import org.yuezhikong.utils.CustomExceptions.UserNotFoundException;
+import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 
+import javax.security.auth.login.AccountNotFoundException;
+import javax.security.auth.login.FailedLoginException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Objects;
 
 import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
@@ -23,9 +28,10 @@ public class UserLogin{
      * @return 是/否允许
      * @throws UserAlreadyLoggedInException 用户已经登录了
      * @throws NullPointerException 用户的某些信息读取出NULL
+     * @throws FailedLoginException 由于用户的原因导致登录失败
      * @apiNote 虽然在执行的期间，就会写入到user.class中，但也请您根据返回值做是否踢出登录等的处理
      */
-    public static boolean WhetherTheUserIsAllowedToLogin(user LoginUser) throws UserAlreadyLoggedInException,NullPointerException {
+    public static boolean WhetherTheUserIsAllowedToLogin(user LoginUser) throws UserAlreadyLoggedInException, NullPointerException, FailedLoginException {
         if (LoginUser.GetUserLogined())
         {
             throw new UserAlreadyLoggedInException("This User Is Logined!");
@@ -55,6 +61,19 @@ public class UserLogin{
                         UserSelect = RSA.decrypt(UserSelect,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
                 }
                 UserSelect = java.net.URLDecoder.decode(UserSelect, StandardCharsets.UTF_8);
+                // 将信息从Protocol Json中取出
+                Gson gson = new Gson();
+                ProtocolData protocolData = gson.fromJson(UserSelect,ProtocolData.class);
+                if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                {
+                    LoginUser.UserDisconnect();
+                }
+                // type目前只实现了chat,FileTransfer延后
+                if (protocolData.getMessageHead().getType() != 1)
+                {
+                    ServerAPI.SendMessageToUser(LoginUser,"此服务器暂不支持FileTransfer协议");
+                }
+                UserSelect = protocolData.getMessageBody().getMessage();
                 int Select = Integer.parseInt(UserSelect);
                 SendMessageToUser(LoginUser,"请输入您的用户名");
                 String UserName;
@@ -73,6 +92,24 @@ public class UserLogin{
                         UserName = RSA.decrypt(UserName,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
                 }
                 UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
+                // 将信息从Protocol Json中取出
+                gson = new Gson();
+                protocolData = gson.fromJson(UserName,ProtocolData.class);
+                if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                {
+                    LoginUser.UserDisconnect();
+                }
+                UserName = protocolData.getMessageBody().getMessage();
+                // type目前只实现了chat,FileTransfer延后
+                if (protocolData.getMessageHead().getType() != 1)
+                {
+                    ServerAPI.SendMessageToUser(LoginUser,"此服务器暂不支持FileTransfer协议");
+                }
+                if (UserName.toLowerCase(Locale.ROOT).contains(" "))
+                {
+                    SendMessageToUser(LoginUser,"含有非法字符！不得含有空格!");
+                    throw new FailedLoginException("This User Input Name Is Not Use!");
+                }
                 SendMessageToUser(LoginUser,"请输入您的密码");
                 String Password;
                 reader = new BufferedReader(new InputStreamReader(LoginUser.GetUserSocket().getInputStream()));//获取输入流
@@ -91,11 +128,24 @@ public class UserLogin{
                     }
                 }
                 Password = java.net.URLDecoder.decode(Password, StandardCharsets.UTF_8);
+                // 将信息从Protocol Json中取出
+                gson = new Gson();
+                protocolData = gson.fromJson(Password,ProtocolData.class);
+                if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                {
+                    LoginUser.UserDisconnect();
+                }
+                // type目前只实现了chat,FileTransfer延后
+                if (protocolData.getMessageHead().getType() != 1)
+                {
+                    ServerAPI.SendMessageToUser(LoginUser,"此服务器暂不支持FileTransfer协议");
+                }
+                Password = protocolData.getMessageBody().getMessage();
                 //上方为请求用户输入用户名、密码
                 boolean ThisUserNameIsNotLogin = false;
                 try {
                     ServerAPI.GetUserByUserName(UserName, Server.GetInstance());
-                } catch (UserNotFoundException e)
+                } catch (AccountNotFoundException e)
                 {
                     ThisUserNameIsNotLogin = true;
                 }

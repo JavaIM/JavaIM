@@ -6,10 +6,10 @@ import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.Server.plugin.PluginManager;
-import org.yuezhikong.utils.CustomExceptions.UserNotFoundException;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
 
+import javax.security.auth.login.AccountNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.ServerSocket;
@@ -19,8 +19,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Date;
 
+import static org.yuezhikong.CodeDynamicConfig.About_System;
+
 class CommandLogger
 {
+
     //客户端 or 服务端，0为服务端，1为客户端
     private final int type;
     //如果是客户端，那么他的class是什么？
@@ -116,6 +119,25 @@ public class RequestCommand {
      */
     private static void CommandRequestPrivate(String command,String[] argv, CommandLogger logger,boolean ISServer)
     {
+        if (About_System)
+        {
+            if (command.equals("/about")) {
+                logger.info("来自于服务器的帮助信息");
+                logger.info("此服务端当前状态为：");
+                logger.info("是否启用RSA加密功能：" + CodeDynamicConfig.GetRSA_Mode());
+                logger.info("是否启用了SQLITE功能：" + CodeDynamicConfig.GetSQLITEMode());
+                logger.info("服务端的database table版本：" + CodeDynamicConfig.GetDatabaseProtocolVersion());
+                logger.info("服务端最大允许的会话数量，为-1代表禁用：" + CodeDynamicConfig.getMaxClient());
+                logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
+                logger.info("主仓库位于：https://github.com/QiLechan/JavaIM");
+                logger.info("主要开发者名单：");
+                logger.info("QiLechan（柒楽）");
+                logger.info("AlexLiuDev233 （阿白）");
+                logger.info("仓库启用了不允许协作者直接推送到主分支，需审核后再提交");
+                logger.info("因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性");
+                return;
+            }
+        }
         switch (command) {
             case "/help" -> {
                 logger.info("命令格式为：");
@@ -127,25 +149,12 @@ public class RequestCommand {
                 logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
                 logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
                 logger.info("/unmute <用户名> 解除用户禁言");
-                logger.info("/about 查看服务端程序相关信息");
+                if (About_System) {
+                    logger.info("/about 查看服务端程序相关信息");
+                }
                 logger.info("注：");
                 logger.info("目前只有三个权限等级，为：0和1，0为普通用户，1为管理员，-1为封禁，如为其他，自动认为为普通用户");
                 logger.info("多余的空格将会被忽略");
-            }
-            case "/about" -> {
-                logger.info("来自于服务器的帮助信息");
-                logger.info("此服务端当前状态为：");
-                logger.info("是否启用RSA加密功能："+CodeDynamicConfig.GetRSA_Mode());
-                logger.info("是否启用了SQLITE功能："+CodeDynamicConfig.GetSQLITEMode());
-                logger.info("服务端的database table版本："+CodeDynamicConfig.GetDatabaseProtocolVersion());
-                logger.info("服务端最大允许的会话数量，为-1代表禁用："+CodeDynamicConfig.getMaxClient());
-                logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
-                logger.info("主仓库位于：https://github.com/QiLechan/JavaIM");
-                logger.info("主要开发者名单：");
-                logger.info("QiLechan（柒楽）");
-                logger.info("AlexLiuDev233 （阿白）");
-                logger.info("仓库启用了不允许协作者直接推送到主分支，需审核后再提交");
-                logger.info("因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性");
             }
             case "/unmute" -> {
                 if (argv.length >= 1)
@@ -172,7 +181,7 @@ public class RequestCommand {
                         } catch (InterruptedException e) {
                             logger.error("发生异常InterruptedException");
                         }
-                    } catch(UserNotFoundException e)
+                    } catch(AccountNotFoundException e)
                     {
                         logger.info("此用户不存在");
                         SaveStackTrace.saveStackTrace(e);

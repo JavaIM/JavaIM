@@ -2,6 +2,8 @@ package org.yuezhikong.Server.UserData;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import com.google.gson.Gson;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.Level;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Commands.RequestCommand;
@@ -12,6 +14,7 @@ import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 
 import javax.crypto.SecretKey;
@@ -42,11 +45,6 @@ public class RecvMessageThread extends Thread{
         CurrentClientID = ClientID;
         Users = users;
     }
-    private static byte[] Sha256ByteSubByte(byte[] src){
-        byte[]bs=new byte[32];
-        System.arraycopy(src, 0, bs, 0, 32);
-        return bs;
-    }
 
     @Override
     public void run() {
@@ -71,7 +69,10 @@ public class RecvMessageThread extends Thread{
                     String RandomByClient = java.net.URLDecoder.decode(RSA.decrypt(in.readUTF(),privateKey),StandardCharsets.UTF_8);
                     String RandomByServer = UUID.randomUUID().toString();
                     out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode(RandomByServer, StandardCharsets.UTF_8),CurrentClientClass.GetUserPublicKey()));
-                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Sha256ByteSubByte(SecureUtil.sha256(RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8)));
+                    byte[] KeyByte = new byte[32];
+                    byte[] SrcByte = Base64.encodeBase64((RandomByClient+RandomByServer).getBytes(StandardCharsets.UTF_8));
+                    System.arraycopy(SrcByte,0,KeyByte,0,31);
+                    SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(),KeyByte);
                     CurrentClientClass.SetUserAES(cn.hutool.crypto.SecureUtil.aes(key.getEncoded()));
                     out.writeUTF(CurrentClientClass.GetUserAES().encryptBase64("Hello,Client! This Message By Server AES System"));
                     logger.info("正在连接的客户端响应："+CurrentClientClass.GetUserAES().decryptStr(in.readUTF()));
@@ -151,6 +152,19 @@ public class RecvMessageThread extends Thread{
                         }
                     }
                     ChatMessage = java.net.URLDecoder.decode(ChatMessage, StandardCharsets.UTF_8);
+                    // 将信息从Protocol Json中取出
+                    Gson gson = new Gson();
+                    ProtocolData protocolData = gson.fromJson(ChatMessage,ProtocolData.class);
+                    if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                    {
+                        CurrentClientClass.UserDisconnect();
+                    }
+                    // type目前只实现了chat,FileTransfer延后
+                    if (protocolData.getMessageHead().getType() != 1)
+                    {
+                        ServerAPI.SendMessageToUser(CurrentClientClass,"此服务器暂不支持FileTransfer协议");
+                    }
+                    ChatMessage = protocolData.getMessageBody().getMessage();
                     if ("quit".equals(ChatMessage))// 退出登录服务端部分
                     {
                         logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "正在退出登录");

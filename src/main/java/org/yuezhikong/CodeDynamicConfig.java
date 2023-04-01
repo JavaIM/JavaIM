@@ -2,14 +2,16 @@ package org.yuezhikong;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
+    //协议版本
+    private static final int ProtocolVersion = 1;
     //本程序版本：
     private static final String Version = "v1.1.1-pre2";
     //目前最新的Database协议版本
     private static final int TheLatestDatabaseProtocolVersion = 2;
     //调试模式
     private static final boolean Debug_Mode = false;
-    //是否允许自动释放依赖
-    private static final boolean Auto_Save_Dependency = false;
+    //About System
+    public static final boolean About_System = true;
     //RSA加密功能
     private static final boolean RSA_Mode = true;
     //插件系统
@@ -52,13 +54,16 @@ public final class CodeDynamicConfig {
     public static boolean GetRSA_Mode (){ return RSA_Mode; }
     public static int getMaxClient() { return MAX_CLIENT; }
     public static boolean GetDebugMode() { return Debug_Mode; }
-    public static boolean GetAutoSaveDependencyMode() { return Auto_Save_Dependency; }
     public static boolean isThisVersionIsExpVersion() {
         return ThisVersionIsExpVersion;
     }
 
     public static String getVersion() {
         return Version;
+    }
+
+    public static int getProtocolVersion() {
+        return ProtocolVersion;
     }
 
     public static boolean isAES_Mode() {

@@ -10,8 +10,12 @@ target/
 *.log
 logs
 
-### build目录 ###
+### build and debug###
 out/
+dependency-reduced-pom.xml
+debug/
+.gradle/
+*.jar
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml
