@@ -4,8 +4,7 @@ import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 
 /**
- * 所有插件都必须事项本接口！
- * 否则，插件将无法被加载
+ * 插件父级interface
  * 建议插件不要直接调用内部class，而是使用API进行修改
  * 目前API仍不完善，后续会添加API
  * @author AlexLiuDev233

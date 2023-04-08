@@ -91,17 +91,23 @@ public interface ServerAPI {
     static void SendMessageToAllClient(String inputMessage, Server ServerInstance)
     {
         String Message = inputMessage;
-        Message = ProtocolRequest(Message,CodeDynamicConfig.getProtocolVersion());
+        String MessageJson = ProtocolRequest(Message,CodeDynamicConfig.getProtocolVersion());
         int i = 0;
         int tmpclientidall = ServerInstance.getClientIDAll();
         tmpclientidall = tmpclientidall - 1;
         try {
             while (true) {
+                Message = MessageJson;
                 if (i > tmpclientidall) {
                     break;
                 }
                 Socket sendsocket = ServerInstance.getUsers().get(i).GetUserSocket();
                 if (sendsocket == null) {
+                    i = i + 1;
+                    continue;
+                }
+                if (!ServerInstance.getUsers().get(i).GetUserLogined())
+                {
                     i = i + 1;
                     continue;
                 }
