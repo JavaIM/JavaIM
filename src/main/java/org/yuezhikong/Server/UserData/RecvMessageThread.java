@@ -18,6 +18,7 @@ import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 
 import javax.crypto.SecretKey;
+import javax.security.auth.login.FailedLoginException;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -101,6 +102,13 @@ public class RecvMessageThread extends Thread{
                     ServerAPI.SendMessageToUser(CurrentClientClass,"来来来，你给我解释一下，你是怎么做到发的信息是null的？");
                     logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
                     CurrentClientClass.UserDisconnect();
+                    return;
+                }
+                catch (FailedLoginException e)
+                {
+                    ServerAPI.SendMessageToUser(CurrentClientClass,"您被踢出此服务器！");
+                    CurrentClientClass.UserDisconnect();
+                    logger.info("["+CurrentClientClass.GetUserSocket().getInetAddress()+"被踢出了服务器，原因：用户名中存在空格");
                     return;
                 }
             }

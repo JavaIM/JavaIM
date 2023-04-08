@@ -119,6 +119,7 @@
                                         <exclude>META-INF/sisu</exclude>
                                         <exclude>META-INF/NOTICE.txt</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>module-info.class</exclude>
                                         <exclude>about.html</exclude>
                                         <exclude>*.jar</exclude>
                                         <exclude>org/vafer/**</exclude>
