@@ -10,7 +10,7 @@ import org.yuezhikong.Server.Commands.RequestCommand;
 import org.yuezhikong.Server.LoginSystem.UserLogin;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.Server.plugin.load.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;

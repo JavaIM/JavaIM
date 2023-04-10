@@ -1,9 +1,11 @@
-package org.yuezhikong.Server.plugin;
+package org.yuezhikong.Server.plugin.load;
 
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.CustomClassLoader.PluginJavaLoader;
+import org.yuezhikong.Server.plugin.Plugin;
+import org.yuezhikong.Server.plugin.load.CustomClassLoader.PluginJavaLoader;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
@@ -22,7 +24,13 @@ public class PluginManager {
     private int NumberOfPlugins = 0;
     private static PluginManager Instance;
 
-    public static PluginManager getInstance(String DirName) {
+    /**
+     * 获取插件管理器实例
+     * @param DirName 如果创建新实例，那么插件文件夹的位置在哪里
+     * @return 插件管理器实例
+     * @throws ModeDisabledException 插件系统已经被禁用了
+     */
+    public static PluginManager getInstance(String DirName) throws ModeDisabledException {
         if (CodeDynamicConfig.GetPluginSystemMode())
         {
             if (Instance == null)
@@ -32,7 +40,7 @@ public class PluginManager {
             return Instance;
         }
         else {
-            return null;
+            throw new ModeDisabledException("Error! Plugin System Is Disabled!");
         }
     }
 
@@ -128,12 +136,14 @@ public class PluginManager {
      */
     public void OnProgramExit(int ProgramExitCode)
     {
-        if (NumberOfPlugins == 0)
+        if (NumberOfPlugins <= 0)
         {
             System.exit(ProgramExitCode);
         }
-        for (Plugin plugin : PluginList) {
-            plugin.OnUnLoad(Server.GetInstance());
+        else {
+            for (Plugin plugin : PluginList) {
+                plugin.OnUnLoad(Server.GetInstance());
+            }
         }
         System.exit(ProgramExitCode);
     }

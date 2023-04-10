@@ -6,7 +6,8 @@ import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.Server.plugin.load.PluginManager;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
@@ -223,19 +224,26 @@ public class Server {
         }
         ExitSystem = true;
         try {
+            serverSocket.close();
             userAuthThread.join();
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             SaveStackTrace.saveStackTrace(e);
             timer.cancel();
-            System.exit(1);
             if (CodeDynamicConfig.GetPluginSystemMode()) {
-                PluginManager.getInstance("./plugins").OnProgramExit(1);
+                try {
+                    PluginManager.getInstance("./plugins").OnProgramExit(1);
+                } catch (ModeDisabledException ex) {
+                    System.exit(1);
+                }
             }
         }
         timer.cancel();
-        System.exit(0);
         if (CodeDynamicConfig.GetPluginSystemMode()) {
-            PluginManager.getInstance("./plugins").OnProgramExit(0);
+            try {
+                PluginManager.getInstance("./plugins").OnProgramExit(0);
+            } catch (ModeDisabledException e) {
+                System.exit(0);
+            }
         }
     }
     /**
@@ -310,8 +318,12 @@ public class Server {
          */
         StartUserAuthThread();
         StartTimer();
-        //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
-        PluginManager.getInstance("./plugins");
+        //这里"getInstance"其实并不是真的为了获取实例，而是为了创建新实例
+        try {
+            PluginManager pluginManager = PluginManager.getInstance("./plugins");
+        } catch (ModeDisabledException e) {
+            e.printStackTrace();
+        }
         StartCommandSystem();
     }
 }

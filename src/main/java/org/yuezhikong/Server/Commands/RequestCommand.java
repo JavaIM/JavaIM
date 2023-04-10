@@ -5,7 +5,8 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.Server.plugin.load.PluginManager;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -359,16 +360,13 @@ public class RequestCommand {
                     ServerSocket.close();
                     userAuthThread.join();
                     Server.GetInstance().timer.cancel();
-                    System.exit(0);
                     if (CodeDynamicConfig.GetPluginSystemMode()) {
                         PluginManager.getInstance("./plugins").OnProgramExit(0);
                     }
-                } catch (IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
+                    System.exit(0);
+                } catch (ModeDisabledException  | IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
                     Server.GetInstance().timer.cancel();
                     System.exit(1);
-                    if (CodeDynamicConfig.GetPluginSystemMode()) {
-                        PluginManager.getInstance("./plugins").OnProgramExit(1);
-                    }
                 }
             }
             case "/say" -> {

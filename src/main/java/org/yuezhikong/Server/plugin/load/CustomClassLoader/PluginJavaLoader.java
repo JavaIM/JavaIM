@@ -1,4 +1,4 @@
-package org.yuezhikong.Server.plugin.CustomClassLoader;
+package org.yuezhikong.Server.plugin.load.CustomClassLoader;
 
 import org.yuezhikong.Server.plugin.Plugin;
 
