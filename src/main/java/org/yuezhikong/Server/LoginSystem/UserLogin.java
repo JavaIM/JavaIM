@@ -144,7 +144,7 @@ public class UserLogin{
                 //上方为请求用户输入用户名、密码
                 boolean ThisUserNameIsNotLogin = false;
                 try {
-                    ServerAPI.GetUserByUserName(UserName, Server.GetInstance());
+                    ServerAPI.GetUserByUserName(UserName, Server.GetInstance(),false);
                 } catch (AccountNotFoundException e)
                 {
                     ThisUserNameIsNotLogin = true;

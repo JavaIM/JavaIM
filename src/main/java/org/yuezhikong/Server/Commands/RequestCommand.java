@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.List;
 
 import static org.yuezhikong.CodeDynamicConfig.About_System;
 
@@ -103,11 +104,11 @@ public class RequestCommand {
         if (UserClass == null)
         {
             CommandLogger logger = new CommandLogger(0,null);
-            CommandRequestPrivate(command,argv,logger,true);
+            CommandRequestPrivate(command,argv,logger,true,null);
             return;
         }
         CommandLogger logger = new CommandLogger(1,UserClass);
-        CommandRequestPrivate(command,argv,logger,false);
+        CommandRequestPrivate(command,argv,logger,false,UserClass);
     }
 
     /**
@@ -116,9 +117,10 @@ public class RequestCommand {
      * @param argv 参数
      * @param logger 发送信息给发信者用的logger
      * @param ISServer 是否为服务端调用，如果是，就为true，如果否，就为false
+     * @param User User Data，如果是服务端调用将返回null
      * @apiNote 这里的logger和CommandLogger Class为历史遗留问题，以前是仅服务端，直接调用logger.info输出，而后来兼容客户端时不得已而如此，有没有好心人把上面的自动适配给弄过来呢?
      */
-    private static void CommandRequestPrivate(String command,String[] argv, CommandLogger logger,boolean ISServer)
+    private static void CommandRequestPrivate(String command,String[] argv, CommandLogger logger,boolean ISServer,user User)
     {
         if (About_System)
         {
@@ -142,26 +144,60 @@ public class RequestCommand {
         switch (command) {
             case "/help" -> {
                 logger.info("命令格式为：");
-                logger.info("/kick ip 端口");
-                logger.info("/say 信息");
-                logger.info("/help 查看帮助");
-                logger.info("/quit 退出程序");
-                logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
-                logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
-                logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
-                logger.info("/unmute <用户名> 解除用户禁言");
+                if (!ISServer)
+                {
+                    if (User.GetUserPermission() == 1)
+                    {
+                        logger.info("/kick ip 端口");
+                        logger.info("/say 信息");
+                        logger.info("/help 查看帮助");
+                        logger.info("/quit 退出程序");
+                        logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
+                        logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
+                        logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
+                        logger.info("/unmute <用户名> 解除用户禁言");
+                    }
+                }
+                else
+                {
+                    logger.info("/kick ip 端口");
+                    logger.info("/say 信息");
+                    logger.info("/help 查看帮助");
+                    logger.info("/quit 退出程序");
+                    logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
+                    logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
+                    logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
+                    logger.info("/unmute <用户名> 解除用户禁言");
+                }
                 if (About_System) {
                     logger.info("/about 查看服务端程序相关信息");
                 }
+                logger.info("/list 查看服务器用户基本信息");
                 logger.info("注：");
                 logger.info("目前只有三个权限等级，为：0和1，0为普通用户，1为管理员，-1为封禁，如为其他，自动认为为普通用户");
                 logger.info("多余的空格将会被忽略");
             }
+            case "/list" -> {
+                List<user> ValidClientList = ServerAPI.GetValidClientList(Server.GetInstance(),true);
+                logger.info("服务器目前有"+ValidClientList.size()+"名用户：");
+                for (user RequestUser : ValidClientList)
+                {
+                    logger.info("用户名为："+RequestUser.GetUserName()+"的用户的用户ID为："+RequestUser.GetUserClientID());
+                }
+            }
             case "/unmute" -> {
+                if (!ISServer)
+                {
+                    if (User.GetUserPermission() != 1)
+                    {
+                        logger.info("未知的命令，请输入/help查看帮助");
+                        return;
+                    }
+                }
                 if (argv.length >= 1)
                 {
                     try {
-                        user RequestUser = ServerAPI.GetUserByUserName(argv[0], Server.GetInstance());
+                        user RequestUser = ServerAPI.GetUserByUserName(argv[0], Server.GetInstance(),true);
                         Runnable SQLUpdateThread = () -> {
                             try {
                                 Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
@@ -182,6 +218,8 @@ public class RequestCommand {
                         } catch (InterruptedException e) {
                             logger.error("发生异常InterruptedException");
                         }
+                        RequestUser.setMuteTime(0);
+                        RequestUser.setMuted(false);
                     } catch(AccountNotFoundException e)
                     {
                         logger.info("此用户不存在");
@@ -190,6 +228,14 @@ public class RequestCommand {
                 }
             }
             case "/mute" -> {
+                if (!ISServer)
+                {
+                    if (User.GetUserPermission() != 1)
+                    {
+                        logger.info("未知的命令，请输入/help查看帮助");
+                        return;
+                    }
+                }
                 if (argv.length == 2)
                 {
                     int UserMuteTime;
@@ -203,37 +249,10 @@ public class RequestCommand {
                         logger.info("详细帮助信息，请输入/help");
                         return;
                     }
-                    int i = 0;
-                    int tmpclientidall = Server.GetInstance().getClientIDAll();
-                    tmpclientidall = tmpclientidall - 1;
-                    boolean found = false;
-                    while (true) {
-                        if (i > tmpclientidall) {
-                            logger.info("错误，找不到此用户");
-                            break;
-                        }
-                        user RequestUser = Server.GetInstance().getUsers().get(i);
-                        if (RequestUser.GetUserSocket() == null) {
-                            i = i + 1;
-                            continue;
-                        }
-                        if (RequestUser.GetUserName().equals(argv[0])) {
-                            RequestUser.setMuteTime(UserMuteTime);
-                            RequestUser.setMuted(true);
-                            //在此写代码
-                            found = true;
-                        }
-                        if (i == tmpclientidall) {
-                            if (!found)
-                            {
-                                logger.info("错误，找不到此用户");
-                            }
-                            break;
-                        }
-                        i = i + 1;
-                    }
-                    if (found)
-                    {
+                    try {
+                        user RequestUser = ServerAPI.GetUserByUserName(argv[0],Server.GetInstance(),true);
+                        RequestUser.setMuteTime(UserMuteTime);
+                        RequestUser.setMuted(true);
                         Runnable SQLUpdateThread = () -> {
                             try {
                                 Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
@@ -255,6 +274,8 @@ public class RequestCommand {
                         } catch (InterruptedException e) {
                             logger.error("发生异常InterruptedException");
                         }
+                    } catch (AccountNotFoundException e) {
+                        logger.info("此用户不存在！");
                     }
                 }
                 else if (argv.length >= 3)
@@ -279,42 +300,15 @@ public class RequestCommand {
                     Date date = new Date();
                     long Time = date.getTime();//获取当前时间毫秒数
                     UserMuteTime = UserMuteTime + Time;
-                    int i = 0;
-                    int tmpclientidall = Server.GetInstance().getClientIDAll();
-                    tmpclientidall = tmpclientidall - 1;
-                    boolean found = false;
-                    while (true) {
-                        if (i > tmpclientidall) {
-                            logger.info("错误，找不到此用户");
-                            break;
-                        }
-                        user RequestUser = Server.GetInstance().getUsers().get(i);
-                        if (RequestUser.GetUserSocket() == null) {
-                            i = i + 1;
-                            continue;
-                        }
-                        if (RequestUser.GetUserName().equals(argv[0])) {
-                            RequestUser.setMuteTime(UserMuteTime);
-                            RequestUser.setMuted(true);
-                            //在此写代码
-                            found = true;
-                        }
-                        if (i == tmpclientidall) {
-                            if (!found)
-                            {
-                                logger.info("错误，找不到此用户");
-                            }
-                            break;
-                        }
-                        i = i + 1;
-                    }
-                    if (found)
-                    {
-                        long finalUserMuteTime = UserMuteTime;//由于java要求lambda表达式要求必须为final或有效final，只能如此
+                    try {
+                        user RequestUser = ServerAPI.GetUserByUserName(argv[0],Server.GetInstance(),true);
+                        RequestUser.setMuteTime(UserMuteTime);
+                        RequestUser.setMuted(true);
+                        long finalUserMuteTime = UserMuteTime;
                         Runnable SQLUpdateThread = () -> {
                             try {
                                 Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-                                String sql = "UPDATE UserData SET UserMuted = 1 and UserMuteTime = ? where UserName = ?";
+                                String sql = "UPDATE UserData SET UserMuted = 1 UserMuteTime = ? where UserName = ?";
                                 PreparedStatement ps = mySQLConnection.prepareStatement(sql);
                                 ps.setLong(1, finalUserMuteTime);
                                 ps.setString(2,argv[0]);
@@ -332,7 +326,8 @@ public class RequestCommand {
                         } catch (InterruptedException e) {
                             logger.error("发生异常InterruptedException");
                         }
-                        logger.info("已成功禁言"+argv[0]);
+                    } catch (AccountNotFoundException e) {
+                        logger.info("此用户不存在！");
                     }
                 }
                 else
@@ -342,6 +337,14 @@ public class RequestCommand {
                 }
             }
             case "/quit" -> {
+                if (!ISServer)
+                {
+                    if (User.GetUserPermission() != 1)
+                    {
+                        logger.info("未知的命令，请输入/help查看帮助");
+                        return;
+                    }
+                }
                 try {
                     Field field = Server.GetInstance().getClass().getDeclaredField("ExitSystem");
                     field.setAccessible(true);
@@ -370,6 +373,14 @@ public class RequestCommand {
                 }
             }
             case "/say" -> {
+                if (!ISServer)
+                {
+                    if (User.GetUserPermission() != 1)
+                    {
+                        logger.info("未知的命令，请输入/help查看帮助");
+                        return;
+                    }
+                }
                 StringBuilder TheServerWillSay = new StringBuilder();//服务端将要发出的信息
                 {
                     int i = 0;
@@ -394,6 +405,14 @@ public class RequestCommand {
                 logger.info("[Server] "+TheServerWillSay);
             }
             case "/SetPermission" -> {
+                if (!ISServer)
+                {
+                    if (User.GetUserPermission() != 1)
+                    {
+                        logger.info("未知的命令，请输入/help查看帮助");
+                        return;
+                    }
+                }
                 if (argv.length >= 2)
                 {
                     int PermissionLevel;
@@ -477,6 +496,14 @@ public class RequestCommand {
                 }
             }
             case "/kick" -> {
+                if (!ISServer)
+                {
+                    if (User.GetUserPermission() != 1)
+                    {
+                        logger.info("未知的命令，请输入/help查看帮助");
+                        return;
+                    }
+                }
                 if (argv.length >= 2) {
                     String IpAddress = argv[0];
                     int Port;
@@ -535,6 +562,9 @@ public class RequestCommand {
             default ->{
                 if (ISServer) {
                     logger.info("无效的命令！");
+                }
+                else {
+                    logger.info("未知的命令，请输入/help查看帮助");
                 }
             }
         }

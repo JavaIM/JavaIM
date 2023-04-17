@@ -205,10 +205,10 @@ public class user {
     {
         return ClientID;
     }
-    public String GetUserPublicKey() throws Exception {
+    public String GetUserPublicKey() throws ModeDisabledException {
         if (!GetRSA_Mode())
         {
-            throw new Exception("RSA Mode Has Disabled!");
+            throw new ModeDisabledException("RSA Mode Has Disabled!");
         }
         if (UserPublicKey != null) {
             return UserPublicKey;
