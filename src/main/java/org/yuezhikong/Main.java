@@ -16,13 +16,15 @@
  */
 package org.yuezhikong;
 
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import javafx.application.Application;
+import org.yuezhikong.GUITest.TestMainGUI;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.utils.SaveStackTrace;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Scanner;
 
 import static org.yuezhikong.CodeDynamicConfig.*;
@@ -115,6 +117,17 @@ public class Main {
                 logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
                 logger.info("本版本测试性内容列表：");
                 logger.info(getExpVersionText());
+                logger.info("是否要启动此GUI？");
+                logger.info("1为启动，其他为正常启动");
+                Scanner sc = new Scanner(System.in);
+                int mode = sc.nextInt();
+                if (mode == 1)
+                {
+                    Runnable GUIThreadRunnable = () -> Application.launch(TestMainGUI.class, args);
+                    Thread GUIThread = new Thread(GUIThreadRunnable);
+                    GUIThread.start();
+                    GUIThread.setName("GUI Thread");
+                }
             }
             logger.info("欢迎来到JavaIM！版本："+getVersion());
             logger.info("使用客户端模式请输入1，服务端模式请输入2:");

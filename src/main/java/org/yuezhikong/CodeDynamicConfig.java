@@ -17,10 +17,9 @@ public final class CodeDynamicConfig {
     //插件系统
     private static final boolean PluginSystem = true;
     //本版本为实验性版本
-    private static final boolean ThisVersionIsExpVersion = false;
+    private static final boolean ThisVersionIsExpVersion = true;
     //如果为测试性版本，则信息为：
-    private static final String ExpVersionText = "此版本包括一个测试性AES加密系统," +
-            "此系统有助于解决纯RSA加密造成的卡顿问题";
+    private static final String ExpVersionText = "此版本包含测试gui";
     //AES加密系统（依赖于RSA加密系统）
     private static final boolean AES_Mode = true;
 
