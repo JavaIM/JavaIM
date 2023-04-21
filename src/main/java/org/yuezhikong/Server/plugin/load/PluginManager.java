@@ -77,7 +77,7 @@ public class PluginManager {
      * 加载一个文件夹下的所有插件
      * @param DirName 文件夹路径
      */
-    public PluginManager(String DirName)
+    private PluginManager(String DirName)
     {
         if (!(new File(DirName).exists()))
         {

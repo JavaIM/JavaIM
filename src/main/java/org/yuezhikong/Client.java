@@ -22,7 +22,7 @@ public class Client {
     //public static final Logger logger = LogManager.getLogger(Client.class);
     public static final Logger logger = new Logger();
     private Socket client;
-    private final KeyData RSAKey;
+    private final CustomVar.KeyData RSAKey;
     private cn.hutool.crypto.symmetric.AES AES;
     public Client(String serverName, int port) {
         {

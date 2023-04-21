@@ -5,6 +5,7 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -30,12 +31,38 @@ import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
  */
 public interface ServerAPI {
     /**
-     * 将消息转换为Protocol
+     * 将命令进行格式化
+     * @param Command 原始命令信息
+     * @return 命令和参数
+     */
+    static CustomVar.Command CommandFormat(String Command)
+    {
+        String command;
+        String[] argv;
+        {
+            String[] CommandLineFormated = Command.split("\\s+"); //分割一个或者多个空格
+            command = CommandLineFormated[0];
+            argv = new String[CommandLineFormated.length - 1];
+            int j = 0;//要删除的字符索引
+            int i = 0;
+            int k = 0;
+            while (i < CommandLineFormated.length) {
+                if (i != j) {
+                    argv[k] = CommandLineFormated[i];
+                    k++;
+                }
+                i++;
+            }
+        }
+        return new CustomVar.Command(command,argv);
+    }
+    /**
+     * 将聊天消息转换为Protocol
      * @param Message 原始信息
      * @param Version 协议版本
      * @return 转换为Protocol的Json格式
      */
-    private static String ProtocolRequest(String Message,int Version)
+    static String ProtocolRequest(String Message,int Version)
     {
         // 将消息根据Protocol封装
         Gson gson = new Gson();
