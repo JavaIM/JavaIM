@@ -37,7 +37,7 @@ public class RecvMessageThread extends Thread{
     private final int CurrentClientID;
     //private final List<Socket> sockets;
     private final List<user> Users;
-    public static final Logger logger = new Logger();
+    public static final Logger logger = Server.GetInstance().logger;
     /**
      * @apiNote 用于给recvMessage线程传参
      * @param ClientID 客户端ID
@@ -174,6 +174,9 @@ public class RecvMessageThread extends Thread{
                         ServerAPI.SendMessageToUser(CurrentClientClass,"此服务器暂不支持FileTransfer协议");
                     }
                     ChatMessage = protocolData.getMessageBody().getMessage();
+                    //客户端可以非法发送换行修复
+                    ChatMessage = ChatMessage.replaceAll("\n","");
+                    ChatMessage = ChatMessage.replaceAll("\r","");
                     if ("quit".equals(ChatMessage))// 退出登录服务端部分
                     {
                         logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "正在退出登录");
@@ -189,6 +192,7 @@ public class RecvMessageThread extends Thread{
                     if (ChatMessage.charAt(0) == '/')//判定是否是斜杠打头，如果是，判定为命令
                     {
                         CustomVar.Command CommandRequestResult = ServerAPI.CommandFormat(ChatMessage);//命令格式化
+                        logger.info(CurrentClientClass.GetUserName()+" 执行了命令 /"+CommandRequestResult.Command());
                         RequestCommand.CommandRequest(CommandRequestResult.Command(),CommandRequestResult.argv(),CurrentClientClass);//调用处理
                         continue;
                     }
@@ -219,7 +223,6 @@ public class RecvMessageThread extends Thread{
                             try {
                                 UpdateThread.join();
                             } catch (InterruptedException e) {
-                                Logger logger = new Logger();
                                 logger.error("发生异常InterruptedException");
                             }
                         }
@@ -232,7 +235,7 @@ public class RecvMessageThread extends Thread{
                             continue;
                     }
                     // 读取客户端发送的消息
-                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
+                    logger.ChatMsg("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                     // 消息转发
                     org.yuezhikong.Server.api.ServerAPI.SendMessageToAllClient("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage , Server.GetInstance());
                 }

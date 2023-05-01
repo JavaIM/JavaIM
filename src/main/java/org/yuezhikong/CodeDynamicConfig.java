@@ -2,6 +2,8 @@ package org.yuezhikong;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
+    //是否是GUI模式
+    private static final boolean GUIMode = true;
     //协议版本
     private static final int ProtocolVersion = 1;
     //本程序版本：
@@ -9,7 +11,7 @@ public final class CodeDynamicConfig {
     //目前最新的Database协议版本
     private static final int TheLatestDatabaseProtocolVersion = 2;
     //调试模式
-    private static final boolean Debug_Mode = false;
+    private static final boolean Debug_Mode = true;
     //About System
     public static final boolean About_System = true;
     //RSA加密功能
@@ -41,6 +43,7 @@ public final class CodeDynamicConfig {
     //MySQL数据库密码
     public static String MySQLDataBasePasswd = "JavaIM";
 
+
     public static boolean GetPluginSystemMode() { return PluginSystem; }
     public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }
     public static int GetDatabaseProtocolVersion() { return TheLatestDatabaseProtocolVersion; }
@@ -71,5 +74,9 @@ public final class CodeDynamicConfig {
 
     public static String getExpVersionText() {
         return ExpVersionText;
+    }
+
+    public static boolean isGUIMode() {
+        return GUIMode;
     }
 }

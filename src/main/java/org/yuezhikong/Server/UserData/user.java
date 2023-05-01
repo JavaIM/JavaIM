@@ -2,6 +2,7 @@ package org.yuezhikong.Server.UserData;
 
 import cn.hutool.crypto.symmetric.AES;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.plugin.load.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
@@ -36,14 +37,14 @@ public class user {
                     if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserUnMute(this)) {
                         Muted = false;
                     } else {
-                        org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
                         logger.info("插件系统阻止了解除禁言操作！");
                     }
                 } else {
                     if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserMute(this)) {
                         Muted = true;
                     } else {
-                        org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
                         logger.info("插件系统阻止了禁言操作");
                     }
                 }
@@ -168,7 +169,7 @@ public class user {
                     {
                         PermissionLevel = permissionLevel;//如果插件系统没有阻止操作，则进行设定
                     } else {
-                        org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
                         logger.info("插件系统阻止了权限更改操作！");
                     }
                 } catch (ModeDisabledException e) {

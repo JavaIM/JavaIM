@@ -63,7 +63,7 @@ public class timer extends TimerTask
                         try {
                             UpdateThread.join();
                         } catch (InterruptedException e) {
-                            Logger logger = new Logger();
+                            Logger logger = Server.GetInstance().logger;
                             logger.error("发生异常InterruptedException");
                             SaveStackTrace.saveStackTrace(e);
                         }

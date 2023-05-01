@@ -30,8 +30,8 @@ import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
 public class Server {
     private Thread userAuthThread;
     private boolean ExitSystem = false;
-    public static final org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-    public static final Logger logger = new Logger();
+    public static final org.apache.logging.log4j.Logger DEBUG = LogManager.getLogger("Debug");
+    public Logger logger;
     private final List<user> Users = new ArrayList<>();
     //private final List<Socket> sockets = new ArrayList<>();
     private int clientIDAll = 0;
@@ -199,6 +199,7 @@ public class Server {
         {
             CustomVar.Command CommandRequestReturn = ServerAPI.CommandFormat(sc.nextLine());
             String command = CommandRequestReturn.Command();
+            logger.info("控制台 执行了命令 /"+command);
 
             if (command.equals("quit"))
             {
@@ -254,12 +255,22 @@ public class Server {
             SaveStackTrace.saveStackTrace(e);
         }
     }
+
+    /**
+     * 严禁集成到构造函数！
+     * 此函数是由GUIServer重写的，用来替换logger，这样可以将信息传输到GUI
+     */
+    protected void SetupLoggerSystem()
+    {
+        logger = new Logger(false,false,null);
+    }
     /**
      * @apiNote 服务端main函数
      * @param port 要开始监听的端口
      */
     public Server(int port) {
         instance = this;
+        SetupLoggerSystem();
         RSA_KeyAutogenerate();
         try {
             serverSocket = new ServerSocket(port);

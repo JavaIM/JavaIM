@@ -42,6 +42,27 @@ class CommandLogger
         User = user;
     }
     /**
+     * 发出聊天信息
+     * @param Message 消息
+     */
+    public void ChatMsg(String Message)
+    {
+        if (type == 0)
+        {
+            org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
+            logger.ChatMsg(Message);
+        }
+        else
+        {
+            try {
+                Thread.sleep(25);
+            } catch (InterruptedException e) {
+                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+            }
+            org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
+        }
+    }
+    /**
      * 发出信息
      * @param Message 消息
      */
@@ -49,7 +70,7 @@ class CommandLogger
     {
         if (type == 0)
         {
-            org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+            org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
             logger.info(Message);
         }
         else
@@ -68,7 +89,7 @@ class CommandLogger
      */
     public void error(String Message)
     {
-        org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
         logger.error(Message);
         if (type == 1)
         {
@@ -83,7 +104,7 @@ class CommandLogger
      */
     public void log(Level level, String Message)
     {
-        org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
         logger.log(level,Message);
         if (type == 1)
         {
@@ -402,7 +423,7 @@ public class RequestCommand {
                 }
                 // 发送信息
                 org.yuezhikong.Server.api.ServerAPI.SendMessageToAllClient("[Server] "+TheServerWillSay, Server.GetInstance());
-                logger.info("[Server] "+TheServerWillSay);
+                logger.ChatMsg("[Server] "+TheServerWillSay);
             }
             case "/SetPermission" -> {
                 if (!ISServer)

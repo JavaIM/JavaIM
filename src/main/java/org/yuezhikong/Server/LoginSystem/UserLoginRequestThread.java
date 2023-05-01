@@ -14,7 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
-import static org.yuezhikong.Server.Server.logger_log4j;
+import static org.yuezhikong.Server.Server.DEBUG;
 
 public class UserLoginRequestThread extends Thread{
     private boolean RequestReturn = false;
@@ -95,7 +95,7 @@ public class UserLoginRequestThread extends Thread{
             e.printStackTrace(pw);
             pw.flush();
             sw.flush();
-            logger_log4j.debug(sw.toString());
+            DEBUG.debug(sw.toString());
             pw.close();
             try {
                 sw.close();
@@ -104,8 +104,8 @@ public class UserLoginRequestThread extends Thread{
             {
                 ex.printStackTrace();
             }
-            logger_log4j.fatal("ClassNotFoundException，无法找到MySQL驱动");
-            logger_log4j.fatal("程序已崩溃");
+            DEBUG.fatal("ClassNotFoundException，无法找到MySQL驱动");
+            DEBUG.fatal("程序已崩溃");
             System.exit(-2);
             RequestReturn = false;
         }

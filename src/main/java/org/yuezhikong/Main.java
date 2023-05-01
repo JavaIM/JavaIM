@@ -17,7 +17,7 @@
 package org.yuezhikong;
 
 import javafx.application.Application;
-import org.yuezhikong.GUITest.TestMainGUI;
+import org.yuezhikong.GUITest.MainGUI.GUI;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -30,7 +30,7 @@ import java.util.Scanner;
 import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Main {
-    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger(false,false,null);
     private static Main instance;
     public static Main getInstance()
     {
@@ -123,10 +123,15 @@ public class Main {
                 int mode = sc.nextInt();
                 if (mode == 1)
                 {
-                    Runnable GUIThreadRunnable = () -> Application.launch(TestMainGUI.class, args);
-                    Thread GUIThread = new Thread(GUIThreadRunnable);
-                    GUIThread.start();
-                    GUIThread.setName("GUI Thread");
+                    if (isGUIMode())
+                    {
+                        Application.launch(GUI.class, args);
+                        return;
+                    }
+                    else
+                    {
+                        logger.info("此版本不允许GUI模式");
+                    }
                 }
             }
             logger.info("欢迎来到JavaIM！版本："+getVersion());

@@ -20,7 +20,7 @@ import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Client {
     //public static final Logger logger = LogManager.getLogger(Client.class);
-    public static final Logger logger = new Logger();
+    public static final Logger logger = new Logger(false,false,null);
     private Socket client;
     private final CustomVar.KeyData RSAKey;
     private cn.hutool.crypto.symmetric.AES AES;
