@@ -7,6 +7,7 @@ import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 
@@ -14,7 +15,6 @@ import javax.security.auth.login.AccountNotFoundException;
 import javax.security.auth.login.FailedLoginException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 import java.util.Objects;
 
 import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
@@ -105,11 +105,16 @@ public class UserLogin{
                 {
                     ServerAPI.SendMessageToUser(LoginUser,"此服务器暂不支持FileTransfer协议");
                 }
-                if (UserName.toLowerCase(Locale.ROOT).contains(" "))
+                //用户名暴力格式化
+                CustomVar.Command username = ServerAPI.CommandFormat(UserName);
+                StringBuilder builder = new StringBuilder();
+                builder.append(username.Command());
+                for (String string : username.argv())
                 {
-                    SendMessageToUser(LoginUser,"含有非法字符！不得含有空格!");
-                    throw new FailedLoginException("This User Input Name Is Not Use!");
+                    builder.append(string);
                 }
+                UserName = builder.toString();
+
                 SendMessageToUser(LoginUser,"请输入您的密码");
                 String Password;
                 reader = new BufferedReader(new InputStreamReader(LoginUser.GetUserSocket().getInputStream()));//获取输入流
@@ -144,7 +149,7 @@ public class UserLogin{
                 //上方为请求用户输入用户名、密码
                 boolean ThisUserNameIsNotLogin = false;
                 try {
-                    ServerAPI.GetUserByUserName(UserName, Server.GetInstance());
+                    ServerAPI.GetUserByUserName(UserName, Server.GetInstance(),false);
                 } catch (AccountNotFoundException e)
                 {
                     ThisUserNameIsNotLogin = true;

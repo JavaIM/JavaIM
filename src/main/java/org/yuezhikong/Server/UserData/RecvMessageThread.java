@@ -10,8 +10,9 @@ import org.yuezhikong.Server.Commands.RequestCommand;
 import org.yuezhikong.Server.LoginSystem.UserLogin;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.Server.plugin.load.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.ProtocolData;
@@ -36,7 +37,7 @@ public class RecvMessageThread extends Thread{
     private final int CurrentClientID;
     //private final List<Socket> sockets;
     private final List<user> Users;
-    public static final Logger logger = new Logger();
+    public static final Logger logger = Server.GetInstance().logger;
     /**
      * @apiNote 用于给recvMessage线程传参
      * @param ClientID 客户端ID
@@ -49,8 +50,8 @@ public class RecvMessageThread extends Thread{
 
     @Override
     public void run() {
-        super.run();
         user CurrentClientClass = Users.get(CurrentClientID);
+        this.setUncaughtExceptionHandler((Thread t, Throwable e)-> CurrentClientClass.UserDisconnect());
         Socket CurrentClientSocket = CurrentClientClass.GetUserSocket();
         try {
             //开始握手
@@ -173,6 +174,9 @@ public class RecvMessageThread extends Thread{
                         ServerAPI.SendMessageToUser(CurrentClientClass,"此服务器暂不支持FileTransfer协议");
                     }
                     ChatMessage = protocolData.getMessageBody().getMessage();
+                    //客户端可以非法发送换行修复
+                    ChatMessage = ChatMessage.replaceAll("\n","");
+                    ChatMessage = ChatMessage.replaceAll("\r","");
                     if ("quit".equals(ChatMessage))// 退出登录服务端部分
                     {
                         logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "正在退出登录");
@@ -185,30 +189,12 @@ public class RecvMessageThread extends Thread{
                         CurrentClientClass.UserDisconnect();
                         return;
                     }
-                    if (CurrentClientClass.GetUserPermission() == 1)//判定是否为管理员
+                    if (ChatMessage.charAt(0) == '/')//判定是否是斜杠打头，如果是，判定为命令
                     {
-                        if (ChatMessage.charAt(0) == '/')//判定是否是斜杠打头，如果是，判定为命令
-                        {
-                            String command;//命令
-                            String[] argv;//参数
-                            {
-                                String[] CommandLineFormated = ChatMessage.split("\\s+"); //分割一个或者多个空格
-                                command = CommandLineFormated[0];
-                                argv = new String[CommandLineFormated.length - 1];
-                                int j = 0;//要删除的字符索引
-                                int i = 0;
-                                int k = 0;
-                                while (i < CommandLineFormated.length) {
-                                    if (i != j) {
-                                        argv[k] = CommandLineFormated[i];
-                                        k++;
-                                    }
-                                    i++;
-                                }
-                            }//格式化
-                            RequestCommand.CommandRequest(command,argv,CurrentClientClass);//调用执行
-                            continue;
-                        }
+                        CustomVar.Command CommandRequestResult = ServerAPI.CommandFormat(ChatMessage);//命令格式化
+                        logger.info(CurrentClientClass.GetUserName()+" 执行了命令 /"+CommandRequestResult.Command());
+                        RequestCommand.CommandRequest(CommandRequestResult.Command(),CommandRequestResult.argv(),CurrentClientClass);//调用处理
+                        continue;
                     }
                     //判断禁言是否已结束
                     if (CurrentClientClass.isMuted())
@@ -237,7 +223,6 @@ public class RecvMessageThread extends Thread{
                             try {
                                 UpdateThread.join();
                             } catch (InterruptedException e) {
-                                Logger logger = new Logger();
                                 logger.error("发生异常InterruptedException");
                             }
                         }
@@ -250,7 +235,7 @@ public class RecvMessageThread extends Thread{
                             continue;
                     }
                     // 读取客户端发送的消息
-                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
+                    logger.ChatMsg("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage);
                     // 消息转发
                     org.yuezhikong.Server.api.ServerAPI.SendMessageToAllClient("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + ChatMessage , Server.GetInstance());
                 }

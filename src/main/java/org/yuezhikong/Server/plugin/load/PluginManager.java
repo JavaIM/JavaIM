@@ -1,9 +1,11 @@
-package org.yuezhikong.Server.plugin;
+package org.yuezhikong.Server.plugin.load;
 
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.CustomClassLoader.PluginJavaLoader;
+import org.yuezhikong.Server.plugin.Plugin;
+import org.yuezhikong.Server.plugin.load.CustomClassLoader.PluginJavaLoader;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
@@ -22,7 +24,13 @@ public class PluginManager {
     private int NumberOfPlugins = 0;
     private static PluginManager Instance;
 
-    public static PluginManager getInstance(String DirName) {
+    /**
+     * 获取插件管理器实例
+     * @param DirName 如果创建新实例，那么插件文件夹的位置在哪里
+     * @return 插件管理器实例
+     * @throws ModeDisabledException 插件系统已经被禁用了
+     */
+    public static PluginManager getInstance(String DirName) throws ModeDisabledException {
         if (CodeDynamicConfig.GetPluginSystemMode())
         {
             if (Instance == null)
@@ -32,7 +40,7 @@ public class PluginManager {
             return Instance;
         }
         else {
-            return null;
+            throw new ModeDisabledException("Error! Plugin System Is Disabled!");
         }
     }
 
@@ -69,19 +77,19 @@ public class PluginManager {
      * 加载一个文件夹下的所有插件
      * @param DirName 文件夹路径
      */
-    public PluginManager(String DirName)
+    private PluginManager(String DirName)
     {
         if (!(new File(DirName).exists()))
         {
             try {
                 if (!(new File(DirName).mkdir())) {
-                    org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                    org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
                     logger.error("无法新建文件夹" + DirName + "，可能是由于权限问题");
                 }
             }
             catch (Exception e)
             {
-                org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
                 logger.error("无法新建文件夹"+DirName+"，可能是由于权限问题");
                 org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
             }
@@ -100,22 +108,8 @@ public class PluginManager {
             }
             catch (Throwable e)
             {
-                    org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+                    org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
                     logger.error("加载插件文件"+s.getName()+"失败！请检查此插件！");
-                    logger.error("发生此错误可能的原因是");
-                    logger.error("1：插件内没有清单文件PluginManifest.properties");
-                    logger.error("2：输入流InputStream异常，一般如果是此原因，是您文件权限导致的");
-                    logger.error("3：插件内清单文件注册的主类无效");
-                    logger.error("4：未根据插件要求进行继承");
-                    logger.error("具体原因请看logs/debug.log内内容");
-                    logger.error("如果下方报错原因为：");
-                    logger.error("ClassNotFoundException则代表主类无效");
-                    logger.error("IOException代表输入流InputStream异常");
-                    logger.error("ClassCastException代表未根据要求继承");
-                    logger.error("NullPointerException代表无清单文件或输入流InputStream无效");
-                    logger.error("其他错误代表出现错误，请联系开发者排查");
-                    logger.error("当前原因为："+e.getClass().getName()+" "+e.getMessage());
-                    logger.error("请自行分辨原因");
                     SaveStackTrace.saveStackTrace(e);
                 }
         }
@@ -128,12 +122,14 @@ public class PluginManager {
      */
     public void OnProgramExit(int ProgramExitCode)
     {
-        if (NumberOfPlugins == 0)
+        if (NumberOfPlugins <= 0)
         {
             System.exit(ProgramExitCode);
         }
-        for (Plugin plugin : PluginList) {
-            plugin.OnUnLoad(Server.GetInstance());
+        else {
+            for (Plugin plugin : PluginList) {
+                plugin.OnUnLoad(Server.GetInstance());
+            }
         }
         System.exit(ProgramExitCode);
     }

@@ -2,16 +2,26 @@ package org.yuezhikong.utils;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.yuezhikong.GUITest.ServerGUI.Controller;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 //import java.util.logging.Level;
 
 public class Logger {
+    private final boolean IsGUIServerLogger;
+    private final Controller GUIForServer;
+    private final boolean IsGUIClientLogger;
+    private final org.yuezhikong.GUITest.ClientGUI.Controller GUIForClient;
     public static final org.apache.logging.log4j.Logger logger_root = LogManager.getLogger(Logger.class.getName());//配置文件没配置Log的class名字，所以用默认的Root
-
+    public Logger(boolean GUIServerLogger, boolean GUIClientLogger, Controller GUIForServer,org.yuezhikong.GUITest.ClientGUI.Controller GUIForClient)
+    {
+        this.GUIForServer = GUIForServer;
+        this.GUIForClient = GUIForClient;
+        IsGUIServerLogger = GUIServerLogger;
+        IsGUIClientLogger = GUIClientLogger;
+    }
     public void info(String msg, Object... params)
     {
         System.out.print("\b");
@@ -20,21 +30,19 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
+        }
+        if (IsGUIServerLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForServer.WriteToServerLog(time.format(formatter)+" [info] "+msg);
+        }
+        else if (IsGUIClientLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForClient.WriteToLog(time.format(formatter)+" [info] "+msg);
         }
         System.out.print(">");
     }
@@ -46,21 +54,19 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
+        }
+        if (IsGUIServerLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForServer.WriteToServerLog(time.format(formatter)+" [info] "+msg);
+        }
+        else if (IsGUIClientLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForClient.WriteToLog(time.format(formatter)+" [info] "+msg);
         }
         System.out.print(">");
     }
@@ -72,21 +78,43 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
+        }
+        if (IsGUIServerLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForServer.WriteToServerLog(time.format(formatter)+" [error] "+msg);
+        }
+        else if (IsGUIClientLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForClient.WriteToLog(time.format(formatter)+" [error] "+msg);
+        }
+        System.out.print(">");
+    }
+    public void ChatMsg(String msg)
+    {
+        System.out.print("\b");
+        //java.util.logging.Logger.getGlobal().info(msg);
+        logger_root.info(msg);
+        try {
+            Thread.sleep(30);
+        } catch (InterruptedException e) {
+            SaveStackTrace.saveStackTrace(e);
+        }
+        if (IsGUIServerLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss] ");
+            GUIForServer.WriteToChatLog(time.format(formatter)+msg);
+        }
+        else if (IsGUIClientLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForClient.WriteToChatArea(time.format(formatter)+msg);
         }
         System.out.print(">");
     }
@@ -98,21 +126,69 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
+            SaveStackTrace.saveStackTrace(e);
+        }
+        if (IsGUIServerLogger)
+        {
+            LocalTime time = LocalTime.now();
+            String LogLevel = "";
+            if (level.equals(Level.ERROR))
             {
-                ex.printStackTrace();
+                LogLevel = "[error] ";
             }
+            else if (level.equals(Level.DEBUG))
+            {
+                LogLevel = "[debug] ";
+            }
+            else if (level.equals(Level.FATAL))
+            {
+                LogLevel = "[fatal] ";
+            }
+            else if (level.equals(Level.INFO))
+            {
+                LogLevel = "[info] ";
+            }
+            else if (level.equals(Level.TRACE))
+            {
+                LogLevel = "[trace] ";
+            }
+            else if (level.equals(Level.WARN))
+            {
+                LogLevel = "[warning] ";
+            }
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss] ");
+            GUIForServer.WriteToServerLog(time.format(formatter)+LogLevel+msg);
+        }
+        else if (IsGUIClientLogger)
+        {
+            LocalTime time = LocalTime.now();
+            String LogLevel = "";
+            if (level.equals(Level.ERROR))
+            {
+                LogLevel = "[error] ";
+            }
+            else if (level.equals(Level.DEBUG))
+            {
+                LogLevel = "[debug] ";
+            }
+            else if (level.equals(Level.FATAL))
+            {
+                LogLevel = "[fatal] ";
+            }
+            else if (level.equals(Level.INFO))
+            {
+                LogLevel = "[info] ";
+            }
+            else if (level.equals(Level.TRACE))
+            {
+                LogLevel = "[trace] ";
+            }
+            else if (level.equals(Level.WARN))
+            {
+                LogLevel = "[warning] ";
+            }
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss] ");
+            GUIForClient.WriteToLog(time.format(formatter)+LogLevel+msg);
         }
         System.out.print(">");
     }
@@ -124,21 +200,19 @@ public class Logger {
         try {
             Thread.sleep(30);
         } catch (InterruptedException e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
+        }
+        if (IsGUIServerLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForServer.WriteToServerLog(time.format(formatter)+" [warning] "+msg);
+        }
+        else if (IsGUIClientLogger)
+        {
+            LocalTime time = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            GUIForClient.WriteToLog(time.format(formatter)+" [warning] "+msg);
         }
         System.out.print(">");
     }

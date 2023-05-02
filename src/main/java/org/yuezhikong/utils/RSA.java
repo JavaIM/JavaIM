@@ -16,65 +16,37 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 public class RSA {
-    public static KeyData loadPublicKeyFromFile(String filePath)
+    public static CustomVar.KeyData loadPublicKeyFromFile(String filePath)
     {
         try {
             String keyString = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
-            KeyData keyData = new KeyData();
+            CustomVar.KeyData keyData = new CustomVar.KeyData();
             keyData.PublicKey = keyString;
             return keyData;
         }
         catch (IOException e)
         {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
             return null;
         }
     }
-    public static KeyData loadPrivateKeyFromFile(String filePath)
+    public static CustomVar.KeyData loadPrivateKeyFromFile(String filePath)
     {
         try {
             String keyString = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
-            KeyData keyData = new KeyData();
+            CustomVar.KeyData keyData = new CustomVar.KeyData();
             keyData.PrivateKey = keyString;
             return keyData;
         }
         catch (IOException e)
         {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
             return null;
         }
     }
-    public static KeyData generateKeyToReturn()
+    public static CustomVar.KeyData generateKeyToReturn()
     {
-        KeyData keyData = new KeyData();
+        CustomVar.KeyData keyData = new CustomVar.KeyData();
         KeyPair pair = SecureUtil.generateKeyPair("RSA");
         keyData.privateKey = pair.getPrivate();
         keyData.publicKey = pair.getPublic();
@@ -96,21 +68,7 @@ public class RSA {
             FileUtils.writeStringToFile(new File(PrivateKeyFile), privateKeyString, StandardCharsets.UTF_8);
         } catch (IOException e)
         {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            pw.flush();
-            sw.flush();
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug(sw.toString());
-            pw.close();
-            try {
-                sw.close();
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-            }
+            SaveStackTrace.saveStackTrace(e);
         }
     }
 

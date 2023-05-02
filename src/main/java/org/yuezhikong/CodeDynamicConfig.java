@@ -2,6 +2,8 @@ package org.yuezhikong;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
+    //是否是GUI模式
+    private static final boolean GUIMode = true;
     //协议版本
     private static final int ProtocolVersion = 1;
     //本程序版本：
@@ -19,8 +21,7 @@ public final class CodeDynamicConfig {
     //本版本为实验性版本
     private static final boolean ThisVersionIsExpVersion = false;
     //如果为测试性版本，则信息为：
-    private static final String ExpVersionText = "此版本包括一个测试性AES加密系统," +
-            "此系统有助于解决纯RSA加密造成的卡顿问题";
+    private static final String ExpVersionText = "此版本包含测试gui";
     //AES加密系统（依赖于RSA加密系统）
     private static final boolean AES_Mode = true;
 
@@ -41,6 +42,7 @@ public final class CodeDynamicConfig {
     public static String MySQLDataBaseUser = "JavaIM";
     //MySQL数据库密码
     public static String MySQLDataBasePasswd = "JavaIM";
+
 
     public static boolean GetPluginSystemMode() { return PluginSystem; }
     public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }
@@ -72,5 +74,9 @@ public final class CodeDynamicConfig {
 
     public static String getExpVersionText() {
         return ExpVersionText;
+    }
+
+    public static boolean isGUIMode() {
+        return GUIMode;
     }
 }

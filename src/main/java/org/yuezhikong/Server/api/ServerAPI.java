@@ -1,20 +1,21 @@
 package org.yuezhikong.Server.api;
 
 import com.google.gson.Gson;
-import org.apache.logging.log4j.Level;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.io.BufferedWriter;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
 import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
@@ -30,12 +31,38 @@ import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
  */
 public interface ServerAPI {
     /**
-     * 将消息转换为Protocol
+     * 将命令进行格式化
+     * @param Command 原始命令信息
+     * @return 命令和参数
+     */
+    static CustomVar.Command CommandFormat(String Command)
+    {
+        String command;
+        String[] argv;
+        {
+            String[] CommandLineFormated = Command.split("\\s+"); //分割一个或者多个空格
+            command = CommandLineFormated[0];
+            argv = new String[CommandLineFormated.length - 1];
+            int j = 0;//要删除的字符索引
+            int i = 0;
+            int k = 0;
+            while (i < CommandLineFormated.length) {
+                if (i != j) {
+                    argv[k] = CommandLineFormated[i];
+                    k++;
+                }
+                i++;
+            }
+        }
+        return new CustomVar.Command(command,argv);
+    }
+    /**
+     * 将聊天消息转换为Protocol
      * @param Message 原始信息
      * @param Version 协议版本
      * @return 转换为Protocol的Json格式
      */
-    private static String ProtocolRequest(String Message,int Version)
+    static String ProtocolRequest(String Message,int Version)
     {
         // 将消息根据Protocol封装
         Gson gson = new Gson();
@@ -83,104 +110,75 @@ public interface ServerAPI {
             SaveStackTrace.saveStackTrace(e);
         }
     }
+
     /**
-     * 向所有客户端发信
+     * 新的向所有客户端发信api
      * @param inputMessage 要发信的信息
      * @param ServerInstance 服务器实例
      */
-    static void SendMessageToAllClient(String inputMessage, Server ServerInstance)
+    static void SendMessageToAllClient(String inputMessage,Server ServerInstance)
     {
-        String Message = inputMessage;
-        String MessageJson = ProtocolRequest(Message,CodeDynamicConfig.getProtocolVersion());
-        int i = 0;
-        int tmpclientidall = ServerInstance.getClientIDAll();
-        tmpclientidall = tmpclientidall - 1;
-        try {
-            while (true) {
-                Message = MessageJson;
-                if (i > tmpclientidall) {
-                    break;
-                }
-                Socket sendsocket = ServerInstance.getUsers().get(i).GetUserSocket();
-                if (sendsocket == null) {
-                    i = i + 1;
-                    continue;
-                }
-                if (!ServerInstance.getUsers().get(i).GetUserLogined())
-                {
-                    i = i + 1;
-                    continue;
-                }
-                if (GetRSA_Mode()) {
-                    String UserPublicKey = ServerInstance.getUsers().get(i).GetUserPublicKey();
-                    if (UserPublicKey == null) {
-                        i = i + 1;
-                        continue;
-                    }
-                    Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
-                    if (isAES_Mode())
-                    {
-                        Message = ServerInstance.getUsers().get(i).GetUserAES().encryptBase64(Message);
-                    }
-                    else {
-                        Message = RSA.encrypt(Message, UserPublicKey);
-                    }
-                }
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(sendsocket.getOutputStream()));
-                try {
-                    writer.write(Message);
-                    writer.newLine();
-                    writer.flush();
-                }
-                catch (IOException e)
-                {
-                    if ("Broken pipe".equals(e.getMessage()))
-                    {
-                        ServerInstance.getUsers().get(i).UserDisconnect();
-                        i = i + 1;
-                        continue;
-                    }
-                }
-                if (i == tmpclientidall) {
-                    break;
-                }
-                i = i + 1;
-            }
-        } catch (IOException e) {
-            Server.logger.log(Level.ERROR, "SendMessage时出现IOException!");
-            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
-        } catch (Exception e) {
-            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+        List<user> ValidClientList = GetValidClientList(ServerInstance,true);
+        for (user User : ValidClientList)
+        {
+            SendMessageToUser(User,inputMessage);
         }
+    }
+    /**
+     * 获取有效的客户端列表
+     * @param ServerInstance 服务端实例
+     * @param DetectLoginStatus 是否检测已登录
+     * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
+     * @return 有效的客户端列表
+     */
+    static List<user> GetValidClientList(Server ServerInstance,boolean DetectLoginStatus)
+    {
+        List<user> AllClientList = ServerInstance.getUsers();
+        List<user> ValidClientList = new ArrayList<>();
+        for (user User : AllClientList)
+        {
+            if (User == null)
+                continue;
+            if (DetectLoginStatus) {
+                if (!User.GetUserLogined())
+                    continue;
+            }
+            if (User.GetUserSocket() == null)
+                continue;
+            if (CodeDynamicConfig.GetRSA_Mode())
+            {
+                try {
+                    if (User.GetUserPublicKey() == null)
+                        continue;
+                    if (CodeDynamicConfig.isAES_Mode()) {
+                        if (User.GetUserAES() == null)
+                            continue;
+                    }
+                } catch (ModeDisabledException e) {
+                    SaveStackTrace.saveStackTrace(e);
+                }
+            }
+            ValidClientList.add(User);
+        }
+        return ValidClientList;
     }
 
     /**
-     * 获取用户User Data Class
+     * 新的获取用户User Data Class api
      * @param UserName 用户名
      * @param ServerInstance 服务器实例
+     * @param DetectLoginStatus 是否检测已登录
      * @return 用户User Data Class
      * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
-    static user GetUserByUserName(String UserName, Server ServerInstance) throws AccountNotFoundException {
-        int i = 0;
-        int tmpclientidall = ServerInstance.getClientIDAll();
-        tmpclientidall = tmpclientidall - 1;
-        while (true) {
-            if (i > tmpclientidall) {
-                throw new AccountNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
+    static user GetUserByUserName(String UserName, Server ServerInstance,boolean DetectLoginStatus) throws AccountNotFoundException {
+        List<user> ValidClientList = GetValidClientList(ServerInstance,DetectLoginStatus);
+        for (user User : ValidClientList)
+        {
+            if (User.GetUserName().equals(UserName)) {
+                return User;
             }
-            user RequestUser = Server.GetInstance().getUsers().get(i);
-            if (RequestUser.GetUserSocket() == null) {
-                i = i + 1;
-                continue;
-            }
-            if (RequestUser.GetUserName().equals(UserName)) {
-                return RequestUser;
-            }
-            if (i == tmpclientidall) {
-                throw new AccountNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
-            }
-            i = i + 1;
         }
+        throw new AccountNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
     }
 }

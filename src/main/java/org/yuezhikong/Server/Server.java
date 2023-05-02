@@ -6,7 +6,10 @@ import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.Server.plugin.load.PluginManager;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
@@ -27,8 +30,8 @@ import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
 public class Server {
     private Thread userAuthThread;
     private boolean ExitSystem = false;
-    public static final org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-    public static final Logger logger = new Logger();
+    public static final org.apache.logging.log4j.Logger DEBUG = LogManager.getLogger("Debug");
+    public Logger logger;
     private final List<user> Users = new ArrayList<>();
     //private final List<Socket> sockets = new ArrayList<>();
     private int clientIDAll = 0;
@@ -56,7 +59,7 @@ public class Server {
     /**
      * @apiNote 自动创建RSA key而不替换已存在的key
      */
-    private void RSA_KeyAutogenerate()
+    protected void RSA_KeyAutogenerate()
     {
         if (!(new File("Public.key").exists()))
         {
@@ -122,7 +125,7 @@ public class Server {
     /**
      * @apiNote 启动用户登录的线程
      */
-    private void StartUserAuthThread()
+    protected void StartUserAuthThread()
     {
         Runnable UserAuthThread = () -> {
             while (true)
@@ -180,7 +183,7 @@ public class Server {
     /**
      * 启动timer
      */
-    private void StartTimer()
+    protected void StartTimer()
     {
         timer = new timer();
         timer.Start();
@@ -188,78 +191,57 @@ public class Server {
     /**
      * @apiNote 启动命令系统
      */
-    private void StartCommandSystem()
+    protected void StartCommandSystem()
     {
         logger.info("服务端启动完成");
         Scanner sc = new Scanner(System.in);
         while (true)
         {
-            String command;
-            String[] argv;
-            {
-                String CommandLine = sc.nextLine();
-                String[] CommandLineFormated = CommandLine.split("\\s+"); //分割一个或者多个空格
-                command = CommandLineFormated[0];
-                argv = new String[CommandLineFormated.length - 1];
-                int j = 0;//要删除的字符索引
-                int i = 0;
-                int k = 0;
-                while (i < CommandLineFormated.length) {
-                    if (i != j) {
-                        argv[k] = CommandLineFormated[i];
-                        k++;
-                    }
-                    i++;
-                }
-            }
+            CustomVar.Command CommandRequestReturn = ServerAPI.CommandFormat(sc.nextLine());
+            String command = CommandRequestReturn.Command();
+            logger.info("控制台 执行了命令 /"+command);
 
-            //此时argv就是你想的那个argv，各个子指令均在这里，你可以自行更改
-            //command就是命令类型
             if (command.equals("quit"))
             {
-                break;
+                ExitSystem = true;
+                try {
+                    serverSocket.close();
+                    userAuthThread.join();
+                } catch (IOException | InterruptedException e) {
+                    SaveStackTrace.saveStackTrace(e);
+                    timer.cancel();
+                    if (CodeDynamicConfig.GetPluginSystemMode()) {
+                        try {
+                            PluginManager.getInstance("./plugins").OnProgramExit(1);
+                        } catch (ModeDisabledException ex) {
+                            System.exit(1);
+                        }
+                    }
+                }
+                timer.cancel();
+                if (CodeDynamicConfig.GetPluginSystemMode()) {
+                    try {
+                        PluginManager.getInstance("./plugins").OnProgramExit(0);
+                    } catch (ModeDisabledException e) {
+                        System.exit(0);
+                    }
+                }
             }
-            CommandRequest("/"+command,argv,null);
-        }
-        ExitSystem = true;
-        try {
-            userAuthThread.join();
-        } catch (InterruptedException e) {
-            SaveStackTrace.saveStackTrace(e);
-            timer.cancel();
-            System.exit(1);
-            if (CodeDynamicConfig.GetPluginSystemMode()) {
-                PluginManager.getInstance("./plugins").OnProgramExit(1);
-            }
-        }
-        timer.cancel();
-        System.exit(0);
-        if (CodeDynamicConfig.GetPluginSystemMode()) {
-            PluginManager.getInstance("./plugins").OnProgramExit(0);
+            CommandRequest("/"+command,CommandRequestReturn.argv(),null);
         }
     }
+
     /**
-     * @apiNote 服务端main函数
-     * @param port 要开始监听的端口
+     * 重置数据库中的用户登录状态，因为服务器重启后，所有用户都会被踢出
      */
-    public Server(int port) {
-        instance = this;
-        RSA_KeyAutogenerate();
-        try {
-            serverSocket = new ServerSocket(port);
-            /* serverSocket.setSoTimeout(10000); */
-        } catch (IOException e) {
-            SaveStackTrace.saveStackTrace(e);
-        }
+    protected void UserLoginStatusReset() {
         Runnable SQLUpdateThread = () -> {
             try {
                 Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                 String sql = "UPDATE UserData SET UserLogged = 0 where UserLogged = 1;";
                 PreparedStatement ps = mySQLConnection.prepareStatement(sql);
                 ps.executeUpdate();
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 SaveStackTrace.saveStackTrace(e);
             }
         };
@@ -272,46 +254,38 @@ public class Server {
             logger.error("发生异常InterruptedException");
             SaveStackTrace.saveStackTrace(e);
         }
-        /*
-        File ConfigFile = new File("./Server.properties");
-        if (!ConfigFile.isFile())
-            System.exit(-1);
-        if (!ConfigFile.exists()) {
-            Main.getInstance().saveJarFiles("/Server.properties", "/");
-        }
-        if (!ConfigFile.canRead())
-            System.exit(-1);
+    }
+
+    /**
+     * 严禁集成到构造函数！
+     * 此函数是由GUIServer重写的，用来替换logger，这样可以将信息传输到GUI
+     */
+    protected void SetupLoggerSystem()
+    {
+        logger = new Logger(false,false,null,null);
+    }
+    /**
+     * @apiNote 服务端main函数
+     * @param port 要开始监听的端口
+     */
+    public Server(int port) {
+        instance = this;
+        SetupLoggerSystem();
+        RSA_KeyAutogenerate();
         try {
-            Properties config = new Properties();
-            InputStream stream = new FileInputStream(ConfigFile);
-            config.load(stream);
-            try {
-                CodeDynamicConfig.MAX_CLIENT = Integer.parseInt(config.getProperty("MAX_CLIENT","-1"));
-                CodeDynamicConfig.EnableLoginSystem = Boolean.parseBoolean(config.getProperty("EnableLoginSystem","true"));
-                CodeDynamicConfig.Use_SQLITE_Mode = Boolean.parseBoolean(config.getProperty("Database.Use_SQLITE_Mode","false"));
-                CodeDynamicConfig.MySQLDataBaseHost = config.getProperty("Database.MySQL.MySQLDataBaseHost","");
-                CodeDynamicConfig.MySQLDataBasePort = config.getProperty("Database.MySQL.MySQLDataBasePort","");
-                CodeDynamicConfig.MySQLDataBaseName = config.getProperty("Database.MySQL.MySQLDataBaseName","");
-                CodeDynamicConfig.MySQLDataBaseUser = config.getProperty("Database.MySQL.MySQLDataBaseUser","");
-                CodeDynamicConfig.MySQLDataBasePasswd = config.getProperty("Database.MySQL.MySQLDataBasePasswd","");
-            }catch (NumberFormatException e)
-            {
-                SaveStackTrace.saveStackTrace(e);
-                logger_log4j.fatal("强制从String转换到int发生错误！");
-                logger_log4j.fatal("请检查您的配置文件！");
-                logger.info("正在退出应用程序");
-                System.exit(-3);
-            }
-            stream.close();
+            serverSocket = new ServerSocket(port);
         } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
-            System.exit(-2);
         }
-         */
+        UserLoginStatusReset();
         StartUserAuthThread();
         StartTimer();
-        //这里"getInstance"其实并不是真的为了获取实例，而是因为启动PluginManager在构造函数
-        PluginManager.getInstance("./plugins");
+        //这里"getInstance"其实并不是真的为了获取实例，而是为了创建新实例
+        try {
+            PluginManager.getInstance("./plugins");
+        } catch (ModeDisabledException e) {
+            e.printStackTrace();
+        }
         StartCommandSystem();
     }
 }

@@ -2,7 +2,8 @@ package org.yuezhikong.Server.UserData;
 
 import cn.hutool.crypto.symmetric.AES;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.Server.Server;
+import org.yuezhikong.Server.plugin.load.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
 import java.io.IOException;
@@ -31,20 +32,25 @@ public class user {
      */
     public void setMuted(boolean muted) {
         if (CodeDynamicConfig.GetPluginSystemMode()) {
-            if (!muted) {
-                if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserUnMute(this)) {
-                    Muted = false;
+            try {
+                if (!muted) {
+                    if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserUnMute(this)) {
+                        Muted = false;
+                    } else {
+                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
+                        logger.info("插件系统阻止了解除禁言操作！");
+                    }
                 } else {
-                    org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
-                    logger.info("插件系统阻止了解除禁言操作！");
+                    if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserMute(this)) {
+                        Muted = true;
+                    } else {
+                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
+                        logger.info("插件系统阻止了禁言操作");
+                    }
                 }
-            } else {
-                if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserMute(this)) {
-                    Muted = true;
-                } else {
-                    org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
-                    logger.info("插件系统阻止了禁言操作");
-                }
+            } catch (Throwable e)
+            {
+                Muted = muted;
             }
         }
         else
@@ -158,12 +164,16 @@ public class user {
         if (CodeDynamicConfig.GetPluginSystemMode()) {
             if (!IsItARefresh)//如果不是刷新登录
             {
-                if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserPermissionChange(this, permissionLevel))//通知插件系统，发生权限更改
-                {
-                    PermissionLevel = permissionLevel;//如果插件系统没有阻止操作，则进行设定
-                } else {
-                    org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
-                    logger.info("插件系统阻止了权限更改操作！");
+                try {
+                    if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserPermissionChange(this, permissionLevel))//通知插件系统，发生权限更改
+                    {
+                        PermissionLevel = permissionLevel;//如果插件系统没有阻止操作，则进行设定
+                    } else {
+                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
+                        logger.info("插件系统阻止了权限更改操作！");
+                    }
+                } catch (ModeDisabledException e) {
+                    PermissionLevel = permissionLevel;
                 }
             } else
                 PermissionLevel = permissionLevel;
@@ -196,10 +206,10 @@ public class user {
     {
         return ClientID;
     }
-    public String GetUserPublicKey() throws Exception {
+    public String GetUserPublicKey() throws ModeDisabledException {
         if (!GetRSA_Mode())
         {
-            throw new Exception("RSA Mode Has Disabled!");
+            throw new ModeDisabledException("RSA Mode Has Disabled!");
         }
         if (UserPublicKey != null) {
             return UserPublicKey;
