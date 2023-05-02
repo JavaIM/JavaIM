@@ -136,6 +136,11 @@ public class Main {
                     }
                 }
             }
+            if (isGUIMode())
+            {
+                Application.launch(GUI.class, args);
+                return;
+            }
             logger.info("欢迎来到JavaIM！版本："+getVersion());
             logger.info("使用客户端模式请输入1，服务端模式请输入2:");
             Scanner sc = new Scanner(System.in);
