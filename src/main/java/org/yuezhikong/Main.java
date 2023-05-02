@@ -25,12 +25,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Proxy;
+import java.net.Socket;
 import java.util.Scanner;
 
 import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Main {
-    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger(false,false,null);
+    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger(false,false,null,null);
     private static Main instance;
     public static Main getInstance()
     {

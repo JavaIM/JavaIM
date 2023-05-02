@@ -169,7 +169,7 @@ public class RequestCommand {
                 {
                     if (User.GetUserPermission() == 1)
                     {
-                        logger.info("/kick ip 端口");
+                        logger.info("/kick 用户名");
                         logger.info("/say 信息");
                         logger.info("/help 查看帮助");
                         logger.info("/quit 退出程序");
@@ -181,7 +181,7 @@ public class RequestCommand {
                 }
                 else
                 {
-                    logger.info("/kick ip 端口");
+                    logger.info("/kick 用户名");
                     logger.info("/say 信息");
                     logger.info("/help 查看帮助");
                     logger.info("/quit 退出程序");
@@ -525,69 +525,19 @@ public class RequestCommand {
                         return;
                     }
                 }
-                if (argv.length >= 2) {
-                    String IpAddress = argv[0];
-                    int Port;
+                if (argv.length >= 1) {
                     try {
-                        Port = Integer.parseInt(argv[1]);
-                    }
-                    catch (NumberFormatException e)
-                    {
-                        if (CodeDynamicConfig.GetDebugMode())
-                        {
-                            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
-                        }
-                        logger.info("输入的命令语法不正确，请检查后再输入");
-                        return;
-                    }
-                    {
-                        int i = 0;
-                        int tmpclientidall = Server.GetInstance().getClientIDAll();
-                        tmpclientidall = tmpclientidall - 1;
-                        try {
-                            while (true) {
-                                if (i > tmpclientidall) {
-                                    logger.info("错误，找不到此用户");
-                                    break;
-                                }
-                                Socket sendsocket = Server.GetInstance().getUsers().get(i).GetUserSocket();
-                                if (sendsocket == null) {
-                                    i = i + 1;
-                                    continue;
-                                }
-                                if (sendsocket.getInetAddress().toString().equals("/"+IpAddress))
-                                {
-                                    if (sendsocket.getPort() == Port)
-                                    {
-                                        logger.info("成功，已关闭IP为:"+sendsocket.getInetAddress()+"端口为："+sendsocket.getPort()+"的连接！");
-                                        sendsocket.close();
-                                        break;
-                                    }
-                                }
-                                if (i == tmpclientidall) {
-                                    logger.info("错误，找不到此用户");
-                                    break;
-                                }
-                                i = i + 1;
-                            }
-                        } catch (IOException e) {
-                            logger.log(Level.ERROR, "遍历用户时出现IOException!");
-                        }
+                        ServerAPI.GetUserByUserName(argv[0], Server.GetInstance(),false).UserDisconnect();
+                    } catch (AccountNotFoundException e) {
+                        logger.info("此用户不存在！");
                     }
                 }
                 else
                 {
-                    logger.info("此命令的语法为：/kick ip 端口");
+                    logger.info("此命令的语法为：/kick 用户名");
                 }
             }
-            default ->{
-                if (ISServer) {
-                    logger.info("无效的命令！");
-                }
-                else {
-                    logger.info("未知的命令，请输入/help查看帮助");
-                }
-            }
+            default -> logger.info("未知的命令，请输入/help查看帮助");
         }
     }
 }

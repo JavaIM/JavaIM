@@ -50,8 +50,8 @@ public class RecvMessageThread extends Thread{
 
     @Override
     public void run() {
-        super.run();
         user CurrentClientClass = Users.get(CurrentClientID);
+        this.setUncaughtExceptionHandler((Thread t, Throwable e)-> CurrentClientClass.UserDisconnect());
         Socket CurrentClientSocket = CurrentClientClass.GetUserSocket();
         try {
             //开始握手

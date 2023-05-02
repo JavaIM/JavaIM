@@ -9,7 +9,7 @@ public class GUIServer extends Server {
 
     @Override
     protected void SetupLoggerSystem() {
-        super.logger = new Logger(true,false,GUIForServer);
+        super.logger = new Logger(true,false,GUIForServer,null);
     }
 
     @Override

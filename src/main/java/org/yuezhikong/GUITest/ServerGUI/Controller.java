@@ -5,6 +5,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
 import org.yuezhikong.CodeDynamicConfig;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.URL;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
@@ -68,7 +70,7 @@ public class Controller implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        logger = new Logger(true,false,Controller.this);
+        logger = new Logger(true,false,Controller.this,null);
         MessageInput.setTextFormatter(new TextFormatter<String>(change -> {
             String newText = change.getText().replaceAll("\n","");
             newText = newText.replaceAll("\r","");
@@ -100,6 +102,15 @@ public class Controller implements Initializable {
     public void SendMessage(ActionEvent actionEvent) {
         if (StartedServer)
         {
+            if (MessageInput.getText().isEmpty())
+            {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("提示");
+                alert.setHeaderText("你不能这样做！");
+                alert.setContentText("你不能发送空消息");
+                alert.showAndWait();
+                return;
+            }
             String msg = "<Server> " + MessageInput.getText();
             new Thread()
             {
@@ -124,6 +135,15 @@ public class Controller implements Initializable {
     public void SendCommand(ActionEvent actionEvent) {
         if (StartedServer) {
             String Command = this.Command.getText();
+            if (Command.isEmpty())
+            {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("提示");
+                alert.setHeaderText("你不能这样做！");
+                alert.setContentText("你不能执行空命令");
+                alert.showAndWait();
+                return;
+            }
             new Thread() {
                 @Override
                 public void run() {
@@ -198,31 +218,41 @@ public class Controller implements Initializable {
             alert.showAndWait();
         }
         else {
-            try {
-                Field field = Server.getClass().getDeclaredField("ExitSystem");
-                field.setAccessible(true);
-                field.set(org.yuezhikong.Server.Server.GetInstance(), true);
-                field.setAccessible(false);
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("警告");
+            alert.setHeaderText("此操作将会退出此程序");
+            alert.setContentText("您确定要这么做吗？");
+            Optional<ButtonType> result = alert.showAndWait();
+            if (result.isPresent()) {
+                if (result.get().equals(ButtonType.YES))
+                {
+                    try {
+                        Field field = Server.getClass().getDeclaredField("ExitSystem");
+                        field.setAccessible(true);
+                        field.set(org.yuezhikong.Server.Server.GetInstance(), true);
+                        field.setAccessible(false);
 
-                field = Server.getClass().getDeclaredField("userAuthThread");
-                field.setAccessible(true);
-                Thread userAuthThread = (Thread) field.get(org.yuezhikong.Server.Server.GetInstance());
-                field.setAccessible(false);
+                        field = Server.getClass().getDeclaredField("userAuthThread");
+                        field.setAccessible(true);
+                        Thread userAuthThread = (Thread) field.get(org.yuezhikong.Server.Server.GetInstance());
+                        field.setAccessible(false);
 
-                field = Server.getClass().getDeclaredField("serverSocket");
-                field.setAccessible(true);
-                ServerSocket ServerSocket = (java.net.ServerSocket) field.get(org.yuezhikong.Server.Server.GetInstance());
-                field.setAccessible(false);
-                ServerSocket.close();
-                userAuthThread.join();
-                org.yuezhikong.Server.Server.GetInstance().timer.cancel();
-                if (CodeDynamicConfig.GetPluginSystemMode()) {
-                    PluginManager.getInstance("./plugins").OnProgramExit(0);
+                        field = Server.getClass().getDeclaredField("serverSocket");
+                        field.setAccessible(true);
+                        ServerSocket ServerSocket = (java.net.ServerSocket) field.get(org.yuezhikong.Server.Server.GetInstance());
+                        field.setAccessible(false);
+                        ServerSocket.close();
+                        userAuthThread.join();
+                        org.yuezhikong.Server.Server.GetInstance().timer.cancel();
+                        if (CodeDynamicConfig.GetPluginSystemMode()) {
+                            PluginManager.getInstance("./plugins").OnProgramExit(0);
+                        }
+                        System.exit(0);
+                    } catch (ModeDisabledException | IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
+                        org.yuezhikong.Server.Server.GetInstance().timer.cancel();
+                        System.exit(1);
+                    }
                 }
-                System.exit(0);
-            } catch (ModeDisabledException | IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
-                org.yuezhikong.Server.Server.GetInstance().timer.cancel();
-                System.exit(1);
             }
         }
     }

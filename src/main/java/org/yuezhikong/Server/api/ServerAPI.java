@@ -128,7 +128,7 @@ public interface ServerAPI {
      * 获取有效的客户端列表
      * @param ServerInstance 服务端实例
      * @param DetectLoginStatus 是否检测已登录
-     * @apiNote 如果此用户未登录，也会被认为为无效用户，所以，请勿长时间保留此数据
+     * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      * @return 有效的客户端列表
      */
     static List<user> GetValidClientList(Server ServerInstance,boolean DetectLoginStatus)

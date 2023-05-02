@@ -262,7 +262,7 @@ public class Server {
      */
     protected void SetupLoggerSystem()
     {
-        logger = new Logger(false,false,null);
+        logger = new Logger(false,false,null,null);
     }
     /**
      * @apiNote 服务端main函数
