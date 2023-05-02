@@ -18,30 +18,16 @@ public class Controller {
     public void OnUserClickStartServer(ActionEvent actionEvent) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("作者的话");
-        alert.setHeaderText("这个部分正在开发中！");
-        if (!CodeDynamicConfig.GetDebugMode()) {
-            alert.setContentText("前面的区域以后再来探索吧!");
-
-            alert.showAndWait();
-        }
-        else
-        {
-            alert.setContentText("导致存在一些bug");
-            alert.showAndWait();
-
-            alert.setAlertType(Alert.AlertType.WARNING);
-            alert.setHeaderText("最后一次警告");
-            alert.setContentText("此部分仍在开发中，可能存在问题！");
-            alert.showAndWait();
-            org.yuezhikong.GUITest.ServerGUI.GUI ServerGUI = new org.yuezhikong.GUITest.ServerGUI.GUI();
-            Stage StageOfServerGUI=new Stage();
-            try {
-                ServerGUI.start(StageOfServerGUI);
-                GUI.getStage().hide();
-                GUI.getStage().close();
-            } catch (Exception e) {
-                SaveStackTrace.saveStackTrace(e);
-            }
+        alert.setHeaderText("此功能最新加入，可能存在问题");
+        alert.showAndWait();
+        org.yuezhikong.GUITest.ServerGUI.GUI ServerGUI = new org.yuezhikong.GUITest.ServerGUI.GUI();
+        Stage StageOfServerGUI=new Stage();
+        try {
+            ServerGUI.start(StageOfServerGUI);
+            GUI.getStage().hide();
+            GUI.getStage().close();
+        } catch (Exception e) {
+            SaveStackTrace.saveStackTrace(e);
         }
     }
 
@@ -49,30 +35,16 @@ public class Controller {
     public void OnUserClickStartClient(ActionEvent actionEvent) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("作者的话");
-        alert.setHeaderText("这个部分正在开发中！");
-        if (!CodeDynamicConfig.GetDebugMode()) {
-            alert.setContentText("前面的区域以后再来探索吧!");
-
-            alert.showAndWait();
-        }
-        else
-        {
-            alert.setContentText("导致存在一些bug");
-            alert.showAndWait();
-
-            alert.setAlertType(Alert.AlertType.WARNING);
-            alert.setHeaderText("最后一次警告");
-            alert.setContentText("此部分仍在开发中，可能存在问题！");
-            alert.showAndWait();
-            org.yuezhikong.GUITest.ClientGUI.GUI ClientGUI = new org.yuezhikong.GUITest.ClientGUI.GUI();
-            Stage StageOfClientGUI=new Stage();
-            try {
-                ClientGUI.start(StageOfClientGUI);
-                GUI.getStage().hide();
-                GUI.getStage().close();
-            } catch (Exception e) {
-                SaveStackTrace.saveStackTrace(e);
-            }
+        alert.setHeaderText("此功能最新加入，可能存在问题");
+        alert.showAndWait();
+        org.yuezhikong.GUITest.ClientGUI.GUI ClientGUI = new org.yuezhikong.GUITest.ClientGUI.GUI();
+        Stage StageOfClientGUI=new Stage();
+        try {
+            ClientGUI.start(StageOfClientGUI);
+            GUI.getStage().hide();
+            GUI.getStage().close();
+        } catch (Exception e) {
+            SaveStackTrace.saveStackTrace(e);
         }
     }
 

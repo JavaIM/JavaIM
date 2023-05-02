@@ -11,7 +11,7 @@ public final class CodeDynamicConfig {
     //目前最新的Database协议版本
     private static final int TheLatestDatabaseProtocolVersion = 2;
     //调试模式
-    private static final boolean Debug_Mode = true;
+    private static final boolean Debug_Mode = false;
     //About System
     public static final boolean About_System = true;
     //RSA加密功能
