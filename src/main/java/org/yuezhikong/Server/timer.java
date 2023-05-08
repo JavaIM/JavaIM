@@ -18,23 +18,14 @@ import java.util.*;
 public class timer
 {
     TimerAllSecond Timer1 = null;
-    TimerAllMinute Timer2 = null;
     public void Start() {
         if (Timer1 != null)
         {
             Timer1.cancel();
         }
-        if (Timer2 != null)
-        {
-            Timer2.cancel();
-        }
         Timer timer = new Timer(true);
         Timer1 = new TimerAllSecond();
         timer.schedule(Timer1,0,1000);
-
-        Timer timer1 = new Timer(true);
-        Timer2 = new TimerAllMinute();
-        timer1.schedule(Timer2,60000);
 
     }
     public static class TimerAllSecond extends TimerTask{
@@ -92,39 +83,11 @@ public class timer
             }
         }
     }
-    public static class TimerAllMinute extends TimerTask {
-        @Override
-        public void run()
-        {
-            //每分钟执行的代码
-            Thread thread = new Thread(()->{
-                //刷新命令列表
-                try {
-                    List<CustomVar.CommandInformation> PluginSetCommands = new ArrayList<>();
-                    for (Plugin plugin : PluginManager.getInstance("./plugins").getPluginList())
-                    {
-                        if (plugin.getRegisteredCommand().size() > 0)
-                        {
-                            PluginSetCommands.addAll(plugin.getRegisteredCommand());
-                        }
-                    }
-                    Server.GetInstance().PluginSetCommands = PluginSetCommands;
-                } catch (ModeDisabledException ignore) {
-                }
-            });
-            thread.setName("Flush Command List Thread");
-            thread.start();
-        }
-    }
     public void cancel()
     {
         if (Timer1 != null) {
             Timer1.cancel();
             Timer1 = null;
-        }
-        if (Timer2 != null) {
-            Timer2.cancel();
-            Timer2 = null;
         }
     }
 }
