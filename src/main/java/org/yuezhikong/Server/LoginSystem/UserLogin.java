@@ -69,9 +69,15 @@ public class UserLogin{
                     LoginUser.UserDisconnect();
                 }
                 // type目前只实现了chat,FileTransfer延后
-                if (protocolData.getMessageHead().getType() != 1)
+                if (protocolData.getMessageHead().getType().equals("FileTransfer"))
                 {
                     ServerAPI.SendMessageToUser(LoginUser,"此服务器暂不支持FileTransfer协议");
+                    return false;
+                }
+                else if (!protocolData.getMessageHead().getType().equals("Chat"))
+                {
+                    ServerAPI.SendMessageToUser(LoginUser,"警告，数据包非法，将会发回");
+                    return false;
                 }
                 UserSelect = protocolData.getMessageBody().getMessage();
                 int Select = Integer.parseInt(UserSelect);
@@ -101,11 +107,17 @@ public class UserLogin{
                 }
                 UserName = protocolData.getMessageBody().getMessage();
                 // type目前只实现了chat,FileTransfer延后
-                if (protocolData.getMessageHead().getType() != 1)
+                if (protocolData.getMessageHead().getType().equals("FileTransfer"))
                 {
                     ServerAPI.SendMessageToUser(LoginUser,"此服务器暂不支持FileTransfer协议");
+                    return false;
                 }
-                //用户名暴力格式化
+                else if (!protocolData.getMessageHead().getType().equals("Chat"))
+                {
+                    ServerAPI.SendMessageToUser(LoginUser,"警告，数据包非法，将会发回");
+                    return false;
+                }
+                //用户名暴力格式化，防止用奇奇怪怪的名字绕过命令选择
                 CustomVar.Command username = ServerAPI.CommandFormat(UserName);
                 StringBuilder builder = new StringBuilder();
                 builder.append(username.Command());
@@ -141,9 +153,15 @@ public class UserLogin{
                     LoginUser.UserDisconnect();
                 }
                 // type目前只实现了chat,FileTransfer延后
-                if (protocolData.getMessageHead().getType() != 1)
+                if (protocolData.getMessageHead().getType().equals("FileTransfer"))
                 {
                     ServerAPI.SendMessageToUser(LoginUser,"此服务器暂不支持FileTransfer协议");
+                    return false;
+                }
+                else if (!protocolData.getMessageHead().getType().equals("Chat"))
+                {
+                    ServerAPI.SendMessageToUser(LoginUser,"警告，数据包非法，将会发回");
+                    return false;
                 }
                 Password = protocolData.getMessageBody().getMessage();
                 //上方为请求用户输入用户名、密码

@@ -169,9 +169,15 @@ public class RecvMessageThread extends Thread{
                         CurrentClientClass.UserDisconnect();
                     }
                     // type目前只实现了chat,FileTransfer延后
-                    if (protocolData.getMessageHead().getType() != 1)
+                    if (protocolData.getMessageHead().getType().equals("FileTransfer"))
                     {
                         ServerAPI.SendMessageToUser(CurrentClientClass,"此服务器暂不支持FileTransfer协议");
+                        break;
+                    }
+                    else if (!protocolData.getMessageHead().getType().equals("Chat"))
+                    {
+                        ServerAPI.SendMessageToUser(CurrentClientClass,"警告，数据包非法，将会发回");
+                        break;
                     }
                     ChatMessage = protocolData.getMessageBody().getMessage();
                     //客户端可以非法发送换行修复

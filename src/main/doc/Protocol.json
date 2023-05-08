@@ -1,7 +1,7 @@
 {
     "MessageHead": {
         "Version": 0,
-        "type": 0
+        "type": ""
     },
     "MessageBody": {
         "Message": "",

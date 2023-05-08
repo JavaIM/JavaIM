@@ -1,42 +1,38 @@
 package org.yuezhikong.utils;
 
 /**
- * 接受/发送的json的反序列化流程
+ * 接受/发送的json的序列化/反序列化流程
  * 如果修改了protocol，请使用GsonFormat插件直接替换
  */
 public class ProtocolData {
-    /**
-     * MessageHead : {"Version":0,"type":0}
-     * MessageBody : {"Message":"","FileLong":0}
-     */
 
-    private MessageHeadBean MessageHead;
-    private MessageBodyBean MessageBody;
+    private MessageHead MessageHead;
+    private MessageBody MessageBody;
 
-    public MessageHeadBean getMessageHead() {
+    public MessageHead getMessageHead() {
         return MessageHead;
     }
 
-    public void setMessageHead(MessageHeadBean MessageHead) {
+    public void setMessageHead(MessageHead MessageHead) {
         this.MessageHead = MessageHead;
     }
 
-    public MessageBodyBean getMessageBody() {
+    public MessageBody getMessageBody() {
         return MessageBody;
     }
 
-    public void setMessageBody(MessageBodyBean MessageBody) {
+    public void setMessageBody(MessageBody MessageBody) {
         this.MessageBody = MessageBody;
     }
 
-    public static class MessageHeadBean {
+    public static class MessageHead {
         /**
          * Version : 0
-         * type : 0
+         * type :
          */
 
         private int Version;
-        private int type;
+        private String type;
 
         public int getVersion() {
             return Version;
@@ -46,16 +42,16 @@ public class ProtocolData {
             this.Version = Version;
         }
 
-        public int getType() {
+        public String getType() {
             return type;
         }
 
-        public void setType(int type) {
+        public void setType(String type) {
             this.type = type;
         }
     }
 
-    public static class MessageBodyBean {
+    public static class MessageBody {
         /**
          * Message :
          * FileLong : 0

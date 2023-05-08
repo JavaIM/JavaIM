@@ -5,16 +5,18 @@ import org.yuezhikong.Server.UserData.user;
 
 /**
  * 插件父级interface
- * 建议插件不要直接调用内部class，而是使用API进行修改
- * 目前API仍不完善，后续会添加API
+ * <p>建议插件不要直接调用内部class，而是使用API进行修改</p>
+ * <p>目前API仍不完善，后续会添加API</p>
+ * <p>建议继承JavaPlugin并重写而不是实现本接口</p>
+ * <p>如果仍要实现本接口来实现，请参阅JavaPlugin</p>
+ * @see org.yuezhikong.Server.plugin.JavaPlugin
  * @author AlexLiuDev233
  * @Date 2023/02/27
  */
 @SuppressWarnings("unused")
 public interface Plugin {
     /**
-     * 插件的入口点，请继承本class后通过@Override注解重写本方法！
-     * 否则，您的插件将不会发生任何行为！
+     * 插件的入口点，在服务端启动时调用
      * @param ServerInstance 服务端实例
      */
     void OnLoad(Server ServerInstance);
