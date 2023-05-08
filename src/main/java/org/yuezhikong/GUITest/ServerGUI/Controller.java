@@ -63,7 +63,7 @@ public class Controller implements Initializable {
         Platform.runLater(()->
                 {
                     ChatLog.appendText(msg+"\n");
-                    ChatLog.positionCaret(Log.getText().length());
+                    ChatLog.positionCaret(ChatLog.getText().length());
                 }
         );
     }

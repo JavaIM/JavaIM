@@ -55,7 +55,7 @@ public class Controller implements Initializable {
         Platform.runLater(()->
                 {
                     MessageArea.appendText(msg+"\n");
-                    MessageArea.positionCaret(Log.getText().length());
+                    MessageArea.positionCaret(MessageArea.getText().length());
                 }
         );
     }

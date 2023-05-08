@@ -9,6 +9,7 @@ import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -21,8 +22,17 @@ import java.util.Locale;
  */
 public class PluginManager {
     private final List<Plugin> PluginList = new ArrayList<>();
+    private final List<PluginJavaLoader> classLoaderList = new ArrayList<>();
     private int NumberOfPlugins = 0;
     private static PluginManager Instance;
+
+    /**
+     * 获取插件列表
+     * @return 插件列表
+     */
+    public List<Plugin> getPluginList() {
+        return PluginList;
+    }
 
     /**
      * 获取插件管理器实例
@@ -100,18 +110,36 @@ public class PluginManager {
             return;
         }
         for (File s : PluginFileList) {
+            PluginJavaLoader classLoader = null;
             try {
-                PluginJavaLoader classLoader = new PluginJavaLoader(ClassLoader.getSystemClassLoader(),s);
-                classLoader.ThisPlugin.OnLoad(Server.GetInstance());
-                PluginList.add(classLoader.ThisPlugin);
-                NumberOfPlugins = NumberOfPlugins + 1;
+                classLoader = new PluginJavaLoader(ClassLoader.getSystemClassLoader(),s);
+                if (classLoader.ThisPlugin.getInformation().PluginName().isEmpty() || classLoader.ThisPlugin.getInformation().plugin() == null || !classLoader.ThisPlugin.getInformation().Registered() || classLoader.ThisPlugin.getInformation().PluginAuthor().isEmpty() || classLoader.ThisPlugin.getInformation().PluginVersion().isEmpty())
+                {
+                    Server.GetInstance().logger.info("加载插件文件"+s.getName()+"失败！原因，未按照要求填写基本信息");
+                    throw new Exception("Run ClassLoader Close");
+                }
+                else
+                {
+                    classLoaderList.add(classLoader);
+                    classLoader.ThisPlugin.OnLoad(Server.GetInstance());
+                    PluginList.add(classLoader.ThisPlugin);
+                    NumberOfPlugins = NumberOfPlugins + 1;
+                }
             }
             catch (Throwable e)
             {
-                    org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
-                    logger.error("加载插件文件"+s.getName()+"失败！请检查此插件！");
-                    SaveStackTrace.saveStackTrace(e);
+                if (classLoader != null)
+                {
+                    try {
+                        classLoader.close();
+                    } catch (IOException ex) {
+                        SaveStackTrace.saveStackTrace(e);
+                    }
                 }
+                org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
+                logger.error("加载插件文件"+s.getName()+"失败！请检查此插件！");
+                SaveStackTrace.saveStackTrace(e);
+            }
         }
     }
 
@@ -129,6 +157,13 @@ public class PluginManager {
         else {
             for (Plugin plugin : PluginList) {
                 plugin.OnUnLoad(Server.GetInstance());
+            }
+            for (PluginJavaLoader ClassLoader : classLoaderList) {
+                try {
+                    ClassLoader.close();
+                } catch (IOException e) {
+                    SaveStackTrace.saveStackTrace(e);
+                }
             }
         }
         System.exit(ProgramExitCode);

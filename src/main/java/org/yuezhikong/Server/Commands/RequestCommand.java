@@ -1,6 +1,5 @@
 package org.yuezhikong.Server.Commands;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
@@ -8,6 +7,7 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.Server.plugin.load.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -210,6 +210,11 @@ public class RequestCommand {
                 }
                 if (About_System) {
                     logger.info("/about 查看服务端程序相关信息");
+                }
+                //插件命令处理
+                for (CustomVar.CommandInformation commandInformation : Server.GetInstance().PluginSetCommands)
+                {
+                    logger.info("/"+commandInformation.Command()+" 命令来源："+commandInformation.plugin().getInformation().PluginName()+"来自"+commandInformation.plugin().getInformation().PluginName()+"的帮助信息："+commandInformation.Help());
                 }
                 logger.info("/list 查看服务器用户基本信息");
                 logger.info("注：");
@@ -532,7 +537,17 @@ public class RequestCommand {
                     logger.info("此命令的语法为：/kick 用户名");
                 }
             }
-            default -> logger.info("未知的命令，请输入/help查看帮助");
+            default -> {
+                for (CustomVar.CommandInformation commandInformation : Server.GetInstance().PluginSetCommands)
+                {
+                    if (("/"+commandInformation.Command()).equals(command))
+                    {
+                        commandInformation.plugin().OnCommand(command,argv);
+                        break;
+                    }
+                }
+                logger.info("未知的命令，请输入/help查看帮助");
+            }
         }
     }
 }

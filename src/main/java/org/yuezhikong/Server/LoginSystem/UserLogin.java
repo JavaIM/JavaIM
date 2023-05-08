@@ -8,16 +8,17 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.CustomVar;
+import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 
 import javax.security.auth.login.AccountNotFoundException;
-import javax.security.auth.login.FailedLoginException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
+import static org.yuezhikong.Server.api.ServerAPI.SendMessageToAllClient;
 import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
 import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
 
@@ -25,13 +26,13 @@ public class UserLogin{
     /**
      * 是否允许用户登录
      * @param LoginUser 请求登录的用户
+     * @param logger Logger
      * @return 是/否允许
      * @throws UserAlreadyLoggedInException 用户已经登录了
      * @throws NullPointerException 用户的某些信息读取出NULL
-     * @throws FailedLoginException 由于用户的原因导致登录失败
      * @apiNote 虽然在执行的期间，就会写入到user.class中，但也请您根据返回值做是否踢出登录等的处理
      */
-    public static boolean WhetherTheUserIsAllowedToLogin(user LoginUser) throws UserAlreadyLoggedInException, NullPointerException, FailedLoginException {
+    public static boolean WhetherTheUserIsAllowedToLogin(user LoginUser,Logger logger) throws UserAlreadyLoggedInException, NullPointerException {
         if (LoginUser.GetUserLogined())
         {
             throw new UserAlreadyLoggedInException("This User Is Logined!");
@@ -190,7 +191,13 @@ public class UserLogin{
                     }
                     else
                     {
-                        SendMessageToUser(LoginUser,"登录成功！");
+                        StringBuilder UserLoginSuccessfulText = new StringBuilder();
+                        UserLoginSuccessfulText.append("登录成功！欢迎").append(UserName).append("!");
+                        SendMessageToUser(LoginUser,UserLoginSuccessfulText.toString());
+                        UserLoginSuccessfulText.setLength(0);
+                        UserLoginSuccessfulText.append("用户：").append(UserName).append(" 蹦蹦跳跳的进入了聊天！");
+                        logger.ChatMsg(UserLoginSuccessfulText.toString());
+                        SendMessageToAllClient(UserLoginSuccessfulText.toString(),Server.GetInstance());
                     }
                     return loginRequestThread.GetReturn();
                 }
@@ -207,7 +214,15 @@ public class UserLogin{
                     }
                     else
                     {
-                        SendMessageToUser(LoginUser,"注册成功！");
+                        StringBuilder UserRegisterSuccessFulText = new StringBuilder();
+                        UserRegisterSuccessFulText.append("注册成功！欢迎").append(UserName).append("的加入！");
+                        SendMessageToUser(LoginUser,UserRegisterSuccessFulText.toString());
+                        UserRegisterSuccessFulText.setLength(0);
+                        UserRegisterSuccessFulText.append("新用户：").append(UserName).append(" 蹦蹦跳跳的进入了聊天！");
+                        logger.ChatMsg(UserRegisterSuccessFulText.toString());
+                        SendMessageToAllClient(UserRegisterSuccessFulText.toString(),Server.GetInstance());
+                        SendMessageToAllClient("有新人来了哎！",Server.GetInstance());
+                        logger.ChatMsg("有新人来了哎！");
                     }
                     return RegisterRequestThread.GetReturn();
                 }
