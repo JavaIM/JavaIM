@@ -19,6 +19,7 @@ package org.yuezhikong;
 import javafx.application.Application;
 import org.yuezhikong.GUITest.MainGUI.GUI;
 import org.yuezhikong.Server.Server;
+import org.yuezhikong.utils.Properties;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
@@ -108,10 +109,27 @@ public class Main {
         System.arraycopy(src, begin, bs, begin, count);
         return bs;
     }
+    public static void CreateServerProperties(){
+        Properties prop = new Properties();
+        prop.CreateServerprop();
+    }
+    public static void CreateClientProperties(){
+        Properties prop = new Properties();
+        prop.CreateClientprop();
+    }
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
+        if (!(new File("server.properties").exists())){
+            logger.info("目录下没有检测到服务端配置文件，正在创建");
+            CreateServerProperties();
+        }
+        if (!(new File("client.properties").exists())){
+            logger.info("目录下没有检测到客户端配置文件，正在创建");
+            CreateClientProperties();
+        }
+
         try {
             if (isThisVersionIsExpVersion())
             {

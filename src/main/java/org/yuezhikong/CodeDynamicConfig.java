@@ -1,9 +1,12 @@
 package org.yuezhikong;
 
+import static org.yuezhikong.utils.Properties.LoadClientProperties;
+import static org.yuezhikong.utils.Properties.LoadServerProperties;
+
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //是否是GUI模式
-    private static final boolean GUIMode = true;
+    private static final boolean GUIMode = Boolean.parseBoolean(LoadClientProperties().getProperty("GUIMode"));
     //协议版本
     private static final int ProtocolVersion = 1;
     //本程序版本：
@@ -27,21 +30,21 @@ public final class CodeDynamicConfig {
 
     //动态区，可动态通过配置文件修改
     //最大客户端数量，输入-1代表禁用
-    public static int MAX_CLIENT = -1;
+    public static int MAX_CLIENT = Integer.parseInt(LoadServerProperties().getProperty("MAX_CLIENT"));
     //是否启用登录系统
-    public static boolean EnableLoginSystem = true;
+    public static boolean EnableLoginSystem = Boolean.parseBoolean(LoadServerProperties().getProperty("EnableLoginSystem"));
     //是否使用SQLITE
-    public static boolean Use_SQLITE_Mode = true;
+    public static boolean Use_SQLITE_Mode = Boolean.parseBoolean(LoadServerProperties().getProperty("Use_SQLITE_Mode"));
     //MySQL数据库地址
-    public static String MySQLDataBaseHost = "127.0.0.1";
+    public static String MySQLDataBaseHost = LoadServerProperties().getProperty("MySQLDataBaseHost");
     //MySQL数据库端口
-    public static String MySQLDataBasePort = "3306";
+    public static String MySQLDataBasePort = LoadServerProperties().getProperty("MySQLDataBasePort");
     //MySQL数据库名称
-    public static String MySQLDataBaseName = "JavaIM";
+    public static String MySQLDataBaseName = LoadServerProperties().getProperty("MySQLDataBaseName");
     //MySQL数据库用户
-    public static String MySQLDataBaseUser = "JavaIM";
+    public static String MySQLDataBaseUser = LoadServerProperties().getProperty("MySQLDataBaseUser");
     //MySQL数据库密码
-    public static String MySQLDataBasePasswd = "JavaIM";
+    public static String MySQLDataBasePasswd = LoadServerProperties().getProperty("MySQLDataBasePasswd");
 
 
     public static boolean GetPluginSystemMode() { return PluginSystem; }
