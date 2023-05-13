@@ -28,6 +28,7 @@ import java.util.Scanner;
 import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
 
 public class Server {
+    public final List<CustomVar.CommandInformation> PluginSetCommands = new ArrayList<>();
     private Thread userAuthThread;
     private boolean ExitSystem = false;
     public static final org.apache.logging.log4j.Logger DEBUG = LogManager.getLogger("Debug");

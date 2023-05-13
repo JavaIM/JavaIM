@@ -57,21 +57,21 @@ public interface ServerAPI {
         return new CustomVar.Command(command,argv);
     }
     /**
-     * 将聊天消息转换为Protocol
+     * 将聊天消息转换为聊天协议格式
      * @param Message 原始信息
      * @param Version 协议版本
-     * @return 转换为Protocol的Json格式
+     * @return 转换为的聊天协议格式
      */
-    static String ProtocolRequest(String Message,int Version)
+    static String ChatProtocolRequest(String Message, int Version)
     {
-        // 将消息根据Protocol封装
+        // 将消息根据聊天协议封装
         Gson gson = new Gson();
         ProtocolData protocolData = new ProtocolData();
-        ProtocolData.MessageHeadBean MessageHead = new ProtocolData.MessageHeadBean();
+        ProtocolData.MessageHead MessageHead = new ProtocolData.MessageHead();
         MessageHead.setVersion(Version);
-        MessageHead.setType(1);
+        MessageHead.setType("Chat");
         protocolData.setMessageHead(MessageHead);
-        ProtocolData.MessageBodyBean MessageBody = new ProtocolData.MessageBodyBean();
+        ProtocolData.MessageBody MessageBody = new ProtocolData.MessageBody();
         MessageBody.setFileLong(0);
         MessageBody.setMessage(Message);
         protocolData.setMessageBody(MessageBody);
@@ -84,8 +84,18 @@ public interface ServerAPI {
      */
     static void SendMessageToUser(user user, String inputMessage)
     {
+        try {
+            Thread.sleep(250);
+        } catch (InterruptedException e) {
+            SaveStackTrace.saveStackTrace(e);
+        }
+        if (user.isServer())
+        {
+            Server.GetInstance().logger.info(inputMessage);
+            return;
+        }
         String Message = inputMessage;
-        Message = ProtocolRequest(Message, CodeDynamicConfig.getProtocolVersion());
+        Message = ChatProtocolRequest(Message, CodeDynamicConfig.getProtocolVersion());
         try {
             if (GetRSA_Mode()) {
                 String UserPublicKey = user.GetUserPublicKey();

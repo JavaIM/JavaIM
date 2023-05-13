@@ -1,7 +1,5 @@
 version代表通讯版本号
-type代表聊天类型
-1代表Chat
-2代表FileTransfer
+type代表聊天类型，Chat代表聊天，FileTransfer代表文件传输
 MessageBody中的Message代表如果是Chat模式，那么消息是什么
 MessageBody中的FileLong代表如果是FileTransfer模式，那么文件长度是多少
 如果是FileTransfer模式，请在json发送完毕后，通过write byte的方式发送文件，长度到达json设定的长度时， 将被截断

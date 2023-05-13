@@ -13,20 +13,14 @@ import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.Server.plugin.load.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.CustomVar;
-import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.ProtocolData;
 import org.yuezhikong.utils.RSA;
 
 import javax.crypto.SecretKey;
-import javax.security.auth.login.FailedLoginException;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -85,10 +79,8 @@ public class RecvMessageThread extends Thread{
             if (GetEnableLoginSystem())
             {
                 try {
-                    if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass))) {
+                    if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass,logger))) {
                         CurrentClientClass.UserDisconnect();
-                    } else {
-                        logger.info("用户登录完成！他的用户名为：" + CurrentClientClass.GetUserName());
                     }
                 }
                 catch (UserAlreadyLoggedInException e)
@@ -103,13 +95,6 @@ public class RecvMessageThread extends Thread{
                     ServerAPI.SendMessageToUser(CurrentClientClass,"来来来，你给我解释一下，你是怎么做到发的信息是null的？");
                     logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
                     CurrentClientClass.UserDisconnect();
-                    return;
-                }
-                catch (FailedLoginException e)
-                {
-                    ServerAPI.SendMessageToUser(CurrentClientClass,"您被踢出此服务器！");
-                    CurrentClientClass.UserDisconnect();
-                    logger.info("["+CurrentClientClass.GetUserSocket().getInetAddress()+"被踢出了服务器，原因：用户名中存在空格");
                     return;
                 }
             }
@@ -169,9 +154,15 @@ public class RecvMessageThread extends Thread{
                         CurrentClientClass.UserDisconnect();
                     }
                     // type目前只实现了chat,FileTransfer延后
-                    if (protocolData.getMessageHead().getType() != 1)
+                    if (protocolData.getMessageHead().getType().equals("FileTransfer"))
                     {
                         ServerAPI.SendMessageToUser(CurrentClientClass,"此服务器暂不支持FileTransfer协议");
+                        break;
+                    }
+                    else if (!protocolData.getMessageHead().getType().equals("Chat"))
+                    {
+                        ServerAPI.SendMessageToUser(CurrentClientClass,"警告，数据包非法，将会发回");
+                        break;
                     }
                     ChatMessage = protocolData.getMessageBody().getMessage();
                     //客户端可以非法发送换行修复
@@ -192,40 +183,9 @@ public class RecvMessageThread extends Thread{
                     if (ChatMessage.charAt(0) == '/')//判定是否是斜杠打头，如果是，判定为命令
                     {
                         CustomVar.Command CommandRequestResult = ServerAPI.CommandFormat(ChatMessage);//命令格式化
-                        logger.info(CurrentClientClass.GetUserName()+" 执行了命令 /"+CommandRequestResult.Command());
+                        logger.info(CurrentClientClass.GetUserName()+" 执行了命令 "+CommandRequestResult.Command());
                         RequestCommand.CommandRequest(CommandRequestResult.Command(),CommandRequestResult.argv(),CurrentClientClass);//调用处理
                         continue;
-                    }
-                    //判断禁言是否已结束
-                    if (CurrentClientClass.isMuted())
-                    {
-                        Date date = new Date();
-                        long Time = date.getTime();//获取当前时间毫秒数
-                        if (CurrentClientClass.getMuteTime() <= Time)
-                        {
-                            CurrentClientClass.setMuteTime(0);
-                            CurrentClientClass.setMuted(false);
-                            Runnable SQLUpdateThread = () -> {
-                                try {
-                                    Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-                                    String sql = "UPDATE UserData SET UserMuted = 0 and UserMuteTime = 0 where UserName = ?";
-                                    PreparedStatement ps = mySQLConnection.prepareStatement(sql);
-                                    ps.setString(1,CurrentClientClass.GetUserName());
-                                    ps.executeUpdate();
-                                    mySQLConnection.close();
-                                } catch (ClassNotFoundException | SQLException e) {
-                                    org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
-                                }
-                            };
-                            Thread UpdateThread = new Thread(SQLUpdateThread);
-                            UpdateThread.start();
-                            UpdateThread.setName("SQL Update Thread");
-                            try {
-                                UpdateThread.join();
-                            } catch (InterruptedException e) {
-                                logger.error("发生异常InterruptedException");
-                            }
-                        }
                     }
                     if (CurrentClientClass.isMuted())
                         continue;

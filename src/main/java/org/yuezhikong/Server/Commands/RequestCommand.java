@@ -1,12 +1,13 @@
 package org.yuezhikong.Server.Commands;
 
-import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.Server.plugin.load.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -14,7 +15,6 @@ import javax.security.auth.login.AccountNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -54,12 +54,7 @@ class CommandLogger
         }
         else
         {
-            try {
-                Thread.sleep(25);
-            } catch (InterruptedException e) {
-                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
-            }
-            org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
+            ServerAPI.SendMessageToUser(User,Message);
         }
     }
     /**
@@ -75,12 +70,7 @@ class CommandLogger
         }
         else
         {
-            try {
-                Thread.sleep(25);
-            } catch (InterruptedException e) {
-                org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
-            }
-            org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
+            ServerAPI.SendMessageToUser(User,Message);
         }
     }
     /**
@@ -93,22 +83,7 @@ class CommandLogger
         logger.error(Message);
         if (type == 1)
         {
-            org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
-        }
-    }
-
-    /**
-     * 发出信息
-     * @param level 日志等级
-     * @param Message 消息
-     */
-    public void log(Level level, String Message)
-    {
-        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
-        logger.log(level,Message);
-        if (type == 1)
-        {
-            org.yuezhikong.Server.api.ServerAPI.SendMessageToUser(User,Message);
+            ServerAPI.SendMessageToUser(User,"[错误] "+Message);
         }
     }
 }
@@ -122,14 +97,61 @@ public class RequestCommand {
      */
     public static void CommandRequest(String command,String[] argv, user UserClass)
     {
+        //获取调用者，使用Throwable的getStackTrace而不是用Thread.getCurrentThread().getStackTrace是因为Thread.getCurrentThread会造成额外性能开销
+        //又用try catch包装，因为直接new idea会警告未抛出
+        try {
+            throw new Throwable("getStackTrace");
+        }
+        catch (Throwable throwable)
+        {
+            StackTraceElement stackTraceElement = throwable.getStackTrace()[1];
+            org.apache.logging.log4j.Logger DebugLogger = LogManager.getLogger("Debug");
+            StringBuilder stringBuilder = new StringBuilder();
+            //调用信息（第一条log)
+            stringBuilder
+                    .append("正在被调用命令：")
+                    .append(command)
+                    .append(" 参数为：");
+            if (argv.length == 0)
+            {
+                stringBuilder.append("无参数");
+            }
+            else {
+                for (String arg : argv) {
+                    stringBuilder.append(arg).append(" ");
+                }
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);//删除多余的空格
+            }
+            DebugLogger.debug(stringBuilder.toString());
+            //清空
+            stringBuilder.setLength(0);
+            //堆栈信息（第二条log）
+            stringBuilder
+                    .append("调用的来源与信息：")
+                    .append("来源为：")
+                    .append(stackTraceElement.getClassName())
+                    .append(":")
+                    .append(stackTraceElement.getMethodName())
+                    .append(" (")
+                    .append(stackTraceElement.getFileName())
+                    .append(":")
+                    .append(stackTraceElement.getLineNumber())
+                    .append(")");
+            DebugLogger.debug(stringBuilder.toString());
+        }
+
         if (UserClass == null)
         {
+            user User = new user(null,-1);
+            User.setServer(true);
+            User.UserLogin("Server");
+            User.SetUserPermission(1,true);
             CommandLogger logger = new CommandLogger(0,null);
-            CommandRequestPrivate(command,argv,logger,true,null);
+            CommandRequestPrivate(command,argv,logger,User);
             return;
         }
         CommandLogger logger = new CommandLogger(1,UserClass);
-        CommandRequestPrivate(command,argv,logger,false,UserClass);
+        CommandRequestPrivate(command,argv,logger,UserClass);
     }
 
     /**
@@ -137,11 +159,10 @@ public class RequestCommand {
      * @param command 命令
      * @param argv 参数
      * @param logger 发送信息给发信者用的logger
-     * @param ISServer 是否为服务端调用，如果是，就为true，如果否，就为false
-     * @param User User Data，如果是服务端调用将返回null
+     * @param User User Data，如果是服务端调用时为一个被标记为服务端，用户名为Server且权限为管理员的虚拟用户，此用户的socket等为null，但调用SendMessageToUser是可以打印的（有单独处理，但如果这样打印到服务端，消息将被处理为“日志”）
      * @apiNote 这里的logger和CommandLogger Class为历史遗留问题，以前是仅服务端，直接调用logger.info输出，而后来兼容客户端时不得已而如此，有没有好心人把上面的自动适配给弄过来呢?
      */
-    private static void CommandRequestPrivate(String command,String[] argv, CommandLogger logger,boolean ISServer,user User)
+    private static void CommandRequestPrivate(String command,String[] argv, CommandLogger logger,user User)
     {
         if (About_System)
         {
@@ -165,33 +186,21 @@ public class RequestCommand {
         switch (command) {
             case "/help" -> {
                 logger.info("命令格式为：");
-                if (!ISServer)
-                {
-                    if (User.GetUserPermission() == 1)
-                    {
-                        logger.info("/kick 用户名");
-                        logger.info("/say 信息");
-                        logger.info("/help 查看帮助");
-                        logger.info("/quit 退出程序");
-                        logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
-                        logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
-                        logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
-                        logger.info("/unmute <用户名> 解除用户禁言");
-                    }
-                }
-                else
-                {
-                    logger.info("/kick 用户名");
-                    logger.info("/say 信息");
-                    logger.info("/help 查看帮助");
-                    logger.info("/quit 退出程序");
-                    logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
-                    logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
-                    logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
-                    logger.info("/unmute <用户名> 解除用户禁言");
-                }
+                logger.info("/kick 用户名");
+                logger.info("/say 信息");
+                logger.info("/help 查看帮助");
+                logger.info("/quit 退出程序");
+                logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
+                logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
+                logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
+                logger.info("/unmute <用户名> 解除用户禁言");
                 if (About_System) {
                     logger.info("/about 查看服务端程序相关信息");
+                }
+                //插件命令处理
+                for (CustomVar.CommandInformation commandInformation : Server.GetInstance().PluginSetCommands)
+                {
+                    logger.info("/"+commandInformation.Command()+" 命令来源："+commandInformation.plugin().getInformation().PluginName()+" 来自"+commandInformation.plugin().getInformation().PluginName()+"的帮助信息："+commandInformation.Help());
                 }
                 logger.info("/list 查看服务器用户基本信息");
                 logger.info("注：");
@@ -207,26 +216,25 @@ public class RequestCommand {
                 }
             }
             case "/unmute" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length >= 1)
                 {
                     try {
                         user RequestUser = ServerAPI.GetUserByUserName(argv[0], Server.GetInstance(),true);
+                        RequestUser.setMuteTime(0);
+                        RequestUser.setMuted(false);
                         Runnable SQLUpdateThread = () -> {
                             try {
-                                Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                                Connection DatabaseConnect = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                 String sql = "UPDATE UserData SET UserMuted = 0 and UserMuteTime = 0 where UserName = ?";
-                                PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+                                PreparedStatement ps = DatabaseConnect.prepareStatement(sql);
                                 ps.setString(1,argv[0]);
                                 ps.executeUpdate();
-                                mySQLConnection.close();
+                                DatabaseConnect.close();
                             } catch (ClassNotFoundException | SQLException e) {
                                 org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                             }
@@ -238,24 +246,20 @@ public class RequestCommand {
                             UpdateThread.join();
                         } catch (InterruptedException e) {
                             logger.error("发生异常InterruptedException");
+                            logger.error("目前解除禁言已动态完成，但未成功写入到数据库");
+                            logger.error("在他下次登录时，他将再次被禁言");
                         }
-                        RequestUser.setMuteTime(0);
-                        RequestUser.setMuted(false);
                     } catch(AccountNotFoundException e)
                     {
                         logger.info("此用户不存在");
-                        SaveStackTrace.saveStackTrace(e);
                     }
                 }
             }
             case "/mute" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length == 2)
                 {
@@ -276,13 +280,13 @@ public class RequestCommand {
                         RequestUser.setMuted(true);
                         Runnable SQLUpdateThread = () -> {
                             try {
-                                Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                                Connection DatabaseConnect = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                 String sql = "UPDATE UserData SET UserMuted = 1 UserMuteTime = ? where UserName = ?";
-                                PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+                                PreparedStatement ps = DatabaseConnect.prepareStatement(sql);
                                 ps.setInt(1, UserMuteTime);
                                 ps.setString(2,argv[0]);
                                 ps.executeUpdate();
-                                mySQLConnection.close();
+                                DatabaseConnect.close();
                             } catch (ClassNotFoundException | SQLException e) {
                                 org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                             }
@@ -294,6 +298,9 @@ public class RequestCommand {
                             UpdateThread.join();
                         } catch (InterruptedException e) {
                             logger.error("发生异常InterruptedException");
+                            logger.error("目前已动态完成禁言操作");
+                            logger.error("但由于错误，未能成功写入到数据库");
+                            logger.error("当此用户重新登录时，他将被解除禁言");
                         }
                     } catch (AccountNotFoundException e) {
                         logger.info("此用户不存在！");
@@ -328,13 +335,13 @@ public class RequestCommand {
                         long finalUserMuteTime = UserMuteTime;
                         Runnable SQLUpdateThread = () -> {
                             try {
-                                Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                                Connection DatabaseConnect = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                 String sql = "UPDATE UserData SET UserMuted = 1 UserMuteTime = ? where UserName = ?";
-                                PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+                                PreparedStatement ps = DatabaseConnect.prepareStatement(sql);
                                 ps.setLong(1, finalUserMuteTime);
                                 ps.setString(2,argv[0]);
                                 ps.executeUpdate();
-                                mySQLConnection.close();
+                                DatabaseConnect.close();
                             } catch (ClassNotFoundException | SQLException e) {
                                 org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
                             }
@@ -346,6 +353,9 @@ public class RequestCommand {
                             UpdateThread.join();
                         } catch (InterruptedException e) {
                             logger.error("发生异常InterruptedException");
+                            logger.error("目前已动态完成禁言操作");
+                            logger.error("但由于错误，未能成功写入到数据库");
+                            logger.error("当此用户重新登录时，他将被解除禁言");
                         }
                     } catch (AccountNotFoundException e) {
                         logger.info("此用户不存在！");
@@ -353,18 +363,15 @@ public class RequestCommand {
                 }
                 else
                 {
-                    logger.info("无效语法，正确的语法应该为：/mute <用户名> <时长> [时长单位]");
+                    logger.info("无效语法，正确的语法应该为：/mute <用户名> <时长> [时间单位]");
                     logger.info("详细语法请见/help");
                 }
             }
             case "/quit" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 try {
                     Field field = Server.GetInstance().getClass().getDeclaredField("ExitSystem");
@@ -394,45 +401,33 @@ public class RequestCommand {
                 }
             }
             case "/say" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
-                StringBuilder TheServerWillSay = new StringBuilder();//服务端将要发出的信息
+                if (argv.length > 0)
                 {
-                    int i = 0;
-                    if (0 != argv.length)
+                    StringBuilder stringBuilder = new StringBuilder();//服务端将要发出的信息
+                    for (String arg : argv)
                     {
-                        while (i < argv.length) {
-                            if (i == argv.length - 1) {
-                                TheServerWillSay.append(argv[i]);
-                                break;
-                            }
-                            TheServerWillSay.append(argv[i]).append(" ");
-                            i++;
-                        }
+                        stringBuilder.append(arg).append(" ");
                     }
-                    else {
-                        logger.info("您所输入的命令不正确");
-                        logger.info("此命令的语法为say 信息");
-                    }
+                    stringBuilder.deleteCharAt(stringBuilder.length() -1);
+                    // 发送信息
+                    ServerAPI.SendMessageToAllClient("[Server] "+stringBuilder, Server.GetInstance());
+                    logger.ChatMsg("[Server] "+stringBuilder);
                 }
-                // 发送信息
-                org.yuezhikong.Server.api.ServerAPI.SendMessageToAllClient("[Server] "+TheServerWillSay, Server.GetInstance());
-                logger.ChatMsg("[Server] "+TheServerWillSay);
+                else {
+                    logger.info("您所输入的命令不正确");
+                    logger.info("此命令的语法为say 信息");
+                }
             }
             case "/SetPermission" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length >= 2)
                 {
@@ -446,44 +441,25 @@ public class RequestCommand {
                         logger.info("命令语法不正确，正确的语法为/SetPermission <权限等级> <用户名>");
                         return;
                     }
-                    int i = 0;
-                    int tmpclientidall = Server.GetInstance().getClientIDAll();
-                    tmpclientidall = tmpclientidall - 1;
-                    boolean found = false;
-                    while (true) {
-                        if (i > tmpclientidall) {
-                            logger.info("错误，找不到此用户");
-                            break;
-                        }
-                        user RequestUser = Server.GetInstance().getUsers().get(i);
-                        if (RequestUser.GetUserSocket() == null) {
-                            i = i + 1;
-                            continue;
-                        }
-                        if (RequestUser.GetUserName().equals(argv[1])) {
-                            RequestUser.SetUserPermission(PermissionLevel,false);
-                            found = true;
-                        }
-                        if (i == tmpclientidall) {
-                            if (!found)
-                            {
-                                logger.info("错误，找不到此用户");
-                            }
-                            break;
-                        }
-                        i = i + 1;
+                    user RequestUser;
+                    try {
+                        RequestUser = ServerAPI.GetUserByUserName(argv[1],Server.GetInstance(),true);
+                    } catch (AccountNotFoundException e) {
+                        logger.info("此用户不存在！");
+                        return;
                     }
+                    RequestUser.SetUserPermission(PermissionLevel,false);
                     Runnable SQLUpdateThread = () -> {
                         try {
-                            Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                            Connection DatabaseConnect = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                             String sql = "UPDATE UserData SET Permission=? where UserName = ?";
-                            PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+                            PreparedStatement ps = DatabaseConnect.prepareStatement(sql);
                             ps.setInt(1,PermissionLevel);
                             ps.setString(2,argv[1]);
                             ps.executeUpdate();
-                            mySQLConnection.close();
+                            DatabaseConnect.close();
                         } catch (ClassNotFoundException | SQLException e) {
-                            org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+                            SaveStackTrace.saveStackTrace(e);
                         }
                     };
                     Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -493,22 +469,17 @@ public class RequestCommand {
                         UpdateThread.join();
                     } catch (InterruptedException e) {
                         logger.error("发生异常InterruptedException");
+                        logger.error("目前成功动态修改掉用户权限，但保存到数据库失败，在此用户重新登录后，他的权限将消失");
                         return;
                     }
-                    if (found) {
-                        if (PermissionLevel == 1) {
-                            logger.info("已将" + argv[1] + "的权限更改为 管理员");
-                        } else if (PermissionLevel == 0) {
-                            logger.info("已将" + argv[1] + "的权限更改为 标准用户");
-                        } else if (PermissionLevel == -1) {
-                            logger.info("已将" + argv[1] + "的权限更改为 已封禁用户");
-                        } else {
-                            logger.info("已将" + argv[1] + "的权限更改为 未使用权限组");
-                        }
-                    }
-                    else
-                    {
-                        logger.info("如果您是在更改一个离线的用户，您可去查询您的数据库，应当已经成功");
+                    if (PermissionLevel == 1) {
+                        logger.info("已将" + argv[1] + "的权限更改为 管理员");
+                    } else if (PermissionLevel == 0) {
+                        logger.info("已将" + argv[1] + "的权限更改为 标准用户");
+                    } else if (PermissionLevel == -1) {
+                        logger.info("已将" + argv[1] + "的权限更改为 已封禁用户");
+                    } else {
+                        logger.info("已将" + argv[1] + "的权限更改为 未使用权限组");
                     }
                 }
                 else
@@ -517,13 +488,10 @@ public class RequestCommand {
                 }
             }
             case "/kick" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length >= 1) {
                     try {
@@ -537,7 +505,17 @@ public class RequestCommand {
                     logger.info("此命令的语法为：/kick 用户名");
                 }
             }
-            default -> logger.info("未知的命令，请输入/help查看帮助");
+            default -> {
+                for (CustomVar.CommandInformation commandInformation : Server.GetInstance().PluginSetCommands)
+                {
+                    if (("/"+commandInformation.Command()).equals(command))
+                    {
+                        commandInformation.plugin().OnCommand(command,argv,User);
+                        return;
+                    }
+                }
+                logger.info("未知的命令，请输入/help查看帮助");
+            }
         }
     }
 }

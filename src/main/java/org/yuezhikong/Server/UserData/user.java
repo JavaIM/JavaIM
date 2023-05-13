@@ -2,7 +2,6 @@ package org.yuezhikong.Server.UserData;
 
 import cn.hutool.crypto.symmetric.AES;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.plugin.load.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
@@ -17,6 +16,7 @@ public class user {
     private int PermissionLevel = 0;
     private String UserName = "";
     private boolean UserLogined;
+    private boolean Server;
     private Socket UserSocket;
     private final int ClientID;
     private String UserPublicKey;
@@ -37,14 +37,14 @@ public class user {
                     if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserUnMute(this)) {
                         Muted = false;
                     } else {
-                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
+                        org.yuezhikong.utils.Logger logger = org.yuezhikong.Server.Server.GetInstance().logger;
                         logger.info("插件系统阻止了解除禁言操作！");
                     }
                 } else {
                     if (!Objects.requireNonNull(PluginManager.getInstance("./plugins")).OnUserMute(this)) {
                         Muted = true;
                     } else {
-                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
+                        org.yuezhikong.utils.Logger logger = org.yuezhikong.Server.Server.GetInstance().logger;
                         logger.info("插件系统阻止了禁言操作");
                     }
                 }
@@ -92,6 +92,23 @@ public class user {
         ClientID = clientid;
         UserLogined = false;
     }
+
+    /**
+     * 设置是否是服务端虚拟账户
+     * @param server 是/否
+     */
+    public void setServer(boolean server) {
+        Server = server;
+    }
+
+    /**
+     * 查询是否是服务端虚拟账户
+     * @return 是/否
+     */
+    public boolean isServer() {
+        return Server;
+    }
+
     public String GetUserName()
     {
         return UserName;
@@ -149,9 +166,16 @@ public class user {
     /**
      * 获取用户的AES
      * @return 用户的AES
+     * @throws RuntimeException 用户是服务端虚拟用户
      */
-    public AES GetUserAES() {
-        return UserAES;
+    public AES GetUserAES() throws RuntimeException{
+        if (Server)
+        {
+            throw new RuntimeException(new ModeDisabledException("Getting a socket does not apply to server-side virtual accounts (translated by cn.bing.com/translator)"));
+        }
+        else {
+            return UserAES;
+        }
     }
 
     /**
@@ -169,7 +193,7 @@ public class user {
                     {
                         PermissionLevel = permissionLevel;//如果插件系统没有阻止操作，则进行设定
                     } else {
-                        org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
+                        org.yuezhikong.utils.Logger logger = org.yuezhikong.Server.Server.GetInstance().logger;
                         logger.info("插件系统阻止了权限更改操作！");
                     }
                 } catch (ModeDisabledException e) {
@@ -194,9 +218,18 @@ public class user {
         UserSocket = null;
         UserPublicKey = null;
     }
-    public Socket GetUserSocket()
-    {
-        return UserSocket;
+
+    /**
+     * 获取用户Socket
+     * @return Socket
+     * @throws RuntimeException 此账户是服务端虚拟账户
+     */
+    public Socket GetUserSocket() throws RuntimeException {
+        if (!Server) {
+            return UserSocket;
+        } else {
+            throw new RuntimeException(new ModeDisabledException("Getting a socket does not apply to server-side virtual accounts (translated by cn.bing.com/translator)"));
+        }
     }
     public int GetUserPermission()
     {
@@ -206,10 +239,20 @@ public class user {
     {
         return ClientID;
     }
+
+    /**
+     * 获取用户公钥
+     * @return 用户公钥
+     * @throws ModeDisabledException 用户是服务端虚拟账户
+     */
     public String GetUserPublicKey() throws ModeDisabledException {
         if (!GetRSA_Mode())
         {
             throw new ModeDisabledException("RSA Mode Has Disabled!");
+        }
+        if (Server)
+        {
+            throw new ModeDisabledException("Getting a socket does not apply to server-side virtual accounts (translated by cn.bing.com/translator)");
         }
         if (UserPublicKey != null) {
             return UserPublicKey;

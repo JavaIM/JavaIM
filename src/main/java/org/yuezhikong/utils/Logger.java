@@ -113,7 +113,7 @@ public class Logger {
         else if (IsGUIClientLogger)
         {
             LocalTime time = LocalTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss]");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("[HH:mm:ss] ");
             GUIForClient.WriteToChatArea(time.format(formatter)+msg);
         }
         System.out.print(">");

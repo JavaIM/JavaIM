@@ -2,22 +2,80 @@ package org.yuezhikong.Server.plugin;
 
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.utils.CustomVar;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * 插件父级interface
- * 建议插件不要直接调用内部class，而是使用API进行修改
- * 目前API仍不完善，后续会添加API
+ * 所有插件都应当继承此class
+ * <p>否则，将无法被加载</p>
  * @author AlexLiuDev233
- * @Date 2023/02/27
+ * @Date 2023/05/08
  */
 @SuppressWarnings("unused")
-public interface Plugin {
+public abstract class Plugin{
+    private final List<CustomVar.CommandInformation> ThisPluginRegisteredCommand = new ArrayList<>();
+    private final CustomVar.PluginInformation Information;
+
     /**
-     * 插件的入口点，请继承本class后通过@Override注解重写本方法！
-     * 否则，您的插件将不会发生任何行为！
+     * 插件基本信息注册
+     * @param name 插件名字
+     * @param author 插件作者
+     * @param version 插件版本
+     * @apiNote 请注意，所有项目都必须填写，如果字符串为空也会加载失败哦
+     */
+    protected Plugin(String name,String author, String version)
+    {
+        Information = new CustomVar.PluginInformation(name,author,version,this,true);
+    }
+
+    /**
+     * 获取插件基本信息
+     * @return 插件基本信息
+     */
+    public CustomVar.PluginInformation getInformation() {
+        return Information;
+    }
+
+    /**
+     * 注册命令
+     * @param Command 命令名
+     * @param Help 帮助
      * @param ServerInstance 服务端实例
      */
-    void OnLoad(Server ServerInstance);
+    protected void RegisterCommand(String Command,String Help,Server ServerInstance)
+    {
+        CustomVar.CommandInformation commandInformation = new CustomVar.CommandInformation(Command,Help,this);
+        ThisPluginRegisteredCommand.add(commandInformation);
+        ServerInstance.PluginSetCommands.add(commandInformation);
+    }
+
+    /**
+     * 取消注册一个本插件注册的命令
+     * @param Command 命令
+     * @param ServerInstance 服务端实例
+     * @return false失败true成功
+     */
+    protected boolean UnRegisterCommand(String Command,Server ServerInstance)
+    {
+        for (CustomVar.CommandInformation CommandInformation : ThisPluginRegisteredCommand)
+        {
+            if (CommandInformation.Command().equals(Command))
+            {
+                ThisPluginRegisteredCommand.remove(CommandInformation);
+                ServerInstance.PluginSetCommands.remove(CommandInformation);
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * 插件的入口点，在服务端启动时调用
+     * @param ServerInstance 服务端实例
+     */
+    public abstract void OnLoad(Server ServerInstance);
 
     /**
      * 当插件被卸载时
@@ -25,7 +83,7 @@ public interface Plugin {
      * 建议I/O操作每次执行都重新打开Stream，而不是被保存着，且每次执行完后都进行销毁
      * @param ServerInstance 服务端实例
      */
-    void OnUnLoad(Server ServerInstance);
+    public abstract void OnUnLoad(Server ServerInstance);
 
     /**
      * 当发生聊天时
@@ -35,9 +93,22 @@ public interface Plugin {
      * @param ServerInstance 服务端实例
      * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
      */
-    default boolean OnChat(user RequestUser, String Message, Server ServerInstance)
+    public boolean OnChat(user RequestUser, String Message, Server ServerInstance)
     {
         return false;
+    }
+
+    /**
+     * 此插件自定义命令的处理程序
+     * <p>请注意，所有注册的命令都会调用此方法</p>
+     * <p>请根据命令名判断指令</p>
+     * @param Command 命令
+     * @param argv 参数
+     * @param RequestUser 用户（服务端模式时为一个被标记为服务端，用户名为Server且权限为管理员的虚拟用户，此用户的socket等为null，但调用SendMessageToUser是可以打印的（有单独处理））
+     */
+    public void OnCommand(String Command,String[] argv,user RequestUser)
+    {
+
     }
 
     /**
@@ -47,7 +118,7 @@ public interface Plugin {
      * @param ServerInstance 服务端实例
      * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
      */
-    default boolean OnUserPermissionEdit(user RequestUser,int NewPermissionLevel,Server ServerInstance)
+    public boolean OnUserPermissionEdit(user RequestUser,int NewPermissionLevel,Server ServerInstance)
     {
         return false;
     }
@@ -58,7 +129,7 @@ public interface Plugin {
      * @param ServerInstance 服务端实例
      * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
      */
-    default boolean OnUserMuted(user RequestUser,Server ServerInstance)
+    public boolean OnUserMuted(user RequestUser,Server ServerInstance)
     {
         return false;
     }
@@ -69,7 +140,7 @@ public interface Plugin {
      * @param ServerInstance 服务端实例
      * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
      */
-    default boolean OnUserUnMuted(user RequestUser,Server ServerInstance)
+    public boolean OnUserUnMuted(user RequestUser,Server ServerInstance)
     {
         return false;
     }

@@ -7,7 +7,7 @@ public final class CodeDynamicConfig {
     //协议版本
     private static final int ProtocolVersion = 1;
     //本程序版本：
-    private static final String Version = "v1.1.1-pre2";
+    private static final String Version = "v1.2.0";
     //目前最新的Database协议版本
     private static final int TheLatestDatabaseProtocolVersion = 2;
     //调试模式

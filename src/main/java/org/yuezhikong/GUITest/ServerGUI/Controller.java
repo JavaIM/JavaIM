@@ -63,7 +63,7 @@ public class Controller implements Initializable {
         Platform.runLater(()->
                 {
                     ChatLog.appendText(msg+"\n");
-                    ChatLog.positionCaret(Log.getText().length());
+                    ChatLog.positionCaret(ChatLog.getText().length());
                 }
         );
     }
@@ -218,42 +218,8 @@ public class Controller implements Initializable {
             alert.showAndWait();
         }
         else {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("警告");
-            alert.setHeaderText("此操作将会退出此程序");
-            alert.setContentText("您确定要这么做吗？");
-            Optional<ButtonType> result = alert.showAndWait();
-            if (result.isPresent()) {
-                if (result.get().equals(ButtonType.YES))
-                {
-                    try {
-                        Field field = Server.getClass().getDeclaredField("ExitSystem");
-                        field.setAccessible(true);
-                        field.set(org.yuezhikong.Server.Server.GetInstance(), true);
-                        field.setAccessible(false);
-
-                        field = Server.getClass().getDeclaredField("userAuthThread");
-                        field.setAccessible(true);
-                        Thread userAuthThread = (Thread) field.get(org.yuezhikong.Server.Server.GetInstance());
-                        field.setAccessible(false);
-
-                        field = Server.getClass().getDeclaredField("serverSocket");
-                        field.setAccessible(true);
-                        ServerSocket ServerSocket = (java.net.ServerSocket) field.get(org.yuezhikong.Server.Server.GetInstance());
-                        field.setAccessible(false);
-                        ServerSocket.close();
-                        userAuthThread.join();
-                        org.yuezhikong.Server.Server.GetInstance().timer.cancel();
-                        if (CodeDynamicConfig.GetPluginSystemMode()) {
-                            PluginManager.getInstance("./plugins").OnProgramExit(0);
-                        }
-                        System.exit(0);
-                    } catch (ModeDisabledException | IOException | NoSuchFieldException | InterruptedException | IllegalAccessException e) {
-                        org.yuezhikong.Server.Server.GetInstance().timer.cancel();
-                        System.exit(1);
-                    }
-                }
-            }
+            CustomVar.Command command = ServerAPI.CommandFormat("/quit");
+            CommandRequest(command.Command(), command.argv(), null);
         }
     }
 }

@@ -93,11 +93,11 @@ public class Client {
         // 将消息根据Protocol封装
         Gson gson = new Gson();
         ProtocolData protocolData = new ProtocolData();
-        ProtocolData.MessageHeadBean MessageHead = new ProtocolData.MessageHeadBean();
+        ProtocolData.MessageHead MessageHead = new ProtocolData.MessageHead();
         MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-        MessageHead.setType(1);
+        MessageHead.setType("Chat");
         protocolData.setMessageHead(MessageHead);
-        ProtocolData.MessageBodyBean MessageBody = new ProtocolData.MessageBodyBean();
+        ProtocolData.MessageBody MessageBody = new ProtocolData.MessageBody();
         MessageBody.setFileLong(0);
         MessageBody.setMessage(input);
         protocolData.setMessageBody(MessageBody);
@@ -193,12 +193,18 @@ public class Client {
                         break;
                     }
                     // type目前只实现了chat,FileTransfer延后
-                    if (protocolData.getMessageHead().getType() != 1)
+                    if (protocolData.getMessageHead().getType().equals("FileTransfer"))
                     {
                         logger.info("有人想要为您发送一个文件，但是此客户端暂不支持FileTransfer协议");
                     }
-                    msg = protocolData.getMessageBody().getMessage();
-                    logger.ChatMsg(msg);
+                    else if (!protocolData.getMessageHead().getType().equals("Chat"))
+                    {
+                        logger.warning("警告，服务端发来无法识别的非法数据包");
+                    }
+                    else {
+                        msg = protocolData.getMessageBody().getMessage();
+                        logger.ChatMsg(msg);
+                    }
                 }
                 catch (IOException e)
                 {
