@@ -171,7 +171,30 @@ public class Controller implements Initializable {
             Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent()) {
                 if (result.get().equals(ButtonType.YES)) {
-                    System.exit(0);
+                    new Thread()
+                    {
+                        @Override
+                        public void run() {
+                            this.setName("User Request Process Thread");
+                            try {
+                                if (client.SendMessageToServer(".quit"))
+                                {
+                                    client.getLogger().info("再见~");
+                                    ExitSystem(0);
+                                }
+                            } catch (IOException e) {
+                                if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage())) {
+                                    client.getLogger().warning("发生I/O错误");
+                                    SaveStackTrace.saveStackTrace(e);
+                                }
+                                else
+                                {
+                                    client.getLogger().info("连接早已被关闭...");
+                                    ExitSystem(0);
+                                }
+                            }
+                        }
+                    }.start();
                 }
             }
         }

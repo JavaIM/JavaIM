@@ -84,6 +84,16 @@ public interface ServerAPI {
      */
     static void SendMessageToUser(user user, String inputMessage)
     {
+        try {
+            Thread.sleep(250);
+        } catch (InterruptedException e) {
+            SaveStackTrace.saveStackTrace(e);
+        }
+        if (user.isServer())
+        {
+            Server.GetInstance().logger.info(inputMessage);
+            return;
+        }
         String Message = inputMessage;
         Message = ChatProtocolRequest(Message, CodeDynamicConfig.getProtocolVersion());
         try {

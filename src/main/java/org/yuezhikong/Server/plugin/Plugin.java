@@ -19,14 +19,6 @@ public abstract class Plugin{
     private final CustomVar.PluginInformation Information;
 
     /**
-     * 获取此插件注册的命令列表
-     * @return 命令列表
-     */
-    public List<CustomVar.CommandInformation> getRegisteredCommand() {
-        return ThisPluginRegisteredCommand;
-    }
-
-    /**
      * 插件基本信息注册
      * @param name 插件名字
      * @param author 插件作者
@@ -112,8 +104,9 @@ public abstract class Plugin{
      * <p>请根据命令名判断指令</p>
      * @param Command 命令
      * @param argv 参数
+     * @param RequestUser 用户（服务端模式时为一个被标记为服务端，用户名为Server且权限为管理员的虚拟用户，此用户的socket等为null，但调用SendMessageToUser是可以打印的（有单独处理））
      */
-    public void OnCommand(String Command,String[] argv)
+    public void OnCommand(String Command,String[] argv,user RequestUser)
     {
 
     }

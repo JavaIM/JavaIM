@@ -183,7 +183,7 @@ public class RecvMessageThread extends Thread{
                     if (ChatMessage.charAt(0) == '/')//判定是否是斜杠打头，如果是，判定为命令
                     {
                         CustomVar.Command CommandRequestResult = ServerAPI.CommandFormat(ChatMessage);//命令格式化
-                        logger.info(CurrentClientClass.GetUserName()+" 执行了命令 /"+CommandRequestResult.Command());
+                        logger.info(CurrentClientClass.GetUserName()+" 执行了命令 "+CommandRequestResult.Command());
                         RequestCommand.CommandRequest(CommandRequestResult.Command(),CommandRequestResult.argv(),CurrentClientClass);//调用处理
                         continue;
                     }

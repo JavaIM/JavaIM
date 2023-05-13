@@ -142,12 +142,16 @@ public class RequestCommand {
 
         if (UserClass == null)
         {
+            user User = new user(null,-1);
+            User.setServer(true);
+            User.UserLogin("Server");
+            User.SetUserPermission(1,true);
             CommandLogger logger = new CommandLogger(0,null);
-            CommandRequestPrivate(command,argv,logger,true,null);
+            CommandRequestPrivate(command,argv,logger,User);
             return;
         }
         CommandLogger logger = new CommandLogger(1,UserClass);
-        CommandRequestPrivate(command,argv,logger,false,UserClass);
+        CommandRequestPrivate(command,argv,logger,UserClass);
     }
 
     /**
@@ -155,11 +159,10 @@ public class RequestCommand {
      * @param command 命令
      * @param argv 参数
      * @param logger 发送信息给发信者用的logger
-     * @param ISServer 是否为服务端调用，如果是，就为true，如果否，就为false
-     * @param User User Data，如果是服务端调用将返回null
+     * @param User User Data，如果是服务端调用时为一个被标记为服务端，用户名为Server且权限为管理员的虚拟用户，此用户的socket等为null，但调用SendMessageToUser是可以打印的（有单独处理，但如果这样打印到服务端，消息将被处理为“日志”）
      * @apiNote 这里的logger和CommandLogger Class为历史遗留问题，以前是仅服务端，直接调用logger.info输出，而后来兼容客户端时不得已而如此，有没有好心人把上面的自动适配给弄过来呢?
      */
-    private static void CommandRequestPrivate(String command,String[] argv, CommandLogger logger,boolean ISServer,user User)
+    private static void CommandRequestPrivate(String command,String[] argv, CommandLogger logger,user User)
     {
         if (About_System)
         {
@@ -183,38 +186,21 @@ public class RequestCommand {
         switch (command) {
             case "/help" -> {
                 logger.info("命令格式为：");
-                if (!ISServer)
-                {
-                    if (User.GetUserPermission() == 1)
-                    {
-                        logger.info("/kick 用户名");
-                        logger.info("/say 信息");
-                        logger.info("/help 查看帮助");
-                        logger.info("/quit 退出程序");
-                        logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
-                        logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
-                        logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
-                        logger.info("/unmute <用户名> 解除用户禁言");
-                    }
-                }
-                else
-                {
-                    logger.info("/kick 用户名");
-                    logger.info("/say 信息");
-                    logger.info("/help 查看帮助");
-                    logger.info("/quit 退出程序");
-                    logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
-                    logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
-                    logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
-                    logger.info("/unmute <用户名> 解除用户禁言");
-                }
+                logger.info("/kick 用户名");
+                logger.info("/say 信息");
+                logger.info("/help 查看帮助");
+                logger.info("/quit 退出程序");
+                logger.info("/SetPermission <权限等级> <用户名> 设置权限等级");
+                logger.info("/mute <用户名> <时长> [时长单位] 设置用户禁言");
+                logger.info("时长单位如果不填，默认为毫秒，可填写s（秒），m(分)，h(小时),d(天)");
+                logger.info("/unmute <用户名> 解除用户禁言");
                 if (About_System) {
                     logger.info("/about 查看服务端程序相关信息");
                 }
                 //插件命令处理
                 for (CustomVar.CommandInformation commandInformation : Server.GetInstance().PluginSetCommands)
                 {
-                    logger.info("/"+commandInformation.Command()+" 命令来源："+commandInformation.plugin().getInformation().PluginName()+"来自"+commandInformation.plugin().getInformation().PluginName()+"的帮助信息："+commandInformation.Help());
+                    logger.info("/"+commandInformation.Command()+" 命令来源："+commandInformation.plugin().getInformation().PluginName()+" 来自"+commandInformation.plugin().getInformation().PluginName()+"的帮助信息："+commandInformation.Help());
                 }
                 logger.info("/list 查看服务器用户基本信息");
                 logger.info("注：");
@@ -230,13 +216,10 @@ public class RequestCommand {
                 }
             }
             case "/unmute" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length >= 1)
                 {
@@ -273,13 +256,10 @@ public class RequestCommand {
                 }
             }
             case "/mute" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length == 2)
                 {
@@ -388,13 +368,10 @@ public class RequestCommand {
                 }
             }
             case "/quit" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 try {
                     Field field = Server.GetInstance().getClass().getDeclaredField("ExitSystem");
@@ -424,13 +401,10 @@ public class RequestCommand {
                 }
             }
             case "/say" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length > 0)
                 {
@@ -450,13 +424,10 @@ public class RequestCommand {
                 }
             }
             case "/SetPermission" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length >= 2)
                 {
@@ -517,13 +488,10 @@ public class RequestCommand {
                 }
             }
             case "/kick" -> {
-                if (!ISServer)
+                if (User.GetUserPermission() != 1)
                 {
-                    if (User.GetUserPermission() != 1)
-                    {
-                        logger.info("未知的命令，请输入/help查看帮助");
-                        return;
-                    }
+                    logger.info("未知的命令，请输入/help查看帮助");
+                    return;
                 }
                 if (argv.length >= 1) {
                     try {
@@ -542,8 +510,8 @@ public class RequestCommand {
                 {
                     if (("/"+commandInformation.Command()).equals(command))
                     {
-                        commandInformation.plugin().OnCommand(command,argv);
-                        break;
+                        commandInformation.plugin().OnCommand(command,argv,User);
+                        return;
                     }
                 }
                 logger.info("未知的命令，请输入/help查看帮助");

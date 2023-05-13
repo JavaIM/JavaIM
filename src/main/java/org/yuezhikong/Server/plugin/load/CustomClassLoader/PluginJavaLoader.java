@@ -12,14 +12,21 @@ import java.util.Properties;
 
 public final class PluginJavaLoader extends URLClassLoader {
     public final Plugin ThisPlugin;
+    private final InputStream propertiesStream;
     public PluginJavaLoader(ClassLoader parent, File s) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         super(new URL[]{s.toURI().toURL()}, parent);
-        InputStream propertiesStream = this.getResourceAsStream("PluginManifest.properties");
+        propertiesStream = this.getResourceAsStream("PluginManifest.properties");
         Properties properties = new Properties();
         properties.load(propertiesStream);
         String mainClass = properties.getProperty("Main-Class");
         Class<?> jarClass = Class.forName(mainClass,true,this);
         Class<? extends Plugin> pluginClass = jarClass.asSubclass(Plugin.class);
         ThisPlugin = pluginClass.getDeclaredConstructor().newInstance();
+    }
+
+    @Override
+    public void close() throws IOException {
+        propertiesStream.close();
+        super.close();
     }
 }
