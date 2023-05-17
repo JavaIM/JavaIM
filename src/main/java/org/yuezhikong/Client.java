@@ -38,7 +38,7 @@ public class Client {
      */
     protected void PublicKeyLack()
     {
-        Logger.logger_root.fatal("在运行目录下未找到ServerPublicKey.key");
+        Logger.logger_root.fatal("在运行目录下未找到ServerPublicKey.txt");
         Logger.logger_root.fatal("此文件为服务端公钥文件，用于保证通信安全");
         Logger.logger_root.fatal("由于此文件缺失，客户端即将停止运行");
         ExitSystem(-1);
@@ -136,7 +136,7 @@ public class Client {
     public Client(String serverName, int port) {
         {
             LoggerInit();
-            if (!(new File("ServerPublicKey.key").exists()))
+            if (!(new File("ServerPublicKey.txt").exists()))
             {
                 PublicKeyLack();
             }
@@ -244,7 +244,7 @@ public class Client {
             InputStream inFromServer = client.getInputStream();
             DataInputStream in = new DataInputStream(inFromServer);
             if (GetRSA_Mode()) {
-                ServerPublicKey = Objects.requireNonNull(RSA.loadPublicKeyFromFile("ServerPublicKey.key")).PublicKey;
+                ServerPublicKey = Objects.requireNonNull(RSA.loadPublicKeyFromFile("ServerPublicKey.txt")).PublicKey;
                 String ClientRSAKey = java.net.URLEncoder.encode(Base64.encodeBase64String(RSAKey.publicKey.getEncoded()), StandardCharsets.UTF_8);
                 out.writeUTF(ClientRSAKey);
                 logger.info("服务器响应："+RSA.decrypt(in.readUTF(),RSAKey.privateKey));

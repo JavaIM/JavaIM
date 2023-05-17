@@ -12,9 +12,7 @@ public class GUIClient extends Client {
 
     @Override
     protected void PublicKeyLack() {
-        Logger.logger_root.fatal("在运行目录下未找到ServerPublicKey.key");
-        Logger.logger_root.fatal("此文件为服务端公钥文件，用于保证通信安全");
-        Logger.logger_root.fatal("由于此文件缺失，客户端即将停止运行");
+        super.PublicKeyLack();
         ClientGUI.ClientStartFailedbyServerPublicKeyLack();
     }
 

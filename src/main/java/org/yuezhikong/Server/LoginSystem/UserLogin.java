@@ -41,6 +41,7 @@ public class UserLogin{
         {
 
             try {
+                String PrivateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.txt")).PrivateKey;
                 SendMessageToUser(LoginUser,"在进入之前，您必须先登录/注册");
                 Thread.sleep(250);
                 SendMessageToUser(LoginUser,"输入1进行登录");
@@ -59,7 +60,7 @@ public class UserLogin{
                         UserSelect = LoginUser.GetUserAES().decryptStr(UserSelect);
                     }
                     else
-                        UserSelect = RSA.decrypt(UserSelect,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                        UserSelect = RSA.decrypt(UserSelect,PrivateKey);
                 }
                 UserSelect = java.net.URLDecoder.decode(UserSelect, StandardCharsets.UTF_8);
                 // 将信息从Protocol Json中取出
@@ -96,7 +97,7 @@ public class UserLogin{
                         UserName = LoginUser.GetUserAES().decryptStr(UserName);
                     }
                     else
-                        UserName = RSA.decrypt(UserName,Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                        UserName = RSA.decrypt(UserName,PrivateKey);
                 }
                 UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
                 // 将信息从Protocol Json中取出
@@ -142,7 +143,7 @@ public class UserLogin{
                         Password = LoginUser.GetUserAES().decryptStr(Password);
                     }
                     else {
-                        Password = RSA.decrypt(Password, Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                        Password = RSA.decrypt(Password, PrivateKey);
                     }
                 }
                 Password = java.net.URLDecoder.decode(Password, StandardCharsets.UTF_8);

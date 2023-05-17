@@ -56,7 +56,7 @@ public class RecvMessageThread extends Thread{
             DataOutputStream out = new DataOutputStream(CurrentClientSocket.getOutputStream());
             String privateKey = null;
             if (GetRSA_Mode()) {//根据RSA模式，决定是否进行RSA握手
-                privateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey;
+                privateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.txt")).PrivateKey;
                 CurrentClientClass.SetUserPublicKey(java.net.URLDecoder.decode(in.readUTF(), StandardCharsets.UTF_8));
                 out.writeUTF(RSA.encrypt("Hello,Client! This Message By Server RSA System",CurrentClientClass.GetUserPublicKey()));
                 logger.info("正在连接的客户端响应："+RSA.decrypt(in.readUTF(),privateKey));
@@ -119,7 +119,7 @@ public class RecvMessageThread extends Thread{
                         UserName = CurrentClientClass.GetUserAES().decryptStr(UserName);
                     }
                     else {
-                        UserName = RSA.decrypt(UserName, Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                        UserName = RSA.decrypt(UserName, Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.txt")).PrivateKey);
                     }
                 }
                 UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);

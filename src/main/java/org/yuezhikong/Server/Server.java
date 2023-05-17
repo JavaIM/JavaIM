@@ -59,12 +59,12 @@ public class Server {
      */
     protected void RSA_KeyAutogenerate()
     {
-        if (!(new File("Public.key").exists()))
+        if (!(new File("Public.txt").exists()))
         {
-            if (!(new File("Private.key").exists()))
+            if (!(new File("Private.txt").exists()))
             {
                 try {
-                    RSA.generateKeyToFile("Public.key", "Private.key");
+                    RSA.generateKeyToFile("Public.txt", "Private.txt");
                 }
                 catch (Exception e)
                 {
@@ -75,7 +75,7 @@ public class Server {
             {
                 logger.warning("系统检测到您的目录下不存在公钥，但，存在私钥，系统将为您覆盖一个新的rsa key");
                 try {
-                    RSA.generateKeyToFile("Public.key", "Private.key");
+                    RSA.generateKeyToFile("Public.txt", "Private.txt");
                 }
                 catch (Exception e)
                 {
@@ -85,11 +85,11 @@ public class Server {
         }
         else
         {
-            if (!(new File("Private.key").exists()))
+            if (!(new File("Private.txt").exists()))
             {
                 logger.warning("系统检测到您的目录下存在公钥，但，不存在私钥，系统将为您覆盖一个新的rsa key");
                 try {
-                    RSA.generateKeyToFile("Public.key", "Private.key");
+                    RSA.generateKeyToFile("Public.txt", "Private.txt");
                 }
                 catch (Exception e)
                 {

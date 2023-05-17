@@ -236,7 +236,7 @@ public class Controller implements Initializable {
             Alert ClientFailedAlert = new Alert(Alert.AlertType.ERROR);
             ClientFailedAlert.setHeaderText("客户端启动失败");
             ClientFailedAlert.setContentText("""
-                    在运行目录下未找到ServerPublicKey.key
+                    在运行目录下未找到ServerPublicKey.txt
                     此文件为服务端公钥文件，用于保证通信安全
                     因为未找到此文件，客户端已经停止工作""");
             ClientFailedAlert.showAndWait();
