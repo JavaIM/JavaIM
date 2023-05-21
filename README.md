@@ -3,7 +3,7 @@
 [![status](https://img.shields.io/github/actions/workflow/status/JavaIM/JavaIM/buildandcodeql.yml?style=for-the-badge)](https://github.com/QiLechan/JavaIM/actions)
 [
 ![Latest Tag](https://img.shields.io/github/v/tag/JavaIM/JavaIM?label=LATEST%20TAG&style=for-the-badge)
-![GitHub Releases (by Asset)](https://img.shields.io/github/downloads/QiLechan/JavaIM/latest/total?style=for-the-badge)
+![GitHub Releases (by Asset)](https://img.shields.io/github/downloads/JavaIM/JavaIM/latest/total?style=for-the-badge)
 ](https://github.com/QiLechan/JavaIM/releases/latest)  
 
 > 注意： JavaIM仍然处于开发阶段，不能保证通信的安全性。
