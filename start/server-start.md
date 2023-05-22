@@ -1,4 +1,4 @@
-# 🛠 服务端配置
+# 📝 服务端配置
 
 ## 如果您要配置一个服务端，请进行以下步骤
 
@@ -32,27 +32,32 @@
 
 ## 第五步 —— 正式构建
 
-再次git 克隆出现的新文件夹
-打开终端(cmd)
-Linux用户请使用
+再次git 克隆出现的新文件夹 打开终端(cmd) Linux用户请使用
+
 ```bash
 chmod 777 ./build.sh
 ./build.sh
 cd target
 java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
 ```
+
 后续使用直接
+
 ```bash
 cd target
 java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
 ```
+
 Windows用户请使用
+
 ```cmd
 build.bat
 cd target
 java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
 ```
+
 后续使用直接
+
 ```cmd
 cd target
 java -Dfile-encoding=UTF-8 -jar JavaIM-1.0-SNAPSHOT.jar
