@@ -2,8 +2,11 @@ package org.yuezhikong.Server.plugin;
 
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.plugin.load.CustomClassLoader.PluginJavaLoader;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomVar;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +43,40 @@ public abstract class Plugin{
     public final void UnRegisterPlugin(Server serverInstance)
     {
         OnUnLoad(serverInstance);
+        //开始清理资源
+        //删除所有注册的命令
+        for (CustomVar.CommandInformation CommandInformation : ThisPluginRegisteredCommand)
+        {
+            serverInstance.PluginSetCommands.remove(CommandInformation);
+        }
+        //释放插件列表
+        try {
+            PluginManager.getInstanceOrNull().PluginList.removeIf(this::equals);
+        } catch (ModeDisabledException ignored) {
+        }
+        //释放插件Information
         Information = null;
+        //插件数量 -1
+        try {
+            PluginManager.getInstanceOrNull().NumberOfPlugins = PluginManager.getInstanceOrNull().NumberOfPlugins - 1;
+        } catch (ModeDisabledException ignored) {
+        }
+        //释放classloader
+        try {
+            for (PluginJavaLoader loader : PluginManager.getInstanceOrNull().classLoaderList)
+            {
+                if (this.equals(loader.getPlugin()))
+                {
+                    PluginManager.getInstanceOrNull().classLoaderList.remove(loader);
+                    try {
+                        loader.close();
+                    } catch (IOException ignored) {
+                    }
+                }
+            }
+
+        } catch (ModeDisabledException ignored) {
+        }
     }
     /**
      * 获取插件基本信息
@@ -55,12 +91,21 @@ public abstract class Plugin{
      * @param Command 命令名
      * @param Help 帮助
      * @param ServerInstance 服务端实例
+     * @return false失败true成功
      */
-    protected final void RegisterCommand(String Command,String Help,Server ServerInstance)
+    protected final boolean RegisterCommand(String Command,String Help,Server ServerInstance)
     {
+        for (CustomVar.CommandInformation CommandInformation : ServerInstance.PluginSetCommands)
+        {
+            if (CommandInformation.Command().equals(Command))
+            {
+                return false;
+            }
+        }
         CustomVar.CommandInformation commandInformation = new CustomVar.CommandInformation(Command,Help,this);
         ThisPluginRegisteredCommand.add(commandInformation);
         ServerInstance.PluginSetCommands.add(commandInformation);
+        return true;
     }
 
     /**
@@ -77,6 +122,7 @@ public abstract class Plugin{
             {
                 ThisPluginRegisteredCommand.remove(CommandInformation);
                 ServerInstance.PluginSetCommands.remove(CommandInformation);
+                return true;
             }
         }
         return false;

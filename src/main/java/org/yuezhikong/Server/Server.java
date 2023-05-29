@@ -7,7 +7,7 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.load.PluginManager;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.*;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.DataBase.Database;
@@ -37,14 +37,6 @@ public class Server {
     //服务端实例
     private static Server instance = null;
     public org.yuezhikong.Server.timer timer;
-
-    /**
-     * 获取客户端总数量
-     * @return 客户端总数量
-     */
-    public int getClientIDAll() {
-        return clientIDAll;
-    }
 
     /**
      * 获取用户Class List

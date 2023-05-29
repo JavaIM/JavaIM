@@ -5,22 +5,14 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
-import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GUITest.GUIServer;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.load.PluginManager;
-import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.ServerSocket;
 import java.net.URL;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
