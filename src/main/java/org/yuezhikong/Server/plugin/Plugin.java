@@ -202,4 +202,23 @@ public abstract class Plugin{
     {
         return false;
     }
+
+    /**
+     * 当用户开始登录时
+     * @param RequestUser 发生此事件的用户
+     * @param ServerInstance 服务端实例
+     * @return 如果返回true，则代表将会阻止此事件，如果返回false，则代表不会阻止此事件
+     */
+    public boolean OnUserPreLogin(user RequestUser,Server ServerInstance)
+    {
+        return false;
+    }
+    /**
+     * 当用户登录结束时
+     * @param RequestUser 发生此事件的用户
+     * @param ServerInstance 服务端实例
+     */
+    public void OnUserLogin(user RequestUser,Server ServerInstance)
+    {
+    }
 }

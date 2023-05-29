@@ -11,6 +11,7 @@ import org.yuezhikong.Server.LoginSystem.UserLogin;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
@@ -81,7 +82,9 @@ public class RecvMessageThread extends Thread{
                 try {
                     if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass,logger))) {
                         CurrentClientClass.UserDisconnect();
+                        return;
                     }
+                    PluginManager.getInstance("./plugins").OnUserLogin(CurrentClientClass);
                 }
                 catch (UserAlreadyLoggedInException e)
                 {
@@ -97,6 +100,7 @@ public class RecvMessageThread extends Thread{
                     CurrentClientClass.UserDisconnect();
                     return;
                 }
+                catch (ModeDisabledException ignored) {}
             }
             else
             {
@@ -152,6 +156,7 @@ public class RecvMessageThread extends Thread{
                     if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
                     {
                         CurrentClientClass.UserDisconnect();
+                        return;
                     }
                     // type目前只实现了chat,FileTransfer延后
                     if (protocolData.getMessageHead().getType().equals("FileTransfer"))

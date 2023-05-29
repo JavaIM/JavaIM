@@ -6,6 +6,8 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
@@ -39,7 +41,13 @@ public class UserLogin{
         }
         else
         {
-
+            try {
+                if (PluginManager.getInstance("./plugins").OnUserPreLogin(LoginUser))
+                {
+                    return false;
+                }
+            } catch (ModeDisabledException ignored) {
+            }
             try {
                 String PrivateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.txt")).PrivateKey;
                 SendMessageToUser(LoginUser,"在进入之前，您必须先登录/注册");
@@ -78,7 +86,7 @@ public class UserLogin{
                 }
                 else if (!protocolData.getMessageHead().getType().equals("Chat"))
                 {
-                    ServerAPI.SendMessageToUser(LoginUser,"警告，数据包非法，将会发回");
+                    ServerAPI.SendMessageToUser(LoginUser,"警告，数据包非法");
                     return false;
                 }
                 UserSelect = protocolData.getMessageBody().getMessage();
@@ -116,7 +124,7 @@ public class UserLogin{
                 }
                 else if (!protocolData.getMessageHead().getType().equals("Chat"))
                 {
-                    ServerAPI.SendMessageToUser(LoginUser,"警告，数据包非法，将会发回");
+                    ServerAPI.SendMessageToUser(LoginUser,"警告，数据包非法");
                     return false;
                 }
                 //用户名暴力格式化，防止用奇奇怪怪的名字绕过命令选择

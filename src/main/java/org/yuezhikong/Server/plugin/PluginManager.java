@@ -178,7 +178,40 @@ public class PluginManager {
         }
         System.exit(ProgramExitCode);
     }
-
+    /**
+     * 用于调用插件事件处理程序
+     * @param LoginUser 用户信息
+     * @return true为阻止消息，false为正常操作
+     */
+    public boolean OnUserPreLogin(user LoginUser)
+    {
+        boolean Block = false;
+        if (NumberOfPlugins == 0)
+        {
+            return false;
+        }
+        for (Plugin plugin : PluginList) {
+            if (plugin.OnUserPreLogin(LoginUser,Server.GetInstance()))
+            {
+                Block = true;
+            }
+        }
+        return Block;
+    }
+    /**
+     * 用于调用插件事件处理程序
+     * @param LoginUser 用户信息
+     */
+    public void OnUserLogin(user LoginUser)
+    {
+        if (NumberOfPlugins == 0)
+        {
+            return;
+        }
+        for (Plugin plugin : PluginList) {
+            plugin.OnUserLogin(LoginUser,Server.GetInstance());
+        }
+    }
     /**
      * 用于调用插件事件处理程序
      * @param ChatUser 用户信息
