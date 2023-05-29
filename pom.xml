@@ -35,11 +35,6 @@
             <version>2.20.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-shade-plugin</artifactId>
-            <version>3.4.0</version>
-        </dependency>
-        <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-crypto</artifactId>
             <version>5.8.15</version>
@@ -48,16 +43,6 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>8.0.32</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <version>3.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>3.2.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -174,7 +159,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                        <finalName>JavaIM-1.0-source</finalName>
+                        <finalName>JavaIM-1.0</finalName>
                         <attach>false</attach>
                         </configuration>
                     </execution>

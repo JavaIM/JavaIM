@@ -156,7 +156,7 @@ public class PluginManager {
         }
         else {
             for (Plugin plugin : PluginList) {
-                plugin.OnUnLoad(Server.GetInstance());
+                plugin.UnRegisterPlugin(Server.GetInstance());
             }
             for (PluginJavaLoader ClassLoader : classLoaderList) {
                 try {
