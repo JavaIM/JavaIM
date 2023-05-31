@@ -1,0 +1,15 @@
+{
+  "LoginPacketHead": {
+    "type": ""
+  },
+  "LoginPacketBody": {
+    "ReLogin": {
+      "UserName": "",
+      "Token": ""
+    },
+    "NormalLogin": {
+      "UserName": "",
+      "Passwd": ""
+    }
+  }
+}
