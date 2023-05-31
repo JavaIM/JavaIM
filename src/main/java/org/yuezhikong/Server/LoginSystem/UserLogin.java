@@ -11,7 +11,7 @@ import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
-import org.yuezhikong.utils.ProtocolData;
+import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.RSA;
 
 import javax.security.auth.login.AccountNotFoundException;
@@ -73,7 +73,7 @@ public class UserLogin{
                 UserSelect = java.net.URLDecoder.decode(UserSelect, StandardCharsets.UTF_8);
                 // 将信息从Protocol Json中取出
                 Gson gson = new Gson();
-                ProtocolData protocolData = gson.fromJson(UserSelect,ProtocolData.class);
+                NormalProtocol protocolData = gson.fromJson(UserSelect, NormalProtocol.class);
                 if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
                 {
                     LoginUser.UserDisconnect();
@@ -110,7 +110,7 @@ public class UserLogin{
                 UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
                 // 将信息从Protocol Json中取出
                 gson = new Gson();
-                protocolData = gson.fromJson(UserName,ProtocolData.class);
+                protocolData = gson.fromJson(UserName, NormalProtocol.class);
                 if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
                 {
                     LoginUser.UserDisconnect();
@@ -157,7 +157,7 @@ public class UserLogin{
                 Password = java.net.URLDecoder.decode(Password, StandardCharsets.UTF_8);
                 // 将信息从Protocol Json中取出
                 gson = new Gson();
-                protocolData = gson.fromJson(Password,ProtocolData.class);
+                protocolData = gson.fromJson(Password, NormalProtocol.class);
                 if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
                 {
                     LoginUser.UserDisconnect();

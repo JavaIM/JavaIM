@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.yuezhikong.utils.*;
+import org.yuezhikong.utils.Protocol.NormalProtocol;
 
 import javax.crypto.SecretKey;
 import java.io.*;
@@ -21,7 +22,7 @@ public class Client {
     //public static final Logger logger = LogManager.getLogger(Client.class);
     protected Logger logger;
     protected String ServerPublicKey = null;
-    private Socket client;
+    protected Socket client;
     private final CustomVar.KeyData RSAKey;
     private cn.hutool.crypto.symmetric.AES AES;
 
@@ -92,12 +93,12 @@ public class Client {
         System.out.print(">");
         // 将消息根据Protocol封装
         Gson gson = new Gson();
-        ProtocolData protocolData = new ProtocolData();
-        ProtocolData.MessageHead MessageHead = new ProtocolData.MessageHead();
+        NormalProtocol protocolData = new NormalProtocol();
+        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
         MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
         MessageHead.setType("Chat");
         protocolData.setMessageHead(MessageHead);
-        ProtocolData.MessageBody MessageBody = new ProtocolData.MessageBody();
+        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
         MessageBody.setFileLong(0);
         MessageBody.setMessage(input);
         protocolData.setMessageBody(MessageBody);
@@ -185,7 +186,7 @@ public class Client {
                     msg = java.net.URLDecoder.decode(msg,StandardCharsets.UTF_8);
                     // 将信息从Protocol Json中取出
                     Gson gson = new Gson();
-                    ProtocolData protocolData = gson.fromJson(msg,ProtocolData.class);
+                    NormalProtocol protocolData = gson.fromJson(msg, NormalProtocol.class);
                     if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
                     {
                         logger.info("此服务器的协议版本与本客户端不相符，正在断开连接");
@@ -210,21 +211,7 @@ public class Client {
                 {
                     if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage()) && !"Socket is closed".equals(e.getMessage()))  {
                         logger.warning("发生I/O错误");
-                        StringWriter sw = new StringWriter();
-                        PrintWriter pw = new PrintWriter(sw);
-                        e.printStackTrace(pw);
-                        pw.flush();
-                        sw.flush();
-                        org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-                        logger_log4j.debug(sw.toString());
-                        pw.close();
-                        try {
-                            sw.close();
-                        }
-                        catch (IOException ex)
-                        {
-                            ex.printStackTrace();
-                        }
+                        SaveStackTrace.saveStackTrace(e);
                     }
                     else
                     {

@@ -15,7 +15,7 @@ import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
-import org.yuezhikong.utils.ProtocolData;
+import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.RSA;
 
 import javax.crypto.SecretKey;
@@ -152,7 +152,7 @@ public class RecvMessageThread extends Thread{
                     ChatMessage = java.net.URLDecoder.decode(ChatMessage, StandardCharsets.UTF_8);
                     // 将信息从Protocol Json中取出
                     Gson gson = new Gson();
-                    ProtocolData protocolData = gson.fromJson(ChatMessage,ProtocolData.class);
+                    NormalProtocol protocolData = gson.fromJson(ChatMessage, NormalProtocol.class);
                     if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
                     {
                         CurrentClientClass.UserDisconnect();

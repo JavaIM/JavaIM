@@ -8,6 +8,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import org.yuezhikong.GUITest.GUIClient;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -30,6 +31,8 @@ public class Controller implements Initializable {
     public TextArea IPAddress;
     @FXML
     public TextArea Port;
+    @FXML
+    public VBox root;
     private boolean Connected = false;
     private GUIClient client;
 
@@ -228,6 +231,13 @@ public class Controller implements Initializable {
             change.setText(newText);
             return change;
         }));
+        root.getScene().getWindow().setOnCloseRequest(windowEvent -> {
+            if (Connected)
+            {
+                client.quit();
+            }
+            System.exit(0);
+        });
     }
     public void ClientStartFailedbyServerPublicKeyLack()
     {

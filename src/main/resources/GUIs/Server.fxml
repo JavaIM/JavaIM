@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="454.0" prefWidth="712.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GUITest.ServerGUI.Controller">
+<VBox fx:id="root" prefHeight="454.0" prefWidth="712.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GUITest.ServerGUI.Controller">
     <MenuBar>
         <Menu mnemonicParsing="false" text="帮助">
             <MenuItem mnemonicParsing="false" onAction="#InformationOfThisWindow" text="这是什么？" />

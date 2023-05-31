@@ -1,12 +1,12 @@
 package org.yuezhikong.GUITest.ServerGUI;
 
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.layout.VBox;
 import org.yuezhikong.GUITest.GUIServer;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.utils.CustomVar;
@@ -21,6 +21,8 @@ public class Controller implements Initializable {
     private boolean StartedServer = false;
     private Logger logger;
     private GUIServer Server;
+    @FXML
+    public VBox root;
     @FXML
     public TextArea ChatLog;
     @FXML
@@ -81,9 +83,15 @@ public class Controller implements Initializable {
             change.setText(newText);
             return change;
         }));
+        root.getScene().getWindow().setOnCloseRequest(windowEvent -> {
+            if (StartedServer) {
+                CloseServer();
+            }
+            System.exit(0);
+        });
     }
 
-    public void InformationOfThisWindow(ActionEvent actionEvent) {
+    public void InformationOfThisWindow() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("关于 此窗口");
         alert.setHeaderText("此窗口是 JavaIM 软件的一部分");
@@ -91,7 +99,7 @@ public class Controller implements Initializable {
         alert.showAndWait();
     }
 
-    public void SendMessage(ActionEvent actionEvent) {
+    public void SendMessage() {
         if (StartedServer)
         {
             if (MessageInput.getText().isEmpty())
@@ -124,7 +132,7 @@ public class Controller implements Initializable {
         }
     }
 
-    public void SendCommand(ActionEvent actionEvent) {
+    public void SendCommand() {
         if (StartedServer) {
             String Command = this.Command.getText();
             if (Command.isEmpty())
@@ -156,7 +164,7 @@ public class Controller implements Initializable {
         }
     }
 
-    public void StartServer(ActionEvent actionEvent) {
+    public void StartServer() {
         int port;
         try
         {
@@ -200,7 +208,7 @@ public class Controller implements Initializable {
         }
     }
 
-    public void CloseServer(ActionEvent actionEvent) {
+    public void CloseServer() {
         if (!StartedServer)
         {
             Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -212,6 +220,7 @@ public class Controller implements Initializable {
         else {
             CustomVar.Command command = ServerAPI.CommandFormat("/quit");
             CommandRequest(command.Command(), command.argv(), null);
+            StartedServer = false;
         }
     }
 }

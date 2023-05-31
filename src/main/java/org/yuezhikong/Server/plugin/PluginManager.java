@@ -160,7 +160,10 @@ public class PluginManager {
     {
         if (NumberOfPlugins <= 0)
         {
-            System.exit(ProgramExitCode);
+            if (!(Server.GetInstance().logger.isGUIMode()))
+            {
+                System.exit(ProgramExitCode);
+            }
         }
         else {
             for (Plugin plugin : PluginList) {
@@ -176,7 +179,10 @@ public class PluginManager {
                 }
             }
         }
-        System.exit(ProgramExitCode);
+        if (!(Server.GetInstance().logger.isGUIMode()))
+        {
+            System.exit(ProgramExitCode);
+        }
     }
     /**
      * 用于调用插件事件处理程序

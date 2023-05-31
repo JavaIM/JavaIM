@@ -6,7 +6,7 @@ import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomVar;
-import org.yuezhikong.utils.ProtocolData;
+import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -66,12 +66,12 @@ public interface ServerAPI {
     {
         // 将消息根据聊天协议封装
         Gson gson = new Gson();
-        ProtocolData protocolData = new ProtocolData();
-        ProtocolData.MessageHead MessageHead = new ProtocolData.MessageHead();
+        NormalProtocol protocolData = new NormalProtocol();
+        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
         MessageHead.setVersion(Version);
         MessageHead.setType("Chat");
         protocolData.setMessageHead(MessageHead);
-        ProtocolData.MessageBody MessageBody = new ProtocolData.MessageBody();
+        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
         MessageBody.setFileLong(0);
         MessageBody.setMessage(Message);
         protocolData.setMessageBody(MessageBody);

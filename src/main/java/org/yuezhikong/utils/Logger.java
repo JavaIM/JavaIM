@@ -22,6 +22,14 @@ public class Logger {
         IsGUIServerLogger = GUIServerLogger;
         IsGUIClientLogger = GUIClientLogger;
     }
+    public boolean isGUIMode()
+    {
+        if (IsGUIServerLogger)
+        {
+            return true;
+        }
+        return IsGUIClientLogger;
+    }
     public void info(String msg, Object... params)
     {
         System.out.print("\b");

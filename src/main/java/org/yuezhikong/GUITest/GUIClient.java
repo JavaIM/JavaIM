@@ -2,6 +2,7 @@ package org.yuezhikong.GUITest;
 
 import org.yuezhikong.Client;
 import org.yuezhikong.GUITest.ClientGUI.Controller;
+import org.yuezhikong.GUITest.ClientGUI.GUI;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -38,6 +39,22 @@ public class GUIClient extends Client {
     @Override
     public boolean SendMessageToServer(String input) throws IOException {
         return super.SendMessageToServer(input);
+    }
+    public void quit()
+    {
+        Thread thread = new Thread(() -> {
+            try {
+                GUIClient.super.client.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        thread.setName("Request User Thread");
+        thread.start();
+        try {
+            thread.join();
+        } catch (InterruptedException ignored) {
+        }
     }
 
     @Override

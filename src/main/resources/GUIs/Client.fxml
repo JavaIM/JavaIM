@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<VBox prefHeight="422.0" prefWidth="624.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GUITest.ClientGUI.Controller">
+<VBox fx:id="root" prefHeight="422.0" prefWidth="624.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GUITest.ClientGUI.Controller">
     <MenuBar>
         <Menu mnemonicParsing="false" text="帮助">
             <MenuItem mnemonicParsing="false" onAction="#InformationOfThisWindow" text="这是什么？" />
