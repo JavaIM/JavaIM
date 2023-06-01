@@ -1,5 +1,6 @@
 package org.yuezhikong.utils.DataBase;
 
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 
 import java.sql.*;
@@ -16,7 +17,7 @@ public class Database {
      * @throws SQLException 获取数据库连接时连接失败
      * @return 数据库连接
      */
-    public static Connection Init(String host, String port, String Database, String UserName, String Password) throws ClassNotFoundException, SQLException {
+    public static @NotNull Connection Init(String host, String port, String Database, String UserName, String Password) throws ClassNotFoundException, SQLException {
         if (!CodeDynamicConfig.GetSQLITEMode()) {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection DatabaseConnection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + Database + "?autoReconnect=true&failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1&useSSL=false", UserName, Password);

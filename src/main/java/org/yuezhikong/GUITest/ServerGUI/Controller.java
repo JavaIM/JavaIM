@@ -7,6 +7,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.VBox;
+import org.jetbrains.annotations.Nls;
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.GUITest.GUIServer;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.utils.CustomVar;
@@ -38,7 +40,7 @@ public class Controller implements Initializable {
      * 将消息打印到服务端日志
      * @param msg 消息
      */
-    public void WriteToServerLog(String msg)
+    public void WriteToServerLog(@NotNull @Nls String msg)
     {
         Platform.runLater(()->
                 {
@@ -52,7 +54,7 @@ public class Controller implements Initializable {
      * 将消息打印到聊天信息
      * @param msg 消息
      */
-    public void WriteToChatLog(String msg)
+    public void WriteToChatLog(@NotNull @Nls String msg)
     {
         Platform.runLater(()->
                 {

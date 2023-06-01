@@ -1,12 +1,10 @@
 package org.yuezhikong;
 
-import static org.yuezhikong.utils.Properties.LoadClientProperties;
-import static org.yuezhikong.utils.Properties.LoadServerProperties;
+import static org.yuezhikong.utils.ConfigFileManager.LoadClientProperties;
+import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
-    //是否是GUI模式
-    private static final boolean GUIMode = Boolean.parseBoolean(LoadClientProperties().getProperty("GUIMode"));
     //协议版本
     private static final int ProtocolVersion = 1;
     //本程序版本：
@@ -29,6 +27,8 @@ public final class CodeDynamicConfig {
     private static final boolean AES_Mode = true;
 
     //动态区，可动态通过配置文件修改
+    //是否是GUI模式
+    public static boolean GUIMode = Boolean.parseBoolean(LoadClientProperties().getProperty("GUIMode"));
     //最大客户端数量，输入-1代表禁用
     public static int MAX_CLIENT = Integer.parseInt(LoadServerProperties().getProperty("MAX_CLIENT"));
     //是否启用登录系统

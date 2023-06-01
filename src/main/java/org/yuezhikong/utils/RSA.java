@@ -4,19 +4,18 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.asymmetric.KeyType;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
 public class RSA {
-    public static CustomVar.KeyData loadPublicKeyFromFile(String filePath)
+    public static CustomVar.@Nullable KeyData loadPublicKeyFromFile(String filePath)
     {
         try {
             String keyString = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
@@ -30,7 +29,7 @@ public class RSA {
             return null;
         }
     }
-    public static CustomVar.KeyData loadPrivateKeyFromFile(String filePath)
+    public static CustomVar.@Nullable KeyData loadPrivateKeyFromFile(String filePath)
     {
         try {
             String keyString = FileUtils.readFileToString(new File(filePath), StandardCharsets.UTF_8);
@@ -44,7 +43,7 @@ public class RSA {
             return null;
         }
     }
-    public static CustomVar.KeyData generateKeyToReturn()
+    public static CustomVar.@NotNull KeyData generateKeyToReturn()
     {
         CustomVar.KeyData keyData = new CustomVar.KeyData();
         KeyPair pair = SecureUtil.generateKeyPair("RSA");

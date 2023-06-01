@@ -1,5 +1,6 @@
 package org.yuezhikong.Server.plugin;
 
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.load.CustomClassLoader.PluginJavaLoader;
@@ -93,7 +94,7 @@ public abstract class Plugin{
      * @param ServerInstance 服务端实例
      * @return false失败true成功
      */
-    protected final boolean RegisterCommand(String Command,String Help,Server ServerInstance)
+    protected final boolean RegisterCommand(String Command, String Help, @NotNull Server ServerInstance)
     {
         for (CustomVar.CommandInformation CommandInformation : ServerInstance.PluginSetCommands)
         {

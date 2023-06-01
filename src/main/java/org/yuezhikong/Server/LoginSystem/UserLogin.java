@@ -2,6 +2,7 @@ package org.yuezhikong.Server.LoginSystem;
 
 
 import com.google.gson.Gson;
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
@@ -34,7 +35,7 @@ public class UserLogin{
      * @throws NullPointerException 用户的某些信息读取出NULL
      * @apiNote 虽然在执行的期间，就会写入到user.class中，但也请您根据返回值做是否踢出登录等的处理
      */
-    public static boolean WhetherTheUserIsAllowedToLogin(user LoginUser,Logger logger) throws UserAlreadyLoggedInException, NullPointerException {
+    public static boolean WhetherTheUserIsAllowedToLogin(@NotNull user LoginUser, Logger logger) throws UserAlreadyLoggedInException, NullPointerException {
         if (LoginUser.GetUserLogined())
         {
             throw new UserAlreadyLoggedInException("This User Is Logined!");

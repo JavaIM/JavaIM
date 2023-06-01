@@ -1,5 +1,6 @@
 package org.yuezhikong.GUITest;
 
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.GUITest.ServerGUI.Controller;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.utils.Logger;
@@ -36,7 +37,7 @@ public class GUIServer extends Server {
      * 请在初始化前调用
      * @param GUIForServer 服务端GUI实例
      */
-    public static void SetTempServerGUI(Controller GUIForServer) {
+    public static void SetTempServerGUI(@NotNull Controller GUIForServer) {
         GUIServer.GUIForServer = GUIForServer;
     }
 }

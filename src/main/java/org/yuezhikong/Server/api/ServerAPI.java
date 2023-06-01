@@ -1,6 +1,9 @@
 package org.yuezhikong.Server.api;
 
 import com.google.gson.Gson;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.Nls;
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
@@ -35,7 +38,9 @@ public interface ServerAPI {
      * @param Command 原始命令信息
      * @return 命令和参数
      */
-    static CustomVar.Command CommandFormat(String Command)
+    @Contract("_ -> new")
+    @NotNull
+    static CustomVar.Command CommandFormat(@NotNull @Nls String Command)
     {
         String command;
         String[] argv;
@@ -62,7 +67,7 @@ public interface ServerAPI {
      * @param Version 协议版本
      * @return 转换为的聊天协议格式
      */
-    static String ChatProtocolRequest(String Message, int Version)
+    static @NotNull String ChatProtocolRequest(@NotNull @Nls String Message, int Version)
     {
         // 将消息根据聊天协议封装
         Gson gson = new Gson();
@@ -82,7 +87,7 @@ public interface ServerAPI {
      * @param user 发信的目标用户
      * @param inputMessage 发信的信息
      */
-    static void SendMessageToUser(user user, String inputMessage)
+    static void SendMessageToUser(@NotNull user user, @NotNull @Nls String inputMessage)
     {
         try {
             Thread.sleep(250);
@@ -127,7 +132,7 @@ public interface ServerAPI {
      * @param inputMessage 要发信的信息
      * @param ServerInstance 服务器实例
      */
-    static void SendMessageToAllClient(String inputMessage,Server ServerInstance)
+    static void SendMessageToAllClient(@NotNull @Nls String inputMessage,@NotNull Server ServerInstance)
     {
         List<user> ValidClientList = GetValidClientList(ServerInstance,true);
         for (user User : ValidClientList)
@@ -142,7 +147,7 @@ public interface ServerAPI {
      * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      * @return 有效的客户端列表
      */
-    static List<user> GetValidClientList(Server ServerInstance,boolean DetectLoginStatus)
+    static @NotNull List<user> GetValidClientList(@NotNull Server ServerInstance, boolean DetectLoginStatus)
     {
         List<user> AllClientList = ServerInstance.getUsers();
         List<user> ValidClientList = new ArrayList<>();
@@ -182,7 +187,7 @@ public interface ServerAPI {
      * @return 用户User Data Class
      * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
-    static user GetUserByUserName(String UserName, Server ServerInstance,boolean DetectLoginStatus) throws AccountNotFoundException {
+    static @NotNull user GetUserByUserName(@NotNull @Nls String UserName, @NotNull Server ServerInstance, boolean DetectLoginStatus) throws AccountNotFoundException {
         List<user> ValidClientList = GetValidClientList(ServerInstance,DetectLoginStatus);
         for (user User : ValidClientList)
         {

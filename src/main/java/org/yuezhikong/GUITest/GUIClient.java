@@ -1,8 +1,8 @@
 package org.yuezhikong.GUITest;
 
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Client;
 import org.yuezhikong.GUITest.ClientGUI.Controller;
-import org.yuezhikong.GUITest.ClientGUI.GUI;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -37,7 +37,7 @@ public class GUIClient extends Client {
     }
 
     @Override
-    public boolean SendMessageToServer(String input) throws IOException {
+    public boolean SendMessageToServer(@NotNull String input) throws IOException {
         return super.SendMessageToServer(input);
     }
     public void quit()
@@ -84,7 +84,7 @@ public class GUIClient extends Client {
         super(serverName, port);
     }
 
-    public static void SetTempClientGUI(Controller ClientGUI)
+    public static void SetTempClientGUI(@NotNull Controller ClientGUI)
     {
         GUIClient.ClientGUI = ClientGUI;
     }

@@ -1,6 +1,8 @@
 package org.yuezhikong.Server.Commands;
 
 import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.Nls;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
@@ -36,6 +38,7 @@ class CommandLogger
      * @param Type 类型：0：服务端，1：服务端
      * @param user 如果是客户端，请在这里加上客户端Class，如果是服务端，请改为null
      */
+    @Contract(pure = true)
     public CommandLogger(int Type,user user)
     {
         type = Type;
@@ -45,7 +48,7 @@ class CommandLogger
      * 发出聊天信息
      * @param Message 消息
      */
-    public void ChatMsg(String Message)
+    public void ChatMsg(@Nls String Message)
     {
         if (type == 0)
         {
@@ -61,7 +64,7 @@ class CommandLogger
      * 发出信息
      * @param Message 消息
      */
-    public void info(String Message)
+    public void info(@Nls String Message)
     {
         if (type == 0)
         {
@@ -77,7 +80,7 @@ class CommandLogger
      * 发出信息
      * @param Message 消息
      */
-    public void error(String Message)
+    public void error(@Nls String Message)
     {
         org.yuezhikong.utils.Logger logger = Server.GetInstance().logger;
         logger.error(Message);

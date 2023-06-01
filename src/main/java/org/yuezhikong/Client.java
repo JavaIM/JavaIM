@@ -4,7 +4,8 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.utils.*;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 
@@ -25,6 +26,12 @@ public class Client {
     protected Socket client;
     private final CustomVar.KeyData RSAKey;
     private cn.hutool.crypto.symmetric.AES AES;
+    private static Client Instance;
+
+    @Contract(pure = true)
+    public static Client getInstance() {
+        return Instance;
+    }
 
     /**
      * Logger初始化
@@ -60,7 +67,7 @@ public class Client {
      * @return true为请退出程序，false为请继续执行
      * @throws IOException 出现io错误时
      */
-    protected boolean SendMessageToServer(String input) throws IOException
+    protected boolean SendMessageToServer(@NotNull String input) throws IOException
     {
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
         if (About_System) {
@@ -135,6 +142,7 @@ public class Client {
         }
     }
     public Client(String serverName, int port) {
+        Instance = this;
         {
             LoggerInit();
             if (!(new File("ServerPublicKey.txt").exists()))

@@ -1,5 +1,6 @@
 package org.yuezhikong.Server.plugin;
 
+import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
@@ -66,7 +67,7 @@ public class PluginManager {
      * @param DirName 文件夹路径
      * @return 文件列表
      */
-    private List<File> GetPluginFileList(String DirName)
+    private @Nullable List<File> GetPluginFileList(String DirName)
     {
         File file = new File(DirName);
         if (file.isDirectory())

@@ -1,10 +1,13 @@
 package org.yuezhikong.utils;
 
-import java.io.*;
+import org.jetbrains.annotations.NotNull;
 
-public class Properties {
+import java.io.*;
+import java.util.Properties;
+
+public class ConfigFileManager {
     public void CreateServerprop(){
-        java.util.Properties sprop = new java.util.Properties();
+        Properties sprop = new Properties();
         try {
             sprop.setProperty("MAX_CLIENT", "-1");
             sprop.setProperty("EnableLoginSystem", "true");
@@ -16,33 +19,33 @@ public class Properties {
             sprop.setProperty("MySQLDataBasePasswd", "JavaIM");
             sprop.store(new FileOutputStream("server.properties"), null);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            SaveStackTrace.saveStackTrace(ex);
         }
     }
     public void CreateClientprop(){
-        java.util.Properties cprop = new java.util.Properties();
+        Properties cprop = new Properties();
         try {
             cprop.setProperty("GUIMode", "true");
             cprop.store(new FileOutputStream("client.properties"), null);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            SaveStackTrace.saveStackTrace(ex);
         }
     }
-    public static java.util.Properties LoadClientProperties(){
-        java.util.Properties prop = new java.util.Properties();
+    public static @NotNull Properties LoadClientProperties(){
+        Properties prop = new Properties();
         try {
             prop.load(new FileInputStream("client.properties"));
         } catch (IOException ex) {
-            ex.printStackTrace();
+            SaveStackTrace.saveStackTrace(ex);
         }
         return prop;
     }
-    public static java.util.Properties LoadServerProperties(){
-        java.util.Properties prop = new java.util.Properties();
+    public static @NotNull Properties LoadServerProperties(){
+        Properties prop = new Properties();
         try {
             prop.load(new FileInputStream("server.properties"));
         } catch (IOException ex) {
-            ex.printStackTrace();
+            SaveStackTrace.saveStackTrace(ex);
         }
         return prop;
     }

@@ -17,20 +17,20 @@
 package org.yuezhikong;
 
 import javafx.application.Application;
+import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.GUITest.MainGUI.GUI;
 import org.yuezhikong.Server.Server;
-import org.yuezhikong.utils.Properties;
+import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.utils.ConfigFileManager;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.SaveStackTrace;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Proxy;
-import java.net.Socket;
+import java.io.*;
 import java.util.Scanner;
 
 import static org.yuezhikong.CodeDynamicConfig.*;
+import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
 
 public class Main {
     private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger(false,false,null,null);
@@ -104,23 +104,77 @@ public class Main {
         }
     }
 
-    public static byte[] subBytes(byte[]src,int begin,int count){
+    public static byte @NotNull [] subBytes(byte[]src, int begin, int count){
         byte[]bs=new byte[count];
         System.arraycopy(src, begin, bs, begin, count);
         return bs;
     }
     public static void CreateServerProperties(){
-        Properties prop = new Properties();
+        ConfigFileManager prop = new ConfigFileManager();
         prop.CreateServerprop();
     }
     public static void CreateClientProperties(){
-        Properties prop = new Properties();
+        ConfigFileManager prop = new ConfigFileManager();
         prop.CreateClientprop();
+    }
+    public static void ConsoleMain()
+    {
+        logger.info("欢迎来到JavaIM！版本："+getVersion());
+        logger.info("使用客户端模式请输入1，服务端模式请输入2:");
+        Scanner sc = new Scanner(System.in);
+        int mode = sc.nextInt();
+        if (mode == 1) {
+            Scanner sc2 = new Scanner(System.in);
+            Scanner sc3 = new Scanner(System.in);
+            String serverName;
+            logger.info("请输入要连接的主机:");
+            serverName = sc2.nextLine();
+            logger.info("请输入端口:");
+            int port = Integer.parseInt(sc3.nextLine());
+            new Client(serverName, port);
+        } else if (mode == 2) {
+            Scanner sc4 = new Scanner(System.in);
+            logger.info("请输入监听端口:");
+            int port = Integer.parseInt(sc4.nextLine());
+            new Server(port);
+        } else {
+            logger.info("输入值错误，请重新运行程序");
+        }
     }
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
+        //注册未抛出的异常处理器
+        Thread.currentThread().setUncaughtExceptionHandler((t, e) -> {
+            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
+            logger_log4j.debug("程序出现错误，错误信息为：");
+            SaveStackTrace.saveStackTrace(e);
+            if (Server.GetInstance() != null)
+            {
+                Server.GetInstance().logger.error("服务端出现致命错误！正在退出服务端");
+                CustomVar.Command command = ServerAPI.CommandFormat("/quit");
+                CommandRequest(command.Command(), command.argv(), null);
+            }
+            else if (Client.getInstance() != null)
+            {
+                Client.getInstance().logger.error("客户端出现致命错误！正在退出客户端");
+                try {
+                    if (Client.getInstance().SendMessageToServer(".quit"))
+                    {
+                        Client.getInstance().logger.info("再见~");
+                        Client.getInstance().ExitSystem(0);
+                    }
+                } catch (IOException ignored) {
+                }
+            }
+            else
+            {
+                logger.error("程序出现致命错误！正在退出程序");
+            }
+            System.exit(0);
+        });
+        //服务端与客户端配置文件初始化
         if (!(new File("server.properties").exists())){
             logger.info("目录下没有检测到服务端配置文件，正在创建");
             CreateServerProperties();
@@ -129,7 +183,9 @@ public class Main {
             logger.info("目录下没有检测到客户端配置文件，正在创建");
             CreateClientProperties();
         }
-
+        //命令行参数处理
+        ConsoleCommandRequest.Request(true,args);
+        //启动JavaIM启动逻辑
         try {
             if (isThisVersionIsExpVersion())
             {
@@ -137,49 +193,15 @@ public class Main {
                 logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
                 logger.info("本版本测试性内容列表：");
                 logger.info(getExpVersionText());
-                logger.info("是否要启动此GUI？");
-                logger.info("1为启动，其他为正常启动");
-                Scanner sc = new Scanner(System.in);
-                int mode = sc.nextInt();
-                if (mode == 1)
-                {
-                    if (isGUIMode())
-                    {
-                        Application.launch(GUI.class, args);
-                        return;
-                    }
-                    else
-                    {
-                        logger.info("此版本不允许GUI模式");
-                    }
-                }
+                ExpVersionCode code = new ExpVersionCode();
+                code.run(logger);
             }
             if (isGUIMode())
             {
                 Application.launch(GUI.class, args);
                 return;
             }
-            logger.info("欢迎来到JavaIM！版本："+getVersion());
-            logger.info("使用客户端模式请输入1，服务端模式请输入2:");
-            Scanner sc = new Scanner(System.in);
-            int mode = sc.nextInt();
-            if (mode == 1) {
-                Scanner sc2 = new Scanner(System.in);
-                Scanner sc3 = new Scanner(System.in);
-                String serverName;
-                logger.info("请输入要连接的主机:");
-                serverName = sc2.nextLine();
-                logger.info("请输入端口:");
-                int port = Integer.parseInt(sc3.nextLine());
-                new Client(serverName, port);
-            } else if (mode == 2) {
-                Scanner sc4 = new Scanner(System.in);
-                logger.info("请输入监听端口:");
-                int port = Integer.parseInt(sc4.nextLine());
-                new Server(port);
-            } else {
-                logger.info("输入值错误，请重新运行程序");
-            }
+            ConsoleMain();
         }
         catch (Exception e)
         {

@@ -1,5 +1,6 @@
 package org.yuezhikong.Server.plugin.load.CustomClassLoader;
 
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.plugin.Plugin;
 
 import java.io.File;
@@ -18,7 +19,7 @@ public final class PluginJavaLoader extends URLClassLoader {
     }
 
     private final InputStream propertiesStream;
-    public PluginJavaLoader(ClassLoader parent, File s) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public PluginJavaLoader(ClassLoader parent, @NotNull File s) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         super(new URL[]{s.toURI().toURL()}, parent);
         propertiesStream = this.getResourceAsStream("PluginManifest.properties");
         Properties properties = new Properties();

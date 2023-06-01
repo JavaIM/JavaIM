@@ -1,6 +1,7 @@
 package org.yuezhikong.utils;
 
 import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -16,7 +17,7 @@ public class SaveStackTrace {
      * 保存到debug.log的方法
      * @param e 发生的异常
      */
-    public static void saveStackTrace(Throwable e)
+    public static void saveStackTrace(@NotNull Throwable e)
     {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);

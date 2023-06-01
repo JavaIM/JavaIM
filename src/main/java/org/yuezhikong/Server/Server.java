@@ -3,6 +3,7 @@ package org.yuezhikong.Server;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.Contract;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
@@ -95,6 +96,7 @@ public class Server {
      * @apiNote 获取服务端实例
      * @return 服务端实例
      */
+    @Contract(pure = true)
     public static Server GetInstance()
     {
         return instance;
@@ -248,7 +250,7 @@ public class Server {
 
     /**
      * 严禁集成到构造函数！
-     * 此函数是由GUIServer重写的，用来替换logger，这样可以将信息传输到GUI
+     * <p>此函数是由GUIServer重写的，用来替换logger，这样可以将信息传输到GUI</p>
      */
     protected void SetupLoggerSystem()
     {
