@@ -7,7 +7,7 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.load.PluginManager;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.*;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.DataBase.Database;
@@ -39,14 +39,6 @@ public class Server {
     public org.yuezhikong.Server.timer timer;
 
     /**
-     * 获取客户端总数量
-     * @return 客户端总数量
-     */
-    public int getClientIDAll() {
-        return clientIDAll;
-    }
-
-    /**
      * 获取用户Class List
      * @return 用户Class List
      */
@@ -59,12 +51,12 @@ public class Server {
      */
     protected void RSA_KeyAutogenerate()
     {
-        if (!(new File("Public.key").exists()))
+        if (!(new File("Public.txt").exists()))
         {
-            if (!(new File("Private.key").exists()))
+            if (!(new File("Private.txt").exists()))
             {
                 try {
-                    RSA.generateKeyToFile("Public.key", "Private.key");
+                    RSA.generateKeyToFile("Public.txt", "Private.txt");
                 }
                 catch (Exception e)
                 {
@@ -75,7 +67,7 @@ public class Server {
             {
                 logger.warning("系统检测到您的目录下不存在公钥，但，存在私钥，系统将为您覆盖一个新的rsa key");
                 try {
-                    RSA.generateKeyToFile("Public.key", "Private.key");
+                    RSA.generateKeyToFile("Public.txt", "Private.txt");
                 }
                 catch (Exception e)
                 {
@@ -85,11 +77,11 @@ public class Server {
         }
         else
         {
-            if (!(new File("Private.key").exists()))
+            if (!(new File("Private.txt").exists()))
             {
                 logger.warning("系统检测到您的目录下存在公钥，但，不存在私钥，系统将为您覆盖一个新的rsa key");
                 try {
-                    RSA.generateKeyToFile("Public.key", "Private.key");
+                    RSA.generateKeyToFile("Public.txt", "Private.txt");
                 }
                 catch (Exception e)
                 {

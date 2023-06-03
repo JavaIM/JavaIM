@@ -1,9 +1,8 @@
-package org.yuezhikong.Server.plugin.load;
+package org.yuezhikong.Server.plugin;
 
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.Plugin;
 import org.yuezhikong.Server.plugin.load.CustomClassLoader.PluginJavaLoader;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -21,18 +20,10 @@ import java.util.Locale;
  * @apiNote 测试性class
  */
 public class PluginManager {
-    private final List<Plugin> PluginList = new ArrayList<>();
-    private final List<PluginJavaLoader> classLoaderList = new ArrayList<>();
-    private int NumberOfPlugins = 0;
+    final List<Plugin> PluginList = new ArrayList<>();
+    final List<PluginJavaLoader> classLoaderList = new ArrayList<>();
+    int NumberOfPlugins = 0;
     private static PluginManager Instance;
-
-    /**
-     * 获取插件列表
-     * @return 插件列表
-     */
-    public List<Plugin> getPluginList() {
-        return PluginList;
-    }
 
     /**
      * 获取插件管理器实例
@@ -47,6 +38,21 @@ public class PluginManager {
             {
                 Instance = new PluginManager(DirName);
             }
+            return Instance;
+        }
+        else {
+            throw new ModeDisabledException("Error! Plugin System Is Disabled!");
+        }
+    }
+    /**
+     * 获取插件管理器实例
+     * 不会创建实例，如果未能成功获取，发送null
+     * @return 插件管理器实例
+     * @throws ModeDisabledException 插件系统已经被禁用了
+     */
+    public static PluginManager getInstanceOrNull() throws ModeDisabledException {
+        if (CodeDynamicConfig.GetPluginSystemMode())
+        {
             return Instance;
         }
         else {
@@ -113,17 +119,19 @@ public class PluginManager {
             PluginJavaLoader classLoader = null;
             try {
                 classLoader = new PluginJavaLoader(ClassLoader.getSystemClassLoader(),s);
-                if (classLoader.ThisPlugin.getInformation().PluginName().isEmpty() || classLoader.ThisPlugin.getInformation().plugin() == null || !classLoader.ThisPlugin.getInformation().Registered() || classLoader.ThisPlugin.getInformation().PluginAuthor().isEmpty() || classLoader.ThisPlugin.getInformation().PluginVersion().isEmpty())
+                classLoaderList.add(classLoader);
+                classLoader.getPlugin().OnLoad(Server.GetInstance());
+                PluginList.add(classLoader.getPlugin());
+                NumberOfPlugins = NumberOfPlugins + 1;
+                if (classLoader.getPlugin().getInformation().PluginName().isEmpty() || classLoader.getPlugin().getInformation().plugin() == null || !classLoader.getPlugin().getInformation().Registered() || classLoader.getPlugin().getInformation().PluginAuthor().isEmpty() || classLoader.getPlugin().getInformation().PluginVersion().isEmpty())
                 {
                     Server.GetInstance().logger.info("加载插件文件"+s.getName()+"失败！原因，未按照要求填写基本信息");
-                    throw new Exception("Run ClassLoader Close");
-                }
-                else
-                {
-                    classLoaderList.add(classLoader);
-                    classLoader.ThisPlugin.OnLoad(Server.GetInstance());
-                    PluginList.add(classLoader.ThisPlugin);
-                    NumberOfPlugins = NumberOfPlugins + 1;
+                    classLoader.getPlugin().UnRegisterPlugin(Server.GetInstance());
+                    try {
+                        classLoader.close();
+                    } catch (IOException ignored) {
+                    }
+                    throw new Exception("出现插件错误");
                 }
             }
             catch (Throwable e)
@@ -156,11 +164,13 @@ public class PluginManager {
         }
         else {
             for (Plugin plugin : PluginList) {
-                plugin.OnUnLoad(Server.GetInstance());
+                plugin.UnRegisterPlugin(Server.GetInstance());
             }
             for (PluginJavaLoader ClassLoader : classLoaderList) {
                 try {
-                    ClassLoader.close();
+                    if (ClassLoader != null) {
+                        ClassLoader.close();
+                    }
                 } catch (IOException e) {
                     SaveStackTrace.saveStackTrace(e);
                 }
@@ -168,7 +178,40 @@ public class PluginManager {
         }
         System.exit(ProgramExitCode);
     }
-
+    /**
+     * 用于调用插件事件处理程序
+     * @param LoginUser 用户信息
+     * @return true为阻止消息，false为正常操作
+     */
+    public boolean OnUserPreLogin(user LoginUser)
+    {
+        boolean Block = false;
+        if (NumberOfPlugins == 0)
+        {
+            return false;
+        }
+        for (Plugin plugin : PluginList) {
+            if (plugin.OnUserPreLogin(LoginUser,Server.GetInstance()))
+            {
+                Block = true;
+            }
+        }
+        return Block;
+    }
+    /**
+     * 用于调用插件事件处理程序
+     * @param LoginUser 用户信息
+     */
+    public void OnUserLogin(user LoginUser)
+    {
+        if (NumberOfPlugins == 0)
+        {
+            return;
+        }
+        for (Plugin plugin : PluginList) {
+            plugin.OnUserLogin(LoginUser,Server.GetInstance());
+        }
+    }
     /**
      * 用于调用插件事件处理程序
      * @param ChatUser 用户信息

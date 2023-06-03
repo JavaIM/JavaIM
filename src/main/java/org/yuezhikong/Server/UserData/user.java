@@ -2,7 +2,7 @@ package org.yuezhikong.Server.UserData;
 
 import cn.hutool.crypto.symmetric.AES;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.Server.plugin.load.PluginManager;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
 import java.io.IOException;

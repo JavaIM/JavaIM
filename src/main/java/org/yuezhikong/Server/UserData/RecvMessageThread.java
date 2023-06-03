@@ -10,7 +10,8 @@ import org.yuezhikong.Server.Commands.RequestCommand;
 import org.yuezhikong.Server.LoginSystem.UserLogin;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.load.PluginManager;
+import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
@@ -56,7 +57,7 @@ public class RecvMessageThread extends Thread{
             DataOutputStream out = new DataOutputStream(CurrentClientSocket.getOutputStream());
             String privateKey = null;
             if (GetRSA_Mode()) {//根据RSA模式，决定是否进行RSA握手
-                privateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey;
+                privateKey = Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.txt")).PrivateKey;
                 CurrentClientClass.SetUserPublicKey(java.net.URLDecoder.decode(in.readUTF(), StandardCharsets.UTF_8));
                 out.writeUTF(RSA.encrypt("Hello,Client! This Message By Server RSA System",CurrentClientClass.GetUserPublicKey()));
                 logger.info("正在连接的客户端响应："+RSA.decrypt(in.readUTF(),privateKey));
@@ -81,7 +82,9 @@ public class RecvMessageThread extends Thread{
                 try {
                     if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass,logger))) {
                         CurrentClientClass.UserDisconnect();
+                        return;
                     }
+                    PluginManager.getInstance("./plugins").OnUserLogin(CurrentClientClass);
                 }
                 catch (UserAlreadyLoggedInException e)
                 {
@@ -97,6 +100,7 @@ public class RecvMessageThread extends Thread{
                     CurrentClientClass.UserDisconnect();
                     return;
                 }
+                catch (ModeDisabledException ignored) {}
             }
             else
             {
@@ -119,7 +123,7 @@ public class RecvMessageThread extends Thread{
                         UserName = CurrentClientClass.GetUserAES().decryptStr(UserName);
                     }
                     else {
-                        UserName = RSA.decrypt(UserName, Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.key")).PrivateKey);
+                        UserName = RSA.decrypt(UserName, Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.txt")).PrivateKey);
                     }
                 }
                 UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
@@ -152,6 +156,7 @@ public class RecvMessageThread extends Thread{
                     if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
                     {
                         CurrentClientClass.UserDisconnect();
+                        return;
                     }
                     // type目前只实现了chat,FileTransfer延后
                     if (protocolData.getMessageHead().getType().equals("FileTransfer"))

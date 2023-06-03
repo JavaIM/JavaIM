@@ -5,7 +5,7 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
-import org.yuezhikong.Server.plugin.load.PluginManager;
+import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
@@ -374,17 +374,17 @@ public class RequestCommand {
                     return;
                 }
                 try {
-                    Field field = Server.GetInstance().getClass().getDeclaredField("ExitSystem");
+                    Field field = Server.class.getDeclaredField("ExitSystem");
                     field.setAccessible(true);
                     field.set(Server.GetInstance(),true);
                     field.setAccessible(false);
 
-                    field = Server.GetInstance().getClass().getDeclaredField("userAuthThread");
+                    field = Server.class.getDeclaredField("userAuthThread");
                     field.setAccessible(true);
                     Thread userAuthThread = (Thread) field.get(Server.GetInstance());
                     field.setAccessible(false);
 
-                    field = Server.GetInstance().getClass().getDeclaredField("serverSocket");
+                    field = Server.class.getDeclaredField("serverSocket");
                     field.setAccessible(true);
                     ServerSocket ServerSocket = (java.net.ServerSocket) field.get(Server.GetInstance());
                     field.setAccessible(false);

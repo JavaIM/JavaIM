@@ -11,7 +11,12 @@ import java.net.URLClassLoader;
 import java.util.Properties;
 
 public final class PluginJavaLoader extends URLClassLoader {
-    public final Plugin ThisPlugin;
+    private Plugin ThisPlugin;
+
+    public Plugin getPlugin() {
+        return ThisPlugin;
+    }
+
     private final InputStream propertiesStream;
     public PluginJavaLoader(ClassLoader parent, File s) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         super(new URL[]{s.toURI().toURL()}, parent);
@@ -26,6 +31,7 @@ public final class PluginJavaLoader extends URLClassLoader {
 
     @Override
     public void close() throws IOException {
+        ThisPlugin = null;
         propertiesStream.close();
         super.close();
     }

@@ -46,17 +46,4 @@ public class Properties {
         }
         return prop;
     }
-    /*
-    public static boolean isGUIMode() {
-        boolean GUIMode = Boolean.parseBoolean(LoadClientProperties().getProperty("GUIMode"));
-        return GUIMode;
-    }
-    public static boolean Debug_Mode() {
-        boolean Debug_Mode = Boolean.parseBoolean(LoadClientProperties().getProperty("Debug_Mode"));
-        return Debug_Mode;
-    }
-    public static int MAX_CLIENT() {
-        CodeDynamicConfig.MAX_CLIENT = Integer.parseInt(LoadClientProperties().getProperty("MAX_CLIENT"));
-        return MAX_CLIENT;
-    }*/
 }

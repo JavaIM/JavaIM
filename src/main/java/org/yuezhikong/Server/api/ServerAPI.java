@@ -115,6 +115,7 @@ public interface ServerAPI {
             writer.write(Message);
             writer.newLine();
             writer.flush();
+            writer.close();
         } catch (Exception e)
         {
             SaveStackTrace.saveStackTrace(e);
