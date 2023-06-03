@@ -17,7 +17,3 @@
 {% content-ref url="start/install/" %}
 [install](start/install/)
 {% endcontent-ref %}
-
-{% content-ref url="start/install/server-start.md" %}
-[server-start.md](start/install/server-start.md)
-{% endcontent-ref %}
