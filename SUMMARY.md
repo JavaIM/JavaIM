@@ -4,5 +4,5 @@
 
 ## Start
 
-* [🛠 服务端配置](start/server-start.md)
+* [🛠 Start Server](start/server-start.md)
 * [🛠 客户端配置](start/client-start.md)

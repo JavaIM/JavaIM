@@ -1,18 +1,18 @@
 # 👋 JavaIM Docs
 
-这里是JavaIM的文档！
+Here is the JavaIM documentation!
 
 {% hint style="info" %}
-**注意：** JavaIM仍然处于开发阶段，不能保证通信的安全性。
+**Attention:** JavaIM is still in the development stage and cannot guarantee the security of communication
 {% endhint %}
 
-## 概述
+## About
 
-> JavaIM是一款使用Java编写的端到端的加密通信软件。
+> JavaIM is a cross-platform encrypted communication software written in Java.
 >
-> JavaIM目前通过RSA算法对通信内容进行加密，这种方式仍然存在一些漏洞，将来将会推出更加安全可靠的方式进行传输。
+> JavaIM currently encrypts communication content through the RSA algorithm. This method still has some vulnerabilities, and more secure and reliable methods will be introduced in the future.
 
-## 现在开始！
+## Start Now！
 
 {% content-ref url="start/server-start.md" %}
 [server-start.md](start/server-start.md)
