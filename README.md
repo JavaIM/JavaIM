@@ -8,7 +8,7 @@
 
 ## 概述
 
-> JavaIM是一款使用Java编写的端到端的加密通信软件。
+> JavaIM是一款使用Java编写的跨平台加密通信软件。
 >
 > JavaIM目前通过RSA算法对通信内容进行加密，这种方式仍然存在一些漏洞，将来将会推出更加安全可靠的方式进行传输。
 
@@ -18,6 +18,6 @@
 [install](start/install/)
 {% endcontent-ref %}
 
-{% content-ref url="start/server-start.md" %}
-[server-start.md](start/server-start.md)
+{% content-ref url="start/install/server-start.md" %}
+[server-start.md](start/install/server-start.md)
 {% endcontent-ref %}
