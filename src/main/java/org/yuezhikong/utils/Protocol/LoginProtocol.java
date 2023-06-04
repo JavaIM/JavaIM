@@ -4,27 +4,10 @@ package org.yuezhikong.utils.Protocol;
  * <p>如果修改了protocol，请使用GsonFormat插件直接替换</p>
  */
 public class LoginProtocol {
-    /*
-     * 目前Json
-     * {
-     *   "LoginPacketHead": {
-     *     "type": ""
-     *   },
-     *   "LoginPacketBody": {
-     *     "ReLogin": {
-     *       "UserName": "",
-     *       "Token": ""
-     *     },
-     *     "NormalLogin": {
-     *       "UserName": "",
-     *       "Passwd": ""
-     *     }
-     *   }
-     * }
-     */
+
     /**
      * LoginPacketHead : {"type":""}
-     * LoginPacketBody : {"ReLogin":{"UserName":"","Token":""},"NormalLogin":{"UserName":"","Passwd":""}}
+     * LoginPacketBody : {"ReLogin":{"Token":""},"NormalLogin":{"UserName":"","Passwd":""}}
      */
 
     private LoginPacketHeadBean LoginPacketHead;
@@ -64,7 +47,7 @@ public class LoginProtocol {
 
     public static class LoginPacketBodyBean {
         /**
-         * ReLogin : {"UserName":"","Token":""}
+         * ReLogin : {"Token":""}
          * NormalLogin : {"UserName":"","Passwd":""}
          */
 
@@ -89,20 +72,10 @@ public class LoginProtocol {
 
         public static class ReLoginBean {
             /**
-             * UserName :
              * Token :
              */
 
-            private String UserName;
             private String Token;
-
-            public String getUserName() {
-                return UserName;
-            }
-
-            public void setUserName(String UserName) {
-                this.UserName = UserName;
-            }
 
             public String getToken() {
                 return Token;

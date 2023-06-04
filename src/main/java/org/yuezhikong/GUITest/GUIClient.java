@@ -3,6 +3,7 @@ package org.yuezhikong.GUITest;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Client;
 import org.yuezhikong.GUITest.ClientGUI.Controller;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -10,6 +11,7 @@ import java.io.IOException;
 
 public class GUIClient extends Client {
     private static Controller ClientGUI;
+    private static GUIClient Instance;
 
     @Override
     protected void PublicKeyLack() {
@@ -22,6 +24,21 @@ public class GUIClient extends Client {
         super.logger = new Logger(false,true,null,ClientGUI);
     }
 
+    @Override
+    protected void GetUserNameAndUserPassword() {
+        ClientGUI.GetUserNameAndPassword();
+    }
+
+    @Override
+    public boolean SendMessageToServer(@NotNull String input) throws IOException {
+        return super.SendMessageToServer(input);
+    }
+
+    public void UserNameAndPasswordReCall(CustomVar.UserAndPassword userAndPassword)
+    {
+        super.LoginCallback(userAndPassword);
+    }
+
     /**
      * 获取客户端logger
      * @return logger
@@ -31,15 +48,14 @@ public class GUIClient extends Client {
         return super.logger;
     }
 
+    public static GUIClient getInstance() {
+        return Instance;
+    }
     @Override
     protected void ExitSystem(int code) {
         ClientGUI.ExitSystem(code);
     }
 
-    @Override
-    public boolean SendMessageToServer(@NotNull String input) throws IOException {
-        return super.SendMessageToServer(input);
-    }
     public void quit()
     {
         Thread thread = new Thread(() -> {
@@ -82,6 +98,7 @@ public class GUIClient extends Client {
 
     public GUIClient(String serverName, int port) {
         super(serverName, port);
+        Instance = this;
     }
 
     public static void SetTempClientGUI(@NotNull Controller ClientGUI)

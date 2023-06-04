@@ -9,7 +9,7 @@ public class ConsoleCommandRequest {
      * @param AllowExit 是/否允许解析退出
      * @param args 命令行参数
      */
-    public static void Request(boolean AllowExit, @NotNull String @NotNull [] args)
+    public static void Request(boolean AllowExit, String @NotNull [] args)
     {
         for (String arg : args)
         {

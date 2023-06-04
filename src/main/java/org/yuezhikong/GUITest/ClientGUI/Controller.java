@@ -10,6 +10,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.GUITest.GUIClient;
@@ -35,6 +36,7 @@ public class Controller implements Initializable {
     public TextArea Port;
     @FXML
     public VBox root;
+    private Stage LoginStage;
     private boolean Connected = false;
     private GUIClient client;
 
@@ -240,6 +242,13 @@ public class Controller implements Initializable {
             }
             System.exit(0);
         });
+        LoginStage = new Stage();
+        org.yuezhikong.GUITest.ClientGUI.LoginGUI.GUI LoginGUI = new org.yuezhikong.GUITest.ClientGUI.LoginGUI.GUI();
+        try {
+            LoginGUI.start(LoginStage);
+        } catch (Exception e) {
+            SaveStackTrace.saveStackTrace(e);
+        }
     }
     public void ClientStartFailedbyServerPublicKeyLack()
     {
@@ -263,5 +272,9 @@ public class Controller implements Initializable {
             ClientFailedAlert.showAndWait();
             System.exit(code);
         });
+    }
+
+    public void GetUserNameAndPassword() {
+        LoginStage.showAndWait();
     }
 }

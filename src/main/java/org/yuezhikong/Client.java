@@ -4,9 +4,11 @@ import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.utils.*;
+import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 
 import javax.crypto.SecretKey;
@@ -126,19 +128,75 @@ public class Client {
         writer.flush();
         return false;
     }
+    private boolean getUserName;
+    private boolean getPassword;
     /**
      * 循环检测控制台并将用户输入发信
      * @throws IOException 出现IO错误时抛出
      */
     protected void SendMessage() throws IOException {
+        String UserName = "";
         while (true) {
             // 等待用户输入信息
             BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
             String input = consoleReader.readLine();
+            if (!(logger.isGUIMode())) {
+                if (getUserName) {
+                    logger.info("请输入密码");
+                    UserName = input;
+                    getUserName = false;
+                    continue;
+                }
+                if (getPassword) {
+                    getPassword = false;
+                    LoginCallback(new CustomVar.UserAndPassword(UserName, input));
+                }
+            }
             if (SendMessageToServer(input))
             {
                 break;
             }
+        }
+    }
+    protected void GetUserNameAndUserPassword()
+    {
+        getUserName = true;
+        getPassword = true;
+        logger.info("请输入用户名");
+    }
+    protected void LoginCallback(CustomVar.UserAndPassword userAndPassword)
+    {
+        try {
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
+            Gson gson = new Gson();
+            String data;
+            LoginProtocol loginProtocol = new LoginProtocol();
+            LoginProtocol.LoginPacketHeadBean LoginPacketHead = new LoginProtocol.LoginPacketHeadBean();
+            LoginPacketHead.setType("Login");
+            loginProtocol.setLoginPacketHead(LoginPacketHead);
+            LoginProtocol.LoginPacketBodyBean LoginPacketBody = new LoginProtocol.LoginPacketBodyBean();
+            LoginProtocol.LoginPacketBodyBean.NormalLoginBean LoginBean = new LoginProtocol.LoginPacketBodyBean.NormalLoginBean();
+            LoginBean.setUserName(userAndPassword.Username());
+            LoginBean.setPasswd(userAndPassword.PassWord());
+            LoginPacketBody.setNormalLogin(LoginBean);
+            loginProtocol.setLoginPacketBody(LoginPacketBody);
+            data = gson.toJson(loginProtocol);
+            // 加密信息
+            data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+            if (GetRSA_Mode()) {
+                if (isAES_Mode()) {
+                    data = AES.encryptBase64(data, StandardCharsets.UTF_8);
+                } else
+                    data = RSA.encrypt(data, ServerPublicKey);
+            }
+            // 发送消息给服务器
+            writer.write(data);
+            writer.newLine();
+            writer.flush();
+        } catch (IOException e)
+        {
+            SaveStackTrace.saveStackTrace(e);
+            ExitSystem(0);
         }
     }
     public Client(String serverName, int port) {
@@ -262,10 +320,156 @@ public class Client {
             }
             //后续握手过程还需测试RSA！
             out.writeUTF("Hello from " + client.getLocalSocketAddress());//通讯握手开始
-            logger.info("服务器响应： " + in.readUTF());//握手结束
+            logger.info("服务器响应： " + in.readUTF());//通讯握手结束
+            //握手（登录状态检测）
+            {
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
+                String data;
+                Gson gson = new Gson();
+                NormalProtocol protocolData = new NormalProtocol();
+                NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                MessageHead.setType("Login");
+                protocolData.setMessageHead(MessageHead);
+                NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
+                MessageBody.setFileLong(0);
+                MessageBody.setMessage("Query");
+                protocolData.setMessageBody(MessageBody);
+                data = gson.toJson(protocolData);
+                // 加密信息
+                data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+                if (GetRSA_Mode()) {
+                    if (isAES_Mode())
+                    {
+                        data = AES.encryptBase64(data,StandardCharsets.UTF_8);
+                    }
+                    else
+                        data = RSA.encrypt(data, ServerPublicKey);
+                }
+                // 发送消息给服务器
+                writer.write(data);
+                writer.newLine();
+                writer.flush();
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                data = reader.readLine();
+                if (data == null)
+                {
+                    logger.info("连接早已被关闭...");
+                    ExitSystem(0);
+                    System.exit(0);
+                }
+                if (GetRSA_Mode()) {
+                    if (isAES_Mode())
+                    {
+                        data = AES.decryptStr(data);
+                    }
+                    else {
+                        if (RSAKey.privateKey != null) {
+                            data = RSA.decrypt(data, RSAKey.privateKey);
+                        } else {
+                            logger.error("错误，您的私钥为null，但现在处于RSA模式，无法解密此消息！");
+                            ExitSystem(0);
+                            System.exit(0);
+                        }
+                    }
+                }
+                data = java.net.URLDecoder.decode(data,StandardCharsets.UTF_8);
+                // 将信息从Protocol Json中取出
+                gson = new Gson();
+                protocolData = gson.fromJson(data, NormalProtocol.class);
+                if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                {
+                    logger.info("此服务器的协议版本与本客户端不相符，正在断开连接");
+                    client.close();
+                    ExitSystem(0);
+                    System.exit(0);
+                }
+                // type目前只实现了chat,FileTransfer延后
+                if (protocolData.getMessageHead().getType().equals("FileTransfer"))
+                {
+                    logger.info("有人想要为您发送一个文件，但是此客户端暂不支持FileTransfer协议");
+                    client.close();
+                    ExitSystem(0);
+                    System.exit(0);
+                }
+                else if (!protocolData.getMessageHead().getType().equals("Login"))
+                {
+                    logger.warning("警告，服务端发来无法识别的非法数据包");
+                    client.close();
+                    ExitSystem(0);
+                    System.exit(0);
+                }
+                else {
+                    if ("Enable".equals(protocolData.getMessageBody().getMessage()))
+                    {
+                        if (new File("./token.txt").exists() && new File("./token.txt").isFile())
+                        {
+                            LoginProtocol loginProtocol = new LoginProtocol();
+                            LoginProtocol.LoginPacketHeadBean LoginPacketHead = new LoginProtocol.LoginPacketHeadBean();
+                            LoginPacketHead.setType("Login");
+                            loginProtocol.setLoginPacketHead(LoginPacketHead);
+                            LoginProtocol.LoginPacketBodyBean LoginPacketBody = new LoginProtocol.LoginPacketBodyBean();
+                            LoginProtocol.LoginPacketBodyBean.ReLoginBean TokenBean = new LoginProtocol.LoginPacketBodyBean.ReLoginBean();
+                            TokenBean.setToken(FileUtils.readFileToString(new File("./token.txt"), StandardCharsets.UTF_8));
+                            LoginPacketBody.setReLogin(TokenBean);
+                            loginProtocol.setLoginPacketBody(LoginPacketBody);
+                            data = gson.toJson(loginProtocol);
+                            // 加密信息
+                            data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+                            if (GetRSA_Mode()) {
+                                if (isAES_Mode())
+                                {
+                                    data = AES.encryptBase64(data,StandardCharsets.UTF_8);
+                                }
+                                else
+                                    data = RSA.encrypt(data, ServerPublicKey);
+                            }
+                            // 发送消息给服务器
+                            writer.write(data);
+                            writer.newLine();
+                            writer.flush();
+                        }
+                        else {
+                            GetUserNameAndUserPassword();
+                        }
+                    }
+                    else {
+                        UUID tmpUserName = UUID.randomUUID();
+                        logger.info("您的用户名为："+ tmpUserName);
+
+                        gson = new Gson();
+                        protocolData = new NormalProtocol();
+                        MessageHead = new NormalProtocol.MessageHead();
+                        MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        MessageHead.setType("Login");
+                        protocolData.setMessageHead(MessageHead);
+                        MessageBody = new NormalProtocol.MessageBody();
+                        MessageBody.setFileLong(0);
+                        MessageBody.setMessage(tmpUserName.toString());
+                        protocolData.setMessageBody(MessageBody);
+                        data = gson.toJson(protocolData);
+                        // 加密信息
+                        data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+                        if (GetRSA_Mode()) {
+                            if (isAES_Mode())
+                            {
+                                data = AES.encryptBase64(data,StandardCharsets.UTF_8);
+                            }
+                            else
+                                data = RSA.encrypt(data, ServerPublicKey);
+                        }
+                        // 发送消息给服务器
+                        writer.write(data);
+                        writer.newLine();
+                        writer.flush();
+                    }
+                }
+            }//握手结束
             Thread thread = new Thread(recvmessage);
             thread.start();
             thread.setName("RecvMessage Thread");
+            //控制台输出检测
             SendMessage();
         }
         catch (IOException e)

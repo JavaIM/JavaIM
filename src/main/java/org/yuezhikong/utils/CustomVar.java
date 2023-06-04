@@ -9,6 +9,10 @@ public class CustomVar {
     }
     public record CommandInformation(String Command, String Help, Plugin plugin) {
     }
+    public record UserAndPassword(String Username,String PassWord)
+    {
+
+    }
     public static class KeyData {
         public java.security.PublicKey publicKey;
         public java.security.PrivateKey privateKey;

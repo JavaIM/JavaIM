@@ -3,3 +3,18 @@ type代表消息类型，Chat代表聊天，FileTransfer代表文件传输，Log
 MessageBody中的Message代表如果是Chat模式，那么消息是什么
 MessageBody中的FileLong代表如果是FileTransfer模式，那么文件长度是多少
 如果是FileTransfer模式，请在json发送完毕后，通过write byte的方式发送文件，长度到达json设定的长度时， 将被截断
+
+新登录逻辑
+Client                                           Server
+模式Login，正常协议，Message:Query        ->
+如果返回Enable
+         <-模式Login，正常协议，Message:Enable
+         Login协议，发送token或用户名密码  ->
+         如果发送token且失败
+            <-模式Login，正常协议，Message:Fail
+            Login协议，发送用户名密码  ->
+         <-模式Login，正常协议，Message:Success
+         备注：Success = 登录成功，其他就会直接断开
+如果返回Disable
+         <-模式Login，正常协议，Message:Disable
+         模式Login，正常协议，发送用户名  ->
