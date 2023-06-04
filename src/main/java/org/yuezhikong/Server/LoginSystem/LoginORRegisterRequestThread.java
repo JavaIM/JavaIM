@@ -1,19 +1,29 @@
 package org.yuezhikong.Server.LoginSystem;
 
 import cn.hutool.crypto.SecureUtil;
+import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.DataBase.Database;
+import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 
+import static org.yuezhikong.CodeDynamicConfig.GetRSA_Mode;
+import static org.yuezhikong.CodeDynamicConfig.isAES_Mode;
 import static org.yuezhikong.Server.Server.DEBUG;
 import static org.yuezhikong.Server.api.ServerAPI.SendMessageToUser;
 
@@ -37,7 +47,6 @@ public class LoginORRegisterRequestThread extends Thread{
         {
             Success = false;
             ServerAPI.SendMessageToUser(RequestUser,"不得使用被禁止的用户名：Server");
-
             return;
         }
         try {
@@ -53,6 +62,7 @@ public class LoginORRegisterRequestThread extends Thread{
                 if (rs.getInt("UserLogged") == 1)
                 {
                     Success = false;
+                    ServerAPI.SendMessageToUser(RequestUser,"此用户已经登录了!");
                     DatabaseConnection.close();
                     return;
                 }
@@ -92,7 +102,6 @@ public class LoginORRegisterRequestThread extends Thread{
                     ps = DatabaseConnection.prepareStatement(sql);
                     ps.setString(1,UserName);
                     ps.executeUpdate();
-                    DatabaseConnection.close();
                 }
             }
             else
@@ -104,7 +113,7 @@ public class LoginORRegisterRequestThread extends Thread{
                     ps = DatabaseConnection.prepareStatement(sql);
                     ps.setString(1, sql);
                     rs = ps.executeQuery();
-                } while (!rs.next());
+                } while (rs.next());
                 String sha256 = SecureUtil.sha256(Passwd + salt);
                 sql = "INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`) VALUES (0,?, ?, ?);";
                 ps = DatabaseConnection.prepareStatement(sql);
@@ -112,10 +121,69 @@ public class LoginORRegisterRequestThread extends Thread{
                 ps.setString(2,sha256);
                 ps.setString(3,salt);
                 ps.executeUpdate();
-                DatabaseConnection.close();
                 Success = true;
                 RequestUser.UserLogin(UserName);
             }
+            String token;
+            do {
+                token = UUID.randomUUID().toString();
+                sql = "select * from UserData where token = ?";
+                ps = DatabaseConnection.prepareStatement(sql);
+                ps.setString(1, sql);
+                rs = ps.executeQuery();
+            } while (rs.next());
+            sql = "UPDATE UserData SET token = ? where UserName = ?;";
+            ps = DatabaseConnection.prepareStatement(sql);
+            ps.setString(1,token);
+            ps.setString(2,UserName);
+            ps.executeUpdate();
+            final String finalToken = token;
+            new Thread()
+            {
+                @Override
+                public void run() {
+                    this.setName("I/O Thread");
+                    try {
+                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.GetUserSocket().getOutputStream()));
+                        Gson gson = new Gson();
+                        NormalProtocol protocolData = new NormalProtocol();
+                        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                        MessageHead.setType("Login");
+                        MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        protocolData.setMessageHead(MessageHead);
+                        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
+                        MessageBody.setFileLong(0);
+                        MessageBody.setMessage(finalToken);
+                        protocolData.setMessageBody(MessageBody);
+                        String data = gson.toJson(protocolData);
+                        if (GetRSA_Mode()) {
+                            String UserPublicKey = RequestUser.GetUserPublicKey();
+                            if (UserPublicKey == null) {
+                                throw new NullPointerException();
+                            }
+                            data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+                            if (isAES_Mode())
+                            {
+                                data = RequestUser.GetUserAES().encryptBase64(data);
+                            }
+                            else {
+                                data = RSA.encrypt(data, UserPublicKey);
+                            }
+                        }
+                        writer.write(data);
+                        writer.newLine();
+                        writer.flush();
+                    } catch (IOException e) {
+                        SaveStackTrace.saveStackTrace(e);
+                    } catch (ModeDisabledException ignored) {
+                    }
+                }
+                public Thread start2()
+                {
+                    super.start();
+                    return this;
+                }
+            }.start2().join();
         } catch (ClassNotFoundException e)
         {
             RequestUser.UserDisconnect();
@@ -130,6 +198,8 @@ public class LoginORRegisterRequestThread extends Thread{
             RequestUser.UserDisconnect();
             SaveStackTrace.saveStackTrace(e);
             Success = false;
+        } catch (InterruptedException e) {
+            SaveStackTrace.saveStackTrace(e);
         }
     }
 

@@ -7,9 +7,12 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.utils.*;
+import org.yuezhikong.utils.CustomVar;
+import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.RSA;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
 import java.io.*;
@@ -60,6 +63,11 @@ public class Client {
      */
     protected void ExitSystem(int code)
     {
+        try {
+            client.close();
+        } catch (IOException e) {
+            SaveStackTrace.saveStackTrace(e);
+        }
         System.exit(0);
     }
 
@@ -72,61 +80,59 @@ public class Client {
     protected boolean SendMessageToServer(@NotNull String input) throws IOException
     {
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-        if (About_System) {
-            if (".about".equals(input)) {
-                logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
-                logger.info("主仓库位于：https://github.com/QiLechan/JavaIM");
-                logger.info("主要开发者名单：");
-                logger.info("QiLechan（柒楽）");
-                logger.info("AlexLiuDev233 （阿白）");
-                logger.info("仓库启用了不允许协作者直接推送到主分支，需审核后再提交");
-                logger.info("因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性");
-            }
-        }
-        if (".help".equals(input)) {
-            logger.info("客户端命令列表");
             if (About_System) {
-                logger.info(".about 查看本程序相关信息");
+                if (".about".equals(input)) {
+                    logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
+                    logger.info("主仓库位于：https://github.com/QiLechan/JavaIM");
+                    logger.info("主要开发者名单：");
+                    logger.info("QiLechan（柒楽）");
+                    logger.info("AlexLiuDev233 （阿白）");
+                    logger.info("仓库启用了不允许协作者直接推送到主分支，需审核后再提交");
+                    logger.info("因此，如果想要体验最新功能，请查看fork仓库，但不保证稳定性");
+                }
             }
-            logger.info(".quit 断开与服务器的连接并终止本程序");
-        }
-        // 检查用户输入是否是.quit
-        if (".quit".equals(input))
-        {
-            logger.info("正在断开连接");
-            writer.write("quit\n");
-            client.close();
-            return true;
-        }
-        // 为控制台补上一个>
-        System.out.print(">");
-        // 将消息根据Protocol封装
-        Gson gson = new Gson();
-        NormalProtocol protocolData = new NormalProtocol();
-        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
-        MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-        MessageHead.setType("Chat");
-        protocolData.setMessageHead(MessageHead);
-        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
-        MessageBody.setFileLong(0);
-        MessageBody.setMessage(input);
-        protocolData.setMessageBody(MessageBody);
-        input = gson.toJson(protocolData);
-        // 加密信息
-        input = java.net.URLEncoder.encode(input, StandardCharsets.UTF_8);
-        if (GetRSA_Mode()) {
-            if (isAES_Mode())
-            {
-                input = AES.encryptBase64(input,StandardCharsets.UTF_8);
+            if (".help".equals(input)) {
+                logger.info("客户端命令列表");
+                if (About_System) {
+                    logger.info(".about 查看本程序相关信息");
+                }
+                logger.info(".quit 断开与服务器的连接并终止本程序");
             }
-            else
-                input = RSA.encrypt(input, ServerPublicKey);
-        }
-        // 发送消息给服务器
-        writer.write(input);
-        writer.newLine();
-        writer.flush();
-        return false;
+            // 检查用户输入是否是.quit
+            if (".quit".equals(input)) {
+                logger.info("正在断开连接");
+                writer.write("quit\n");
+                writer.newLine();
+                writer.flush();
+                return true;
+            }
+            // 为控制台补上一个>
+            System.out.print(">");
+            // 将消息根据Protocol封装
+            Gson gson = new Gson();
+            NormalProtocol protocolData = new NormalProtocol();
+            NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+            MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+            MessageHead.setType("Chat");
+            protocolData.setMessageHead(MessageHead);
+            NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
+            MessageBody.setFileLong(0);
+            MessageBody.setMessage(input);
+            protocolData.setMessageBody(MessageBody);
+            input = gson.toJson(protocolData);
+            // 加密信息
+            input = java.net.URLEncoder.encode(input, StandardCharsets.UTF_8);
+            if (GetRSA_Mode()) {
+                if (isAES_Mode()) {
+                    input = AES.encryptBase64(input, StandardCharsets.UTF_8);
+                } else
+                    input = RSA.encrypt(input, ServerPublicKey);
+            }
+            // 发送消息给服务器
+            writer.write(input);
+            writer.newLine();
+            writer.flush();
+            return false;
     }
     private boolean getUserName;
     private boolean getPassword;
@@ -138,24 +144,24 @@ public class Client {
         String UserName = "";
         while (true) {
             // 等待用户输入信息
-            BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
-            String input = consoleReader.readLine();
-            if (!(logger.isGUIMode())) {
-                if (getUserName) {
-                    logger.info("请输入密码");
-                    UserName = input;
-                    getUserName = false;
-                    continue;
+                BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+                String input = consoleReader.readLine();
+                if (!(logger.isGUIMode())) {
+                    if (getUserName) {
+                        logger.info("请输入密码");
+                        UserName = input;
+                        getUserName = false;
+                        continue;
+                    }
+                    if (getPassword) {
+                        getPassword = false;
+                        LoginCallback(new CustomVar.UserAndPassword(UserName, input));
+                        continue;
+                    }
                 }
-                if (getPassword) {
-                    getPassword = false;
-                    LoginCallback(new CustomVar.UserAndPassword(UserName, input));
+                if (SendMessageToServer(input)) {
+                    break;
                 }
-            }
-            if (SendMessageToServer(input))
-            {
-                break;
-            }
         }
     }
     protected void GetUserNameAndUserPassword()
@@ -193,12 +199,13 @@ public class Client {
             writer.write(data);
             writer.newLine();
             writer.flush();
-        } catch (IOException e)
-        {
+            TokenWrite = true;
+        } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
             ExitSystem(0);
         }
     }
+    boolean TokenWrite = false;
     public Client(String serverName, int port) {
         Instance = this;
         {
@@ -225,62 +232,52 @@ public class Client {
             }
             while (true)
             {
-                BufferedReader reader;//获取输入流
+                //获取输入流
                 try {
-                    reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                    String msg = reader.readLine();
-                    if (msg == null)
-                    {
-                        logger.info("连接早已被关闭...");
-                        ExitSystem(0);
-                        break;
-                    }
-                    if (GetRSA_Mode()) {
-                        if (isAES_Mode())
-                        {
-                            msg = AES.decryptStr(msg);
-                        }
-                        else {
-                            if (privateKey != null) {
-                                msg = RSA.decrypt(msg, privateKey);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                    String msg;
+                    while ((msg = reader.readLine()) != null) {
+                        if (GetRSA_Mode()) {
+                            if (isAES_Mode()) {
+                                msg = AES.decryptStr(msg);
                             } else {
-                                logger.error("错误，您的私钥为null，但现在处于RSA模式，无法解密此消息！");
-                                continue;
+                                if (privateKey != null) {
+                                    msg = RSA.decrypt(msg, privateKey);
+                                } else {
+                                    logger.error("错误，您的私钥为null，但现在处于RSA模式，无法解密此消息！");
+                                    continue;
+                                }
                             }
                         }
+                        msg = java.net.URLDecoder.decode(msg, StandardCharsets.UTF_8);
+                        // 将信息从Protocol Json中取出
+                        Gson gson = new Gson();
+                        NormalProtocol protocolData = gson.fromJson(msg, NormalProtocol.class);
+                        if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion()) {
+                            logger.info("此服务器的协议版本与本客户端不相符，正在断开连接");
+                            client.close();
+                            break;
+                        }
+                        // type目前只实现了chat,FileTransfer延后
+                        if (protocolData.getMessageHead().getType().equals("FileTransfer")) {
+                            logger.info("有人想要为您发送一个文件，但是此客户端暂不支持FileTransfer协议");
+                        } else if (protocolData.getMessageHead().getType().equals("Login")) {
+                            if (TokenWrite) {
+                                FileUtils.writeStringToFile(new File("./token.txt"), protocolData.getMessageBody().getMessage(), StandardCharsets.UTF_8);
+                                System.out.print(">");
+                            }
+                        } else if (!protocolData.getMessageHead().getType().equals("Chat")) {
+                            logger.warning("警告，服务端发来无法识别的非法数据包");
+                        } else {
+                            msg = protocolData.getMessageBody().getMessage();
+                            logger.ChatMsg(msg);
+                        }
                     }
-                    msg = java.net.URLDecoder.decode(msg,StandardCharsets.UTF_8);
-                    // 将信息从Protocol Json中取出
-                    Gson gson = new Gson();
-                    NormalProtocol protocolData = gson.fromJson(msg, NormalProtocol.class);
-                    if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
-                    {
-                        logger.info("此服务器的协议版本与本客户端不相符，正在断开连接");
-                        client.close();
-                        break;
-                    }
-                    // type目前只实现了chat,FileTransfer延后
-                    if (protocolData.getMessageHead().getType().equals("FileTransfer"))
-                    {
-                        logger.info("有人想要为您发送一个文件，但是此客户端暂不支持FileTransfer协议");
-                    }
-                    else if (!protocolData.getMessageHead().getType().equals("Chat"))
-                    {
-                        logger.warning("警告，服务端发来无法识别的非法数据包");
-                    }
-                    else {
-                        msg = protocolData.getMessageBody().getMessage();
-                        logger.ChatMsg(msg);
-                    }
-                }
-                catch (IOException e)
-                {
-                    if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage()) && !"Socket is closed".equals(e.getMessage()))  {
+                } catch (IOException e) {
+                    if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage()) && !"Socket is closed".equals(e.getMessage())) {
                         logger.warning("发生I/O错误");
                         SaveStackTrace.saveStackTrace(e);
-                    }
-                    else
-                    {
+                    } else {
                         logger.info("连接早已被关闭...");
                         ExitSystem(0);
                         break;
@@ -318,12 +315,12 @@ public class Client {
                 }
                 //out.writeUTF(RSA.encrypt(java.net.URLEncoder.encode("你", StandardCharsets.UTF_8),ServerPublicKey));
             }
-            //后续握手过程还需测试RSA！
             out.writeUTF("Hello from " + client.getLocalSocketAddress());//通讯握手开始
             logger.info("服务器响应： " + in.readUTF());//通讯握手结束
             //握手（登录状态检测）
             {
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
                 String data;
                 Gson gson = new Gson();
                 NormalProtocol protocolData = new NormalProtocol();
@@ -339,11 +336,9 @@ public class Client {
                 // 加密信息
                 data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
                 if (GetRSA_Mode()) {
-                    if (isAES_Mode())
-                    {
-                        data = AES.encryptBase64(data,StandardCharsets.UTF_8);
-                    }
-                    else
+                    if (isAES_Mode()) {
+                        data = AES.encryptBase64(data, StandardCharsets.UTF_8);
+                    } else
                         data = RSA.encrypt(data, ServerPublicKey);
                 }
                 // 发送消息给服务器
@@ -351,60 +346,50 @@ public class Client {
                 writer.newLine();
                 writer.flush();
 
-                BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
                 data = reader.readLine();
-                if (data == null)
-                {
+                if (data == null) {
                     logger.info("连接早已被关闭...");
                     ExitSystem(0);
                     System.exit(0);
                 }
                 if (GetRSA_Mode()) {
-                    if (isAES_Mode())
-                    {
+                    if (isAES_Mode()) {
                         data = AES.decryptStr(data);
-                    }
-                    else {
+                    } else {
                         if (RSAKey.privateKey != null) {
                             data = RSA.decrypt(data, RSAKey.privateKey);
                         } else {
                             logger.error("错误，您的私钥为null，但现在处于RSA模式，无法解密此消息！");
+                            client.close();
                             ExitSystem(0);
                             System.exit(0);
                         }
                     }
                 }
-                data = java.net.URLDecoder.decode(data,StandardCharsets.UTF_8);
+                data = java.net.URLDecoder.decode(data, StandardCharsets.UTF_8);
                 // 将信息从Protocol Json中取出
                 gson = new Gson();
                 protocolData = gson.fromJson(data, NormalProtocol.class);
-                if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
-                {
+                if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion()) {
                     logger.info("此服务器的协议版本与本客户端不相符，正在断开连接");
                     client.close();
                     ExitSystem(0);
                     System.exit(0);
                 }
                 // type目前只实现了chat,FileTransfer延后
-                if (protocolData.getMessageHead().getType().equals("FileTransfer"))
-                {
+                if (protocolData.getMessageHead().getType().equals("FileTransfer")) {
                     logger.info("有人想要为您发送一个文件，但是此客户端暂不支持FileTransfer协议");
                     client.close();
                     ExitSystem(0);
                     System.exit(0);
-                }
-                else if (!protocolData.getMessageHead().getType().equals("Login"))
-                {
+                } else if (!protocolData.getMessageHead().getType().equals("Login")) {
                     logger.warning("警告，服务端发来无法识别的非法数据包");
                     client.close();
                     ExitSystem(0);
                     System.exit(0);
-                }
-                else {
-                    if ("Enable".equals(protocolData.getMessageBody().getMessage()))
-                    {
-                        if (new File("./token.txt").exists() && new File("./token.txt").isFile())
-                        {
+                } else {
+                    if ("Enable".equals(protocolData.getMessageBody().getMessage())) {
+                        if (new File("./token.txt").exists() && new File("./token.txt").isFile()) {
                             gson = new Gson();
                             LoginProtocol loginProtocol = new LoginProtocol();
                             LoginProtocol.LoginPacketHeadBean LoginPacketHead = new LoginProtocol.LoginPacketHeadBean();
@@ -419,25 +404,63 @@ public class Client {
                             // 加密信息
                             data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
                             if (GetRSA_Mode()) {
-                                if (isAES_Mode())
-                                {
-                                    data = AES.encryptBase64(data,StandardCharsets.UTF_8);
-                                }
-                                else
+                                if (isAES_Mode()) {
+                                    data = AES.encryptBase64(data, StandardCharsets.UTF_8);
+                                } else
                                     data = RSA.encrypt(data, ServerPublicKey);
                             }
                             // 发送消息给服务器
                             writer.write(data);
                             writer.newLine();
                             writer.flush();
-                        }
-                        else {
+
+                            data = reader.readLine();
+                            if (data == null) {
+                                logger.info("连接早已被关闭...");
+                                client.close();
+                                ExitSystem(0);
+                                System.exit(0);
+                            }
+                            if (GetRSA_Mode()) {
+                                if (isAES_Mode()) {
+                                    data = AES.decryptStr(data);
+                                } else {
+                                    if (RSAKey.privateKey != null) {
+                                        data = RSA.decrypt(data, RSAKey.privateKey);
+                                    } else {
+                                        logger.error("错误，您的私钥为null，但现在处于RSA模式，无法解密此消息！");
+                                        client.close();
+                                        ExitSystem(0);
+                                        System.exit(0);
+                                    }
+                                }
+                            }
+                            data = java.net.URLDecoder.decode(data, StandardCharsets.UTF_8);
+                            // 将信息从Protocol Json中取出
+                            gson = new Gson();
+                            protocolData = gson.fromJson(data, NormalProtocol.class);
+                            if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion()) {
+                                logger.info("此服务器的协议版本与本客户端不相符，正在断开连接");
+                                client.close();
+                                ExitSystem(0);
+                                System.exit(0);
+                            }
+                            if (!protocolData.getMessageHead().getType().equals("Login")) {
+                                logger.warning("警告，服务端发来无法识别的非法数据包");
+                                client.close();
+                                ExitSystem(0);
+                                System.exit(0);
+                            } else {
+                                if ("Fail".equals(protocolData.getMessageBody().getMessage())) {
+                                    GetUserNameAndUserPassword();
+                                }
+                            }
+                        } else {
                             GetUserNameAndUserPassword();
                         }
-                    }
-                    else {
+                    } else {
                         UUID tmpUserName = UUID.randomUUID();
-                        logger.info("您的用户名为："+ tmpUserName);
+                        logger.info("您的用户名为：" + tmpUserName);
 
                         gson = new Gson();
                         protocolData = new NormalProtocol();
@@ -453,11 +476,9 @@ public class Client {
                         // 加密信息
                         data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
                         if (GetRSA_Mode()) {
-                            if (isAES_Mode())
-                            {
-                                data = AES.encryptBase64(data,StandardCharsets.UTF_8);
-                            }
-                            else
+                            if (isAES_Mode()) {
+                                data = AES.encryptBase64(data, StandardCharsets.UTF_8);
+                            } else
                                 data = RSA.encrypt(data, ServerPublicKey);
                         }
                         // 发送消息给服务器
@@ -466,10 +487,11 @@ public class Client {
                         writer.flush();
                     }
                 }
-            }//握手结束
+            }
+            //握手结束
             Thread thread = new Thread(recvmessage);
-            thread.start();
             thread.setName("RecvMessage Thread");
+            thread.start();
             //控制台输出检测
             SendMessage();
         }

@@ -53,6 +53,11 @@ public class GUIClient extends Client {
     }
     @Override
     protected void ExitSystem(int code) {
+        try {
+            super.client.close();
+        } catch (IOException e) {
+            SaveStackTrace.saveStackTrace(e);
+        }
         ClientGUI.ExitSystem(code);
     }
 

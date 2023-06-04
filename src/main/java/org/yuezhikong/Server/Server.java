@@ -9,16 +9,18 @@ import org.yuezhikong.Server.UserData.RecvMessageThread;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.Server.plugin.PluginManager;
-import org.yuezhikong.utils.*;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
+import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.RSA;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -229,10 +231,10 @@ public class Server {
     protected void UserLoginStatusReset() {
         Runnable SQLUpdateThread = () -> {
             try {
-                Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                 String sql = "UPDATE UserData SET UserLogged = 0 where UserLogged = 1;";
-                PreparedStatement ps = mySQLConnection.prepareStatement(sql);
-                ps.executeUpdate();
+                DatabaseConnection.createStatement().executeUpdate(sql);
+                DatabaseConnection.close();
             } catch (Exception e) {
                 SaveStackTrace.saveStackTrace(e);
             }

@@ -2,97 +2,37 @@ package org.yuezhikong.utils.DataBase;
 
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.sql.*;
 
 public class Database {
     private static void UpdateDatabase(@NotNull Connection DatabaseConnection) throws SQLException {
-        int version = 0;
-        //version:2
-        String sql = "select * from UserData where DatabaseProtocolVersion = 2";
-        PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-        if (rs.next())
-        {
-            rs.first();
-            version = 2;
-        }
-        //version:1
-        sql = "select * from UserData where DatabaseProtocolVersion = 1";
-        ps = DatabaseConnection.prepareStatement(sql);
-        rs = ps.executeQuery();
-        if (rs.next())
-        {
-            rs.first();
-            version = 1;
-        }
-        if (version == 2 || version == 1)
-        {
-            sql = "ALTER TABLE student ADD token varchar(255) not null AFTER salt;";
-            ps = DatabaseConnection.prepareStatement(sql);
-            ps.executeUpdate();
-            if (version == 1)
-            {
-                sql = "select * from UserData where DatabaseProtocolVersion = 1";
-                ps = DatabaseConnection.prepareStatement(sql);
-                rs = ps.executeQuery();
-                while (rs.next())
-                {
-                    sql = "INSERT  INTO `UserData` (" +
-                            "`DatabaseProtocolVersion`," +
-                            "`UserMuted`," +
-                            "`UserMuteTime`," +
-                            "`Permission`," +
-                            "`UserName`," +
-                            "`Passwd`," +
-                            "`salt`," +
-                            "`token`,"+
-                            "`UserLogged`" +
-                            ") VALUES (?,?,?,?,?,?,?,?,?);";
-                    ps = DatabaseConnection.prepareStatement(sql);
-                    ps.setInt(1, CodeDynamicConfig.GetDatabaseProtocolVersion());
-                    ps.setLong(2,rs.getLong("UserMuted"));
-                    ps.setLong(3,rs.getLong("UserMuteTime"));
-                    ps.setLong(4,rs.getLong("Permission"));
-                    ps.setString(5,rs.getString("UserName"));
-                    ps.setString(6,rs.getString("Passwd"));
-                    ps.setString(7,rs.getString("salt"));
-                    ps.setString(8,"");
-                    ps.setInt(9,0);
-                    ps.executeUpdate();
+        boolean exist = false;
+        if (CodeDynamicConfig.GetSQLITEMode()) {
+            try {
+                String sql = "PRAGMA table_info('UserData')";
+                ResultSet rs = DatabaseConnection.createStatement().executeQuery(sql);
+                while (rs.next()) {
+                    String column = rs.getString("name");
+                    if ("token".equals(column)) {
+                        exist = true;
+                        break;
+                    }
                 }
+            } catch (SQLException e) {
+                SaveStackTrace.saveStackTrace(e);
             }
-            if (version == 2)
-            {
-                sql = "select * from UserData where DatabaseProtocolVersion = 2";
-                ps = DatabaseConnection.prepareStatement(sql);
-                rs = ps.executeQuery();
-                while (rs.next())
-                {
-                    sql = "INSERT  INTO `UserData` (" +
-                            "`DatabaseProtocolVersion`," +
-                            "`UserMuted`," +
-                            "`UserMuteTime`," +
-                            "`Permission`," +
-                            "`UserName`," +
-                            "`Passwd`," +
-                            "`salt`," +
-                            "`token`,"+
-                            "`UserLogged`" +
-                            ") VALUES (?,?,?,?,?,?,?,?,?);";
-                    ps = DatabaseConnection.prepareStatement(sql);
-                    ps.setInt(1, CodeDynamicConfig.GetDatabaseProtocolVersion());
-                    ps.setLong(2,rs.getLong("UserMuted"));
-                    ps.setLong(3,rs.getLong("UserMuteTime"));
-                    ps.setLong(4,rs.getLong("Permission"));
-                    ps.setString(5,rs.getString("UserName"));
-                    ps.setString(6,rs.getString("Passwd"));
-                    ps.setString(7,rs.getString("salt"));
-                    ps.setString(8,"");
-                    ps.setInt(9,0);
-                    ps.executeUpdate();
-                }
-            }
+        }
+        else
+        {
+            String sql = "SHOW COLUMNS FROM UserData LIKE 'token'";
+            ResultSet rs = DatabaseConnection.createStatement().executeQuery(sql);
+            exist = rs.next();
+        }
+        if (!exist) {
+            String sql = "ALTER TABLE UserData ADD COLUMN token VARCHAR(255) NOT NULL DEFAULT '';";
+            DatabaseConnection.createStatement().executeUpdate(sql);
         }
     }
     /**
@@ -120,12 +60,10 @@ public class Database {
                             " UserName varchar(255)," +//用户名
                             " Passwd varchar(255)," +//密码
                             " salt varchar(255)," +//密码加盐加的盐
-                            " token varchar(255),"+//Login Token
-                            " UserLogged INT"+//用户是否已登录
+                            " UserLogged INT,"+//用户是否已登录
+                            " token varchar(255)"+//Login Token
                             " );";
-
-            PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-            ps.executeUpdate();
+            DatabaseConnection.createStatement().executeUpdate(sql);
             UpdateDatabase(DatabaseConnection);
             return DatabaseConnection;
         }
@@ -142,10 +80,10 @@ public class Database {
                             " UserName varchar(255)," +//用户名
                             " Passwd varchar(255)," +//密码
                             " salt varchar(255)," +//密码加盐加的盐
-                            " UserLogged INT"+//用户是否已登录
+                            " UserLogged INT,"+//用户是否已登录
+                            " token varchar(255)"+//Login Token
                             " );";
-            PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-            ps.executeUpdate();
+            DatabaseConnection.createStatement().executeUpdate(sql);
             UpdateDatabase(DatabaseConnection);
             return DatabaseConnection;
         }

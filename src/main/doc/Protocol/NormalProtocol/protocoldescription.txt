@@ -10,9 +10,11 @@ Client                                           Server
 如果返回Enable
          <-模式Login，正常协议，Message:Enable
          Login协议，发送token或用户名密码  ->
+         <-模式Login，正常协议，Message:Success（仅token）
          如果发送token且失败
             <-模式Login，正常协议，Message:Fail
             Login协议，发送用户名密码  ->
+         <-模式Login，正常协议，Message:（token）
          备注：Success = 登录成功，其他就会直接断开
 如果返回Disable
          <-模式Login，正常协议，Message:Disable

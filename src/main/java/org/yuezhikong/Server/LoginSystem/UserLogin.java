@@ -53,6 +53,7 @@ public class UserLogin{
                 }
                 //处理登录请求
                 LoginORRegisterRequestThread requestThread = new LoginORRegisterRequestThread(UserName,Passwd,LoginUser);
+                requestThread.start();
                 requestThread.join();
                 return requestThread.isSuccess();
             }

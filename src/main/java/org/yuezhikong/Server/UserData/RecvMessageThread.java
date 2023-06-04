@@ -22,6 +22,7 @@ import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
+import javax.security.auth.login.AccountNotFoundException;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -172,38 +173,140 @@ public class RecvMessageThread extends Thread{
                         if (LoginPacket.getLoginPacketHead().getType().equals("Token"))
                         {
                             final List<String> username = new ArrayList<>();
-                            Thread thread = new Thread()
-                            {
-                                @Override
-                                public void run() {
-                                    this.setName("SQL Process Thread");
-                                    try {
-                                        Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-                                        String sql = "select * from UserData where token = ?";
-                                        PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-                                        ps.setString(1,LoginPacket.getLoginPacketBody().getReLogin().getToken());
-                                        ResultSet rs = ps.executeQuery();
-                                        if (rs.next())
-                                        {
-                                            username.add(rs.getString("UserName"));
-                                        }
-                                    } catch (SQLException | ClassNotFoundException e)
-                                    {
-                                        SaveStackTrace.saveStackTrace(e);
-                                    }
-                                }
-                            };
-                            thread.start();
                             try {
-                                thread.join();
+                                new Thread() {
+                                    @Override
+                                    public void run() {
+                                        this.setName("SQL Process Thread");
+                                        try {
+                                            Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                                            String sql = "select * from UserData where token = ?";
+                                            PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
+                                            ps.setString(1, LoginPacket.getLoginPacketBody().getReLogin().getToken());
+                                            ResultSet rs = ps.executeQuery();
+                                            if (rs.next()) {
+                                                username.add(rs.getString("UserName"));
+                                            }
+                                            DatabaseConnection.close();
+                                        } catch (SQLException | ClassNotFoundException e) {
+                                            SaveStackTrace.saveStackTrace(e);
+                                        }
+                                    }
+                                    public Thread start2() {
+                                        super.start();
+                                        return this;
+                                    }
+                                }.start2().join();
                             } catch (InterruptedException ignored) {}
                             if (username.isEmpty())
                             {
-                                CurrentClientClass.UserDisconnect();
-                                return;
+                                gson = new Gson();
+                                protocolData = new NormalProtocol();
+                                MessageHead = new NormalProtocol.MessageHead();
+                                MessageHead.setType("Login");
+                                MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                protocolData.setMessageHead(MessageHead);
+                                MessageBody = new NormalProtocol.MessageBody();
+                                MessageBody.setFileLong(0);
+                                MessageBody.setMessage("Fail");
+                                protocolData.setMessageBody(MessageBody);
+                                data = gson.toJson(protocolData);
+                                if (GetRSA_Mode()) {
+                                    String UserPublicKey = CurrentClientClass.GetUserPublicKey();
+                                    if (UserPublicKey == null) {
+                                        throw new NullPointerException();
+                                    }
+                                    data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+                                    if (isAES_Mode())
+                                    {
+                                        data = CurrentClientClass.GetUserAES().encryptBase64(data);
+                                    }
+                                    else {
+                                        data = RSA.encrypt(data, UserPublicKey);
+                                    }
+                                }
+                                writer.write(data);
+                                writer.newLine();
+                                writer.flush();
+                                try {
+                                    data = reader.readLine();
+                                    if (GetRSA_Mode()) {
+                                        if (isAES_Mode())
+                                        {
+                                            data = CurrentClientClass.GetUserAES().decryptStr(data);
+                                        }
+                                        else {
+                                            data = RSA.decrypt(data, privateKey);
+                                        }
+                                    }
+                                    data = java.net.URLDecoder.decode(data, StandardCharsets.UTF_8);
+                                    gson = new Gson();
+                                    LoginProtocol LoginPacket1 = gson.fromJson(data, LoginProtocol.class);
+                                    if ("passwd".equals(LoginPacket1.getLoginPacketHead().getType())) {
+                                        if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass, logger, LoginPacket1.getLoginPacketBody().getNormalLogin().getUserName(), LoginPacket.getLoginPacketBody().getNormalLogin().getPasswd()))) {
+                                            CurrentClientClass.UserDisconnect();
+                                            return;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        CurrentClientClass.UserDisconnect();
+                                        return;
+                                    }
+                                }
+                                catch (UserAlreadyLoggedInException e)
+                                {
+                                    ServerAPI.SendMessageToUser(CurrentClientClass,"您的账户已经登录过了！");
+                                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
+                                    CurrentClientClass.UserDisconnect();
+                                    return;
+                                }
                             }
                             else
                             {
+                                gson = new Gson();
+                                protocolData = new NormalProtocol();
+                                MessageHead = new NormalProtocol.MessageHead();
+                                MessageHead.setType("Login");
+                                MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                protocolData.setMessageHead(MessageHead);
+                                MessageBody = new NormalProtocol.MessageBody();
+                                MessageBody.setFileLong(0);
+                                MessageBody.setMessage("Success");
+                                protocolData.setMessageBody(MessageBody);
+                                data = gson.toJson(protocolData);
+                                if (GetRSA_Mode()) {
+                                    String UserPublicKey = CurrentClientClass.GetUserPublicKey();
+                                    if (UserPublicKey == null) {
+                                        throw new NullPointerException();
+                                    }
+                                    data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+                                    if (isAES_Mode())
+                                    {
+                                        data = CurrentClientClass.GetUserAES().encryptBase64(data);
+                                    }
+                                    else {
+                                        data = RSA.encrypt(data, UserPublicKey);
+                                    }
+                                }
+                                writer.write(data);
+                                writer.newLine();
+                                writer.flush();
+                                boolean found = true;
+                                try
+                                {
+                                    ServerAPI.GetUserByUserName(username.get(0),Server.GetInstance(),true);
+                                } catch (AccountNotFoundException e)
+                                {
+                                    found = false;
+                                }
+                                if (found)
+                                {
+                                    ServerAPI.SendMessageToUser(CurrentClientClass,"您的账户已经登录过了！");
+                                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
+                                    CurrentClientClass.UserDisconnect();
+                                    return;
+                                }
                                 CurrentClientClass.UserLogin(username.get(0));
                             }
                         }

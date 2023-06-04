@@ -31,9 +31,9 @@ public class UserLoginRequestThread extends Thread{
     public void run() {
         super.run();
         try {
-            Connection mySQLConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+            Connection DatabaseConection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
             String sql = "select * from UserData where UserName = ?";
-            PreparedStatement ps = mySQLConnection.prepareStatement(sql);
+            PreparedStatement ps = DatabaseConection.prepareStatement(sql);
             ps.setString(1,Username);
             ResultSet rs = ps.executeQuery();
             String salt;
@@ -62,7 +62,7 @@ public class UserLoginRequestThread extends Thread{
                             {
                                 SendMessageToUser(RequestUser,"您的账户已被永久封禁！");
                                 RequestReturn = false;
-                                mySQLConnection.close();
+                                DatabaseConection.close();
                                 return;
                             }
                         }
@@ -78,14 +78,14 @@ public class UserLoginRequestThread extends Thread{
                     RequestUser.SetUserPermission(PermissionLevel,true);
                     RequestUser.UserLogin(Username);
                     sql = "UPDATE UserData SET UserLogged = 1 where UserName = ?;";
-                    ps = mySQLConnection.prepareStatement(sql);
+                    ps = DatabaseConection.prepareStatement(sql);
                     ps.setString(1,Username);
                     ps.executeUpdate();
-                    mySQLConnection.close();
+                    DatabaseConection.close();
                     return;
                 }
             }
-            mySQLConnection.close();
+            DatabaseConection.close();
             RequestReturn = false;
         }
         catch (ClassNotFoundException e)
