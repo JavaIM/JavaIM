@@ -6,7 +6,7 @@ import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
-    private static final int ProtocolVersion = 2;
+    private static final int ProtocolVersion = 3;
     //本程序版本：
     private static final String Version = "v1.2.0";
     //目前最新的Database协议版本

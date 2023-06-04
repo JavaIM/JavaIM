@@ -121,6 +121,12 @@ public class user {
     {
         UserName = Username;
         UserLogined = true;
+        if (!("Server".equals(Username))) {
+            try {
+                PluginManager.getInstance("./plugins").OnUserLogin(this);
+            } catch (ModeDisabledException ignored) {
+            }
+        }
     }
 
     /**

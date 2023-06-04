@@ -14,14 +14,22 @@ import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomExceptions.UserAlreadyLoggedInException;
 import org.yuezhikong.utils.CustomVar;
+import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.RSA;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -77,57 +85,210 @@ public class RecvMessageThread extends Thread{
             }
             logger.info(in.readUTF());
             out.writeUTF("服务器连接成功：" + CurrentClientSocket.getLocalSocketAddress());
-            if (GetEnableLoginSystem())
-            {
-                try {
-                    if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass,logger))) {
-                        CurrentClientClass.UserDisconnect();
-                        return;
-                    }
-                    PluginManager.getInstance("./plugins").OnUserLogin(CurrentClientClass);
-                }
-                catch (UserAlreadyLoggedInException e)
+            BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentClientSocket.getInputStream()));//获取输入流
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(CurrentClientSocket.getOutputStream()));
+            {//新登录机制
+                String data = reader.readLine();
+                if (data == null)
                 {
-                    ServerAPI.SendMessageToUser(CurrentClientClass,"您的账户已经登录过了！");
-                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
                     CurrentClientClass.UserDisconnect();
-                    return;
-                }
-                catch (NullPointerException e)
-                {
-                    ServerAPI.SendMessageToUser(CurrentClientClass,"来来来，你给我解释一下，你是怎么做到发的信息是null的？");
-                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
-                    CurrentClientClass.UserDisconnect();
-                    return;
-                }
-                catch (ModeDisabledException ignored) {}
-            }
-            else
-            {
-                ServerAPI.SendMessageToUser(CurrentClientClass,"在进入之前，您必须设置用户名");
-                Thread.sleep(250);
-                ServerAPI.SendMessageToUser(CurrentClientClass,"请输入您的用户名：");
-                String UserName;
-                BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentClientSocket.getInputStream()));//获取输入流
-                UserName = reader.readLine();
-                if (UserName == null)
-                {
-                    ServerAPI.SendMessageToUser(CurrentClientClass,"来来来，你给我解释一下，你是怎么做到发的信息是null的？");
-                    CurrentClientClass.UserDisconnect();
-                    logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
                     return;
                 }
                 if (GetRSA_Mode()) {
                     if (isAES_Mode())
                     {
-                        UserName = CurrentClientClass.GetUserAES().decryptStr(UserName);
+                        data = CurrentClientClass.GetUserAES().decryptStr(data);
                     }
                     else {
-                        UserName = RSA.decrypt(UserName, Objects.requireNonNull(RSA.loadPrivateKeyFromFile("Private.txt")).PrivateKey);
+                        data = RSA.decrypt(data, privateKey);
                     }
                 }
-                UserName = java.net.URLDecoder.decode(UserName, StandardCharsets.UTF_8);
-                CurrentClientClass.UserLogin(UserName);
+                data = java.net.URLDecoder.decode(data,StandardCharsets.UTF_8);
+                Gson gson = new Gson();
+                NormalProtocol protocolData = gson.fromJson(data, NormalProtocol.class);
+                if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                {
+                    CurrentClientClass.UserDisconnect();
+                    return;
+                }
+                if (!protocolData.getMessageHead().getType().equals("Login"))
+                {
+                    CurrentClientClass.UserDisconnect();
+                    return;
+                }
+                if ("Query".equals(protocolData.getMessageBody().getMessage()))
+                {
+                    try {
+                        if (PluginManager.getInstance("./plugins").OnUserPreLogin(CurrentClientClass))
+                        {
+                            CurrentClientClass.UserDisconnect();
+                            return;
+                        }
+                    } catch (ModeDisabledException ignored) {}
+                    if (GetEnableLoginSystem())
+                    {
+                        gson = new Gson();
+                        protocolData = new NormalProtocol();
+                        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                        MessageHead.setType("Login");
+                        MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        protocolData.setMessageHead(MessageHead);
+                        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
+                        MessageBody.setFileLong(0);
+                        MessageBody.setMessage("Enable");
+                        protocolData.setMessageBody(MessageBody);
+                        data = gson.toJson(protocolData);
+                        if (GetRSA_Mode()) {
+                            String UserPublicKey = CurrentClientClass.GetUserPublicKey();
+                            if (UserPublicKey == null) {
+                                throw new NullPointerException();
+                            }
+                            data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+                            if (isAES_Mode())
+                            {
+                                data = CurrentClientClass.GetUserAES().encryptBase64(data);
+                            }
+                            else {
+                                data = RSA.encrypt(data, UserPublicKey);
+                            }
+                        }
+                        writer.write(data);
+                        writer.newLine();
+                        writer.flush();
+
+                        data = reader.readLine();
+                        if (GetRSA_Mode()) {
+                            if (isAES_Mode())
+                            {
+                                data = CurrentClientClass.GetUserAES().decryptStr(data);
+                            }
+                            else {
+                                data = RSA.decrypt(data, privateKey);
+                            }
+                        }
+                        data = java.net.URLDecoder.decode(data, StandardCharsets.UTF_8);
+                        gson = new Gson();
+                        LoginProtocol LoginPacket = gson.fromJson(data, LoginProtocol.class);
+                        if (LoginPacket.getLoginPacketHead().getType().equals("Token"))
+                        {
+                            final List<String> username = new ArrayList<>();
+                            Thread thread = new Thread()
+                            {
+                                @Override
+                                public void run() {
+                                    this.setName("SQL Process Thread");
+                                    try {
+                                        Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                                        String sql = "select * from UserData where token = ?";
+                                        PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
+                                        ps.setString(1,LoginPacket.getLoginPacketBody().getReLogin().getToken());
+                                        ResultSet rs = ps.executeQuery();
+                                        if (rs.next())
+                                        {
+                                            username.add(rs.getString("UserName"));
+                                        }
+                                    } catch (SQLException | ClassNotFoundException e)
+                                    {
+                                        SaveStackTrace.saveStackTrace(e);
+                                    }
+                                }
+                            };
+                            thread.start();
+                            try {
+                                thread.join();
+                            } catch (InterruptedException ignored) {}
+                            if (username.isEmpty())
+                            {
+                                CurrentClientClass.UserDisconnect();
+                                return;
+                            }
+                            else
+                            {
+                                CurrentClientClass.UserLogin(username.get(0));
+                            }
+                        }
+                        else
+                        {
+                            try {
+                                if (!(UserLogin.WhetherTheUserIsAllowedToLogin(CurrentClientClass,logger,LoginPacket.getLoginPacketBody().getNormalLogin().getUserName(),LoginPacket.getLoginPacketBody().getNormalLogin().getPasswd()))) {
+                                    CurrentClientClass.UserDisconnect();
+                                    return;
+                                }
+                            }
+                            catch (UserAlreadyLoggedInException e)
+                            {
+                                ServerAPI.SendMessageToUser(CurrentClientClass,"您的账户已经登录过了！");
+                                logger.info("["+CurrentClientClass.GetUserName()+"] [" + CurrentClientSocket.getInetAddress() + ":" + CurrentClientSocket.getPort() + "]: " + "已离线");
+                                CurrentClientClass.UserDisconnect();
+                                return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        gson = new Gson();
+                        protocolData = new NormalProtocol();
+                        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                        MessageHead.setType("Login");
+                        MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        protocolData.setMessageHead(MessageHead);
+                        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
+                        MessageBody.setFileLong(0);
+                        MessageBody.setMessage("Disable");
+                        protocolData.setMessageBody(MessageBody);
+                        data = gson.toJson(protocolData);
+                        if (GetRSA_Mode()) {
+                            String UserPublicKey = CurrentClientClass.GetUserPublicKey();
+                            if (UserPublicKey == null) {
+                                throw new NullPointerException();
+                            }
+                            data = java.net.URLEncoder.encode(data, StandardCharsets.UTF_8);
+                            if (isAES_Mode())
+                            {
+                                data = CurrentClientClass.GetUserAES().encryptBase64(data);
+                            }
+                            else {
+                                data = RSA.encrypt(data, UserPublicKey);
+                            }
+                        }
+                        writer.write(data);
+                        writer.newLine();
+                        writer.flush();
+
+                        data = reader.readLine();
+                        if (GetRSA_Mode()) {
+                            if (isAES_Mode())
+                            {
+                                data = CurrentClientClass.GetUserAES().decryptStr(data);
+                            }
+                            else {
+                                data = RSA.decrypt(data, privateKey);
+                            }
+                        }
+                        data = java.net.URLDecoder.decode(data, StandardCharsets.UTF_8);
+                        gson = new Gson();
+                        protocolData = gson.fromJson(data, NormalProtocol.class);
+                        if (protocolData.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                        {
+                            CurrentClientClass.UserDisconnect();
+                            return;
+                        }
+                        if (!protocolData.getMessageHead().getType().equals("Login"))
+                        {
+                            CurrentClientClass.UserDisconnect();
+                            return;
+                        }
+                        else
+                        {
+                            CurrentClientClass.UserLogin(protocolData.getMessageBody().getMessage());
+                        }
+                    }
+                }
+                else
+                {
+                    CurrentClientClass.UserDisconnect();
+                    return;
+                }
             }
             while (true) {
                 if (CurrentClientSocket.isClosed())
@@ -136,7 +297,6 @@ public class RecvMessageThread extends Thread{
                     CurrentClientClass.UserDisconnect();
                     return;
                 }
-                BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentClientSocket.getInputStream()));//获取输入流
                 String ChatMessage;
                 while ((ChatMessage = reader.readLine()) != null) {
                     // 解密信息
@@ -166,7 +326,7 @@ public class RecvMessageThread extends Thread{
                     }
                     else if (!protocolData.getMessageHead().getType().equals("Chat"))
                     {
-                        ServerAPI.SendMessageToUser(CurrentClientClass,"警告，数据包非法，将会发回");
+                        ServerAPI.SendMessageToUser(CurrentClientClass,"警告，数据包非法");
                         break;
                     }
                     ChatMessage = protocolData.getMessageBody().getMessage();

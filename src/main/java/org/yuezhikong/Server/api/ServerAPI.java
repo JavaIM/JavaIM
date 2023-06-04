@@ -102,12 +102,12 @@ public interface ServerAPI {
         String Message = inputMessage;
         Message = ChatProtocolRequest(Message, CodeDynamicConfig.getProtocolVersion());
         try {
+            Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
             if (GetRSA_Mode()) {
                 String UserPublicKey = user.GetUserPublicKey();
                 if (UserPublicKey == null) {
                     throw new NullPointerException();
                 }
-                Message = java.net.URLEncoder.encode(Message, StandardCharsets.UTF_8);
                 if (isAES_Mode())
                 {
                     Message = user.GetUserAES().encryptBase64(Message);

@@ -164,7 +164,7 @@ public class Client {
         getPassword = true;
         logger.info("请输入用户名");
     }
-    protected void LoginCallback(CustomVar.UserAndPassword userAndPassword)
+    protected void LoginCallback(CustomVar.@NotNull UserAndPassword userAndPassword)
     {
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
@@ -172,7 +172,7 @@ public class Client {
             String data;
             LoginProtocol loginProtocol = new LoginProtocol();
             LoginProtocol.LoginPacketHeadBean LoginPacketHead = new LoginProtocol.LoginPacketHeadBean();
-            LoginPacketHead.setType("Login");
+            LoginPacketHead.setType("passwd");
             loginProtocol.setLoginPacketHead(LoginPacketHead);
             LoginProtocol.LoginPacketBodyBean LoginPacketBody = new LoginProtocol.LoginPacketBodyBean();
             LoginProtocol.LoginPacketBodyBean.NormalLoginBean LoginBean = new LoginProtocol.LoginPacketBodyBean.NormalLoginBean();
@@ -405,9 +405,10 @@ public class Client {
                     {
                         if (new File("./token.txt").exists() && new File("./token.txt").isFile())
                         {
+                            gson = new Gson();
                             LoginProtocol loginProtocol = new LoginProtocol();
                             LoginProtocol.LoginPacketHeadBean LoginPacketHead = new LoginProtocol.LoginPacketHeadBean();
-                            LoginPacketHead.setType("Login");
+                            LoginPacketHead.setType("Token");
                             loginProtocol.setLoginPacketHead(LoginPacketHead);
                             LoginProtocol.LoginPacketBodyBean LoginPacketBody = new LoginProtocol.LoginPacketBodyBean();
                             LoginProtocol.LoginPacketBodyBean.ReLoginBean TokenBean = new LoginProtocol.LoginPacketBodyBean.ReLoginBean();
