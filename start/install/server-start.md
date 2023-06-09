@@ -22,9 +22,12 @@ JavaIM有两种启动方式：GUI启动和命令行启动。
 
 GUI启动只需要双击打开即可。
 
-如使用命令行，请使用“java -jar JavaIM.jar”启动。
+如使用命令行，请使用“java -jar JavaIM.jar -nogui”启动。
 
-如果你使用的是Windows Server Core，请在启动命令后加上“nogui”，如“java -jar JavaIM.jar nogui”
+请注意，这将会覆盖您在配置文件中的“GUIMode”配置项
+
+如需了解更多关于命令行参数的信息，请使用
+“java -jar JavaIM.jar -help”
 
 之后根据提示操作。
 
@@ -37,6 +40,7 @@ GUI启动只需要双击打开即可。
 一个标准的配置文件应该是这样：
 
 ```properties
+GUIMode=true                // 是否使用GUI模式
 MySQLDataBaseHost=127.0.0.1 // MySQL数据库地址
 MySQLDataBaseName=JavaIM    // MySQL数据库名
 MAX_CLIENT=-1               // 可连接的最大客户端数量，-1为不限制
@@ -56,3 +60,5 @@ MySQLDataBasePasswd=JavaIM  // MySQL数据库密码
 如果您希望自己构建JavaIM使用，请安装好Maven，配置完成Java开发环境，拉取JavaIM的仓库，运行“build.bat”或“build.sh”。
 
 注意，仓库中的代码通常是最新的，没有经过大量测试的，可能会出现大量Bug，不建议生产环境使用。
+
+目前预计将于2023年6月17日开始对于JavaIM的重构，以解决绝大多数的Bug
