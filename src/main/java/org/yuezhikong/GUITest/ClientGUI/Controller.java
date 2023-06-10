@@ -8,7 +8,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.Nls;
@@ -34,8 +33,6 @@ public class Controller implements Initializable {
     public TextArea IPAddress;
     @FXML
     public TextArea Port;
-    @FXML
-    public VBox root;
     private Stage LoginStage;
     private boolean Connected = false;
     private GUIClient client;
@@ -235,7 +232,7 @@ public class Controller implements Initializable {
             change.setText(newText);
             return change;
         }));
-        root.getScene().getWindow().setOnCloseRequest(windowEvent -> {
+        GUI.getStage().setOnCloseRequest(windowEvent -> {
             if (Connected)
             {
                 client.quit();

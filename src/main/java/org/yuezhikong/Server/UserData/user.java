@@ -2,6 +2,8 @@ package org.yuezhikong.Server.UserData;
 
 import cn.hutool.crypto.symmetric.AES;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.Server.Server;
+import org.yuezhikong.Server.api.ServerAPI;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 
@@ -119,13 +121,15 @@ public class user {
     }
     public void UserLogin(String Username)
     {
-        UserName = Username;
+        UserName= Username;
         UserLogined = true;
         if (!("Server".equals(Username))) {
             try {
                 PluginManager.getInstance("./plugins").OnUserLogin(this);
             } catch (ModeDisabledException ignored) {
             }
+            ServerAPI.SendMessageToUser(this,"欢迎来到此服务器！");
+            ServerAPI.SendMessageToAllClient(Username+"加入了服务器！", org.yuezhikong.Server.Server.GetInstance());
         }
     }
 

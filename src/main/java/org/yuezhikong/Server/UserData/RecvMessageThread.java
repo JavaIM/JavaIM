@@ -401,7 +401,7 @@ public class RecvMessageThread extends Thread{
                     return;
                 }
                 String ChatMessage;
-                while ((ChatMessage = reader.readLine()) != null) {
+                while ((ChatMessage = reader.readLine()) != null && !(CurrentClientSocket.isClosed())) {
                     // 解密信息
                     if (GetRSA_Mode()) {
                         if (isAES_Mode())

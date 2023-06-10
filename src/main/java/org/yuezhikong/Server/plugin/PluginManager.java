@@ -1,5 +1,6 @@
 package org.yuezhikong.Server.plugin;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
@@ -26,6 +27,21 @@ public class PluginManager {
     int NumberOfPlugins = 0;
     private static PluginManager Instance;
 
+    public void UnRegisterPlugin(@NotNull final Plugin plugin)
+    {
+        plugin.UnRegisterPlugin(Server.GetInstance());
+        //释放PluginList
+        PluginList.removeIf(plugin1 -> plugin1.equals(plugin));
+        //释放classloader
+        classLoaderList.removeIf(pluginJavaLoader -> {
+            if (plugin.equals(pluginJavaLoader.getPlugin()))
+            try {
+                pluginJavaLoader.close();
+            } catch (IOException ignored) {
+            }
+            return true;
+        });
+    }
     /**
      * 获取插件管理器实例
      * @param DirName 如果创建新实例，那么插件文件夹的位置在哪里
@@ -121,19 +137,20 @@ public class PluginManager {
             try {
                 classLoader = new PluginJavaLoader(ClassLoader.getSystemClassLoader(),s);
                 classLoaderList.add(classLoader);
-                classLoader.getPlugin().OnLoad(Server.GetInstance());
                 PluginList.add(classLoader.getPlugin());
                 NumberOfPlugins = NumberOfPlugins + 1;
                 if (classLoader.getPlugin().getInformation().PluginName().isEmpty() || classLoader.getPlugin().getInformation().plugin() == null || !classLoader.getPlugin().getInformation().Registered() || classLoader.getPlugin().getInformation().PluginAuthor().isEmpty() || classLoader.getPlugin().getInformation().PluginVersion().isEmpty())
                 {
                     Server.GetInstance().logger.info("加载插件文件"+s.getName()+"失败！原因，未按照要求填写基本信息");
-                    classLoader.getPlugin().UnRegisterPlugin(Server.GetInstance());
+                    UnRegisterPlugin(classLoader.getPlugin());
+                    NumberOfPlugins = NumberOfPlugins + 1;//UnRegister会导致NumberOfPlugins-1,需要+1补回来
                     try {
                         classLoader.close();
                     } catch (IOException ignored) {
                     }
                     throw new Exception("出现插件错误");
                 }
+                classLoader.getPlugin().OnLoad(Server.GetInstance());
             }
             catch (Throwable e)
             {
@@ -159,6 +176,7 @@ public class PluginManager {
      */
     public void OnProgramExit(int ProgramExitCode)
     {
+        System.gc();
         if (NumberOfPlugins <= 0)
         {
             if (!(Server.GetInstance().logger.isGUIMode()))
@@ -170,15 +188,17 @@ public class PluginManager {
             for (Plugin plugin : PluginList) {
                 plugin.UnRegisterPlugin(Server.GetInstance());
             }
-            for (PluginJavaLoader ClassLoader : classLoaderList) {
+            //释放PluginList
+            PluginList.clear();
+            //释放classloader
+            classLoaderList.removeIf(pluginJavaLoader -> {
                 try {
-                    if (ClassLoader != null) {
-                        ClassLoader.close();
-                    }
-                } catch (IOException e) {
-                    SaveStackTrace.saveStackTrace(e);
+                    pluginJavaLoader.close();
+                } catch (IOException ignored) {
                 }
-            }
+                return true;
+            });
+
         }
         if (!(Server.GetInstance().logger.isGUIMode()))
         {

@@ -9,8 +9,10 @@ import javafx.stage.Stage;
 import java.util.Objects;
 
 public class GUI extends Application {
+    private static Stage stage;
     @Override
     public void start(Stage stage) throws Exception {
+        GUI.stage = stage;
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getClassLoader().getResource("GUIs/Server.fxml")));
         stage.setTitle("服务端界面");
         stage.setScene(new Scene(root));
@@ -19,5 +21,9 @@ public class GUI extends Application {
         stage.setMinHeight(492);
         stage.setHeight(492);
         stage.show();
+    }
+
+    public static Stage getStage() {
+        return stage;
     }
 }

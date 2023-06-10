@@ -236,7 +236,7 @@ public class Client {
                 try {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
                     String msg;
-                    while ((msg = reader.readLine()) != null) {
+                    while ((msg = reader.readLine()) != null && !(client.isClosed())) {
                         if (GetRSA_Mode()) {
                             if (isAES_Mode()) {
                                 msg = AES.decryptStr(msg);
@@ -273,6 +273,7 @@ public class Client {
                             logger.ChatMsg(msg);
                         }
                     }
+                    ExitSystem(0);
                 } catch (IOException e) {
                     if (!"Connection reset by peer".equals(e.getMessage()) && !"Connection reset".equals(e.getMessage()) && !"Socket is closed".equals(e.getMessage())) {
                         logger.warning("发生I/O错误");

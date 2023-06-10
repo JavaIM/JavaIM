@@ -6,7 +6,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
-import javafx.scene.layout.VBox;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.GUITest.GUIServer;
@@ -23,8 +22,6 @@ public class Controller implements Initializable {
     private boolean StartedServer = false;
     private Logger logger;
     private GUIServer Server;
-    @FXML
-    public VBox root;
     @FXML
     public TextArea ChatLog;
     @FXML
@@ -85,7 +82,7 @@ public class Controller implements Initializable {
             change.setText(newText);
             return change;
         }));
-        root.getScene().getWindow().setOnCloseRequest(windowEvent -> {
+        GUI.getStage().setOnCloseRequest(windowEvent -> {
             if (StartedServer) {
                 CloseServer();
             }

@@ -15,8 +15,6 @@ import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
     @FXML
-    public VBox root;
-    @FXML
     public TextArea Password;
     @FXML
     public TextArea UserName;
@@ -55,6 +53,6 @@ public class Controller implements Initializable {
         }.start();
         Password.setText("");
         UserName.setText("");
-        root.getScene().getWindow().hide();
+        GUI.getStage().hide();
     }
 }

@@ -6,6 +6,7 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.load.CustomClassLoader.PluginJavaLoader;
 import org.yuezhikong.utils.CustomExceptions.ModeDisabledException;
 import org.yuezhikong.utils.CustomVar;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,41 +42,25 @@ public abstract class Plugin{
     /**
      * 插件取消注册
      */
-    public final void UnRegisterPlugin(Server serverInstance)
+    final void UnRegisterPlugin(Server serverInstance)
     {
-        OnUnLoad(serverInstance);
+        try {
+            OnUnLoad(serverInstance);
+        } catch (Throwable e)
+        {
+            SaveStackTrace.saveStackTrace(e);
+        }
         //开始清理资源
         //删除所有注册的命令
-        for (CustomVar.CommandInformation CommandInformation : ThisPluginRegisteredCommand)
-        {
-            serverInstance.PluginSetCommands.remove(CommandInformation);
-        }
-        //释放插件列表
-        try {
-            PluginManager.getInstanceOrNull().PluginList.removeIf(this::equals);
-        } catch (ModeDisabledException ignored) {
-        }
+        ThisPluginRegisteredCommand.removeIf(commandInformation -> {
+            serverInstance.PluginSetCommands.remove(commandInformation);
+            return true;
+        });
         //释放插件Information
         Information = null;
         //插件数量 -1
         try {
             PluginManager.getInstanceOrNull().NumberOfPlugins = PluginManager.getInstanceOrNull().NumberOfPlugins - 1;
-        } catch (ModeDisabledException ignored) {
-        }
-        //释放classloader
-        try {
-            for (PluginJavaLoader loader : PluginManager.getInstanceOrNull().classLoaderList)
-            {
-                if (this.equals(loader.getPlugin()))
-                {
-                    PluginManager.getInstanceOrNull().classLoaderList.remove(loader);
-                    try {
-                        loader.close();
-                    } catch (IOException ignored) {
-                    }
-                }
-            }
-
         } catch (ModeDisabledException ignored) {
         }
     }
