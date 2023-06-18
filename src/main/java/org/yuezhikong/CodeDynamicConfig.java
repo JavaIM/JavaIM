@@ -6,7 +6,7 @@ import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
-    private static final int ProtocolVersion = 3;
+    private static final int ProtocolVersion = 4;
     //本程序版本：
     private static final String Version = "v1.2.0";
     //目前最新的Database协议版本
@@ -20,9 +20,9 @@ public final class CodeDynamicConfig {
     //插件系统
     private static final boolean PluginSystem = true;
     //本版本为实验性版本
-    private static final boolean ThisVersionIsExpVersion = false;
+    private static final boolean ThisVersionIsExpVersion = true;
     //如果为测试性版本，则信息为：
-    private static final String ExpVersionText = "此版本包含测试gui";
+    private static final String ExpVersionText = "此版本包含新C/S机制";
     //AES加密系统（依赖于RSA加密系统）
     private static final boolean AES_Mode = true;
 
