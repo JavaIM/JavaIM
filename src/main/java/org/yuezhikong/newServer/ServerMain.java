@@ -219,7 +219,7 @@ public class ServerMain extends GeneralMethod {
                                 public void run() {
                                     this.setName("I/O Thread");
                                     try {
-                                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream()));
+                                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(),StandardCharsets.UTF_8));
                                         Gson gson = new Gson();
                                         NormalProtocol protocolData = new NormalProtocol();
                                         NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
@@ -290,11 +290,12 @@ public class ServerMain extends GeneralMethod {
         {
             String json;
             LoginProtocol protocol;
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(User.getUserSocket().getInputStream()));
-            final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(User.getUserSocket().getOutputStream()));
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(User.getUserSocket().getInputStream(),StandardCharsets.UTF_8));
+            final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(User.getUserSocket().getOutputStream(),StandardCharsets.UTF_8));
             do {
                 json = reader.readLine();
             } while (json == null);
+            json = unicodeToString(json);
             Gson gson = new Gson();
             json = User.getUserAES().decryptStr(json);
             protocol = gson.fromJson(json,LoginProtocol.class);
@@ -337,12 +338,13 @@ public class ServerMain extends GeneralMethod {
                     normalProtocol.setMessageHead(head);
                     body.setMessage("Fail");
                     normalProtocol.setMessageBody(body);
-                    writer.write(gson.toJson(normalProtocol));
+                    writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(normalProtocol)));
                     writer.newLine();
                     writer.flush();
                     do {
                         json = reader.readLine();
                     } while (json == null);
+                    json = unicodeToString(json);
                     json = User.getUserAES().decryptStr(json);
                     protocol = gson.fromJson(json,LoginProtocol.class);
                     if (!("passwd".equals(protocol.getLoginPacketHead().getType())))
@@ -400,17 +402,17 @@ public class ServerMain extends GeneralMethod {
                 //服务器密钥加载
                 final String ServerPrivateKey = FileUtils.readFileToString(new File("Private.txt"),StandardCharsets.UTF_8);
                 //开始握手
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(CurrentUserSocket.getOutputStream()));
-                BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentUserSocket.getInputStream()));
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(CurrentUserSocket.getOutputStream(),StandardCharsets.UTF_8));
+                BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentUserSocket.getInputStream(),StandardCharsets.UTF_8));
                 //测试明文通讯
                 writer.write("Hello Client");
                 writer.newLine();
                 writer.flush();
-                logger.info("正在连接的客户端返回："+reader.readLine());
+                logger.info("正在连接的客户端返回："+unicodeToString(reader.readLine()));
                 writer.write("你好，客户端");
                 writer.newLine();
                 writer.flush();
-                logger.info("正在连接的客户端返回："+reader.readLine());
+                logger.info("正在连接的客户端返回："+unicodeToString(reader.readLine()));
                 //测试通讯协议
                 Gson gson = new Gson();
                 NormalProtocol protocol = new NormalProtocol();
@@ -429,6 +431,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
+                json = unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -439,6 +442,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
+                json = unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
                 {
@@ -460,6 +464,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
+                json = unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -482,6 +487,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
+                json = unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
                 {
@@ -505,6 +511,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
+                json = unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                     if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -527,6 +534,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
+                json = unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("UpdateProtocol".equals(protocol.getMessageHead().getType())))
                 {

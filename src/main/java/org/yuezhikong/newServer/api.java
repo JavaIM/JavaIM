@@ -13,6 +13,7 @@ import org.yuezhikong.utils.SaveStackTrace;
 import javax.security.auth.login.AccountNotFoundException;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,7 +83,7 @@ public class api {
         Message = ChatProtocolRequest(Message, CodeDynamicConfig.getProtocolVersion());
         Message = user.getUserAES().encryptBase64(Message);
         try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(user.getUserSocket().getOutputStream()));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(user.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
             writer.write(Message);
             writer.newLine();
             writer.flush();
