@@ -1,3 +1,19 @@
+/*
+ * Simplified Chinese (简体中文)
+ *
+ * 版权所有 (C) 2023 QiLechan <qilechan@outlook.com> 和本程序的贡献者
+ *
+ * 本程序是自由软件：你可以再分发之和/或依照由自由软件基金会发布的 GNU 通用公共许可证修改之，无论是版本 3 许可证，还是 3 任何以后版都可以。
+ * 发布该程序是希望它能有用，但是并无保障;甚至连可销售和符合某个特定的目的都不保证。请参看 GNU 通用公共许可证，了解详情。
+ * 你应该随程序获得一份 GNU 通用公共许可证的副本。如果没有，请看 <https://www.gnu.org/licenses/>。
+ * English (英语)
+ *
+ * Copyright (C) 2023 QiLechan <qilechan@outlook.com> and contributors to this program
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or 3 any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.yuezhikong.newServer;
 
 import cn.hutool.crypto.SecureUtil;
@@ -122,65 +138,146 @@ public class ServerMain extends GeneralMethod {
                         {
                             Success = false;
                             api.SendMessageToUser(RequestUser,"不得使用被禁止的用户名：Server");
+                            try {
+                                new Thread()
+                                {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            this.setName("IO Worker");
+                                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
+                                            Gson gson = new Gson();
+                                            NormalProtocol protocolData = new NormalProtocol();
+                                            NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                                            MessageHead.setType("Fail");
+                                            MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                            protocolData.setMessageHead(MessageHead);
+                                            String data = gson.toJson(protocolData);
+                                            data = RequestUser.getUserAES().encryptBase64(data);
+                                            writer.write(data);
+                                            writer.newLine();
+                                            writer.flush();
+                                        } catch (IOException ignored)
+                                        {
+
+                                        }
+                                    }
+                                    public Thread start2()
+                                    {
+                                        start();
+                                        return this;
+                                    }
+                                }.start2().join();
+                            } catch (InterruptedException ex) {
+                                SaveStackTrace.saveStackTrace(ex);
+                            }
                             return;
                         }
-                        try {
-                            Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                        try (Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd())) {
                             String sql = "select * from UserData where UserName = ?";
                             PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-                            ps.setString(1,UserName);
+                            ps.setString(1, UserName);
                             ResultSet rs = ps.executeQuery();
-                            if (rs.next())
-                            {
+                            if (rs.next()) {
                                 String salt;
                                 String sha256;
-                                if (rs.getInt("UserLogged") == 1)
-                                {
+                                if (rs.getInt("UserLogged") == 1) {
                                     Success = false;
-                                    api.SendMessageToUser(RequestUser,"此用户已经登录了!");
-                                    DatabaseConnection.close();
+                                    api.SendMessageToUser(RequestUser, "此用户已经登录了!");
+                                    try {
+                                        new Thread() {
+                                            @Override
+                                            public void run() {
+                                                try {
+                                                    this.setName("IO Worker");
+                                                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
+                                                    Gson gson = new Gson();
+                                                    NormalProtocol protocolData = new NormalProtocol();
+                                                    NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                                                    MessageHead.setType("Fail");
+                                                    MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                                    protocolData.setMessageHead(MessageHead);
+                                                    String data = gson.toJson(protocolData);
+                                                    data = RequestUser.getUserAES().encryptBase64(data);
+                                                    writer.write(data);
+                                                    writer.newLine();
+                                                    writer.flush();
+                                                } catch (IOException ignored) {
+
+                                                }
+                                            }
+
+                                            public Thread start2() {
+                                                start();
+                                                return this;
+                                            }
+                                        }.start2().join();
+                                    } catch (InterruptedException ex) {
+                                        SaveStackTrace.saveStackTrace(ex);
+                                    }
                                     return;
                                 }
                                 salt = rs.getString("salt");
                                 sha256 = SecureUtil.sha256(Passwd + salt);
-                                if (rs.getString("Passwd").equals(sha256))
-                                {
+                                if (rs.getString("Passwd").equals(sha256)) {
                                     int PermissionLevel = rs.getInt("Permission");
-                                    if (PermissionLevel != 0)
-                                    {
-                                        if (PermissionLevel != 1)
-                                        {
-                                            if (PermissionLevel != -1)
-                                            {
+                                    if (PermissionLevel != 0) {
+                                        if (PermissionLevel != 1) {
+                                            if (PermissionLevel != -1) {
                                                 PermissionLevel = 0;
-                                            }
-                                            else
-                                            {
-                                                api.SendMessageToUser(RequestUser,"您的账户已被永久封禁！");
+                                            } else {
+                                                api.SendMessageToUser(RequestUser, "您的账户已被永久封禁！");
                                                 Success = false;
-                                                DatabaseConnection.close();
+                                                try {
+                                                    new Thread() {
+                                                        @Override
+                                                        public void run() {
+                                                            try {
+                                                                this.setName("IO Worker");
+                                                                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
+                                                                Gson gson = new Gson();
+                                                                NormalProtocol protocolData = new NormalProtocol();
+                                                                NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                                                                MessageHead.setType("Fail");
+                                                                MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                                                protocolData.setMessageHead(MessageHead);
+                                                                String data = gson.toJson(protocolData);
+                                                                data = RequestUser.getUserAES().encryptBase64(data);
+                                                                writer.write(data);
+                                                                writer.newLine();
+                                                                writer.flush();
+                                                            } catch (IOException ignored) {
+
+                                                            }
+                                                        }
+
+                                                        public Thread start2() {
+                                                            start();
+                                                            return this;
+                                                        }
+                                                    }.start2().join();
+                                                } catch (InterruptedException ex) {
+                                                    SaveStackTrace.saveStackTrace(ex);
+                                                }
                                                 return;
                                             }
                                         }
                                     }
                                     long muted = rs.getLong("UserMuted");
                                     long MuteTime = rs.getLong("UserMuteTime");
-                                    if (muted == 1)
-                                    {
+                                    if (muted == 1) {
                                         RequestUser.setMuteTime(MuteTime);
                                         RequestUser.setMuted(true);
                                     }
                                     Success = true;
-                                    RequestUser.SetUserPermission(PermissionLevel,true);
+                                    RequestUser.SetUserPermission(PermissionLevel, true);
                                     RequestUser.UserLogin(UserName);
                                     sql = "UPDATE UserData SET UserLogged = 1 where UserName = ?;";
                                     ps = DatabaseConnection.prepareStatement(sql);
-                                    ps.setString(1,UserName);
+                                    ps.setString(1, UserName);
                                     ps.executeUpdate();
                                 }
-                            }
-                            else
-                            {
+                            } else {
                                 String salt;
                                 do {
                                     salt = UUID.randomUUID().toString();
@@ -192,9 +289,9 @@ public class ServerMain extends GeneralMethod {
                                 String sha256 = SecureUtil.sha256(Passwd + salt);
                                 sql = "INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`) VALUES (0,?, ?, ?);";
                                 ps = DatabaseConnection.prepareStatement(sql);
-                                ps.setString(1,UserName);
-                                ps.setString(2,sha256);
-                                ps.setString(3,salt);
+                                ps.setString(1, UserName);
+                                ps.setString(2, sha256);
+                                ps.setString(3, salt);
                                 ps.executeUpdate();
                                 Success = true;
                                 RequestUser.UserLogin(UserName);
@@ -209,17 +306,16 @@ public class ServerMain extends GeneralMethod {
                             } while (rs.next());
                             sql = "UPDATE UserData SET token = ? where UserName = ?;";
                             ps = DatabaseConnection.prepareStatement(sql);
-                            ps.setString(1,token);
-                            ps.setString(2,UserName);
+                            ps.setString(1, token);
+                            ps.setString(2, UserName);
                             ps.executeUpdate();
                             final String finalToken = token;
-                            new Thread()
-                            {
+                            new Thread() {
                                 @Override
                                 public void run() {
                                     this.setName("I/O Thread");
                                     try {
-                                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(),StandardCharsets.UTF_8));
+                                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
                                         Gson gson = new Gson();
                                         NormalProtocol protocolData = new NormalProtocol();
                                         NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
@@ -239,14 +335,13 @@ public class ServerMain extends GeneralMethod {
                                         SaveStackTrace.saveStackTrace(e);
                                     }
                                 }
-                                public Thread start2()
-                                {
+
+                                public Thread start2() {
                                     super.start();
                                     return this;
                                 }
                             }.start2().join();
-                        } catch (ClassNotFoundException e)
-                        {
+                        } catch (ClassNotFoundException e) {
                             RequestUser.UserDisconnect();
                             SaveStackTrace.saveStackTrace(e);
                             org.apache.logging.log4j.Logger DEBUG = LogManager.getLogger("Debug");
@@ -254,12 +349,72 @@ public class ServerMain extends GeneralMethod {
                             DEBUG.fatal("程序已崩溃");
                             System.exit(-2);
                             Success = false;
-                        }
-                        catch (SQLException e)
-                        {
+                            try {
+                                new Thread() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            this.setName("IO Worker");
+                                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
+                                            Gson gson = new Gson();
+                                            NormalProtocol protocolData = new NormalProtocol();
+                                            NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                                            MessageHead.setType("Fail");
+                                            MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                            protocolData.setMessageHead(MessageHead);
+                                            String data = gson.toJson(protocolData);
+                                            data = RequestUser.getUserAES().encryptBase64(data);
+                                            writer.write(data);
+                                            writer.newLine();
+                                            writer.flush();
+                                        } catch (IOException ignored) {
+
+                                        }
+                                    }
+
+                                    public Thread start2() {
+                                        start();
+                                        return this;
+                                    }
+                                }.start2().join();
+                            } catch (InterruptedException ex) {
+                                SaveStackTrace.saveStackTrace(ex);
+                            }
+                        } catch (SQLException e) {
                             RequestUser.UserDisconnect();
                             SaveStackTrace.saveStackTrace(e);
                             Success = false;
+                            try {
+                                new Thread() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            this.setName("IO Worker");
+                                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
+                                            Gson gson = new Gson();
+                                            NormalProtocol protocolData = new NormalProtocol();
+                                            NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                                            MessageHead.setType("Fail");
+                                            MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                            protocolData.setMessageHead(MessageHead);
+                                            String data = gson.toJson(protocolData);
+                                            data = RequestUser.getUserAES().encryptBase64(data);
+                                            writer.write(data);
+                                            writer.newLine();
+                                            writer.flush();
+                                        } catch (IOException ignored) {
+
+                                        }
+                                    }
+
+                                    public Thread start2() {
+                                        start();
+                                        return this;
+                                    }
+                                }.start2().join();
+                            } catch (InterruptedException ex) {
+                                SaveStackTrace.saveStackTrace(ex);
+                            }
                         } catch (InterruptedException e) {
                             SaveStackTrace.saveStackTrace(e);
                         }
@@ -556,8 +711,23 @@ public class ServerMain extends GeneralMethod {
                         return;
                     }
                 }
-                logger.info("正在开发中");
-                logger.info("前面的区域以后再来探索吧");
+                //登录完毕，开始聊天
+                String ChatMsg;
+                while (true) {
+                    do {
+                        ChatMsg = reader.readLine();
+                    } while (ChatMsg == null);
+                    ChatMsg = unicodeToString(ChatMsg);
+                    ChatMsg = CurrentUser.getUserAES().decryptStr(ChatMsg);
+                    protocol = getServer().protocolRequest(ChatMsg);
+                    if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Chat".equals(protocol.getMessageHead().getType())))
+                    {
+                        CurrentUser.UserDisconnect();
+                        return;
+                    }
+                    logger.ChatMsg(protocol.getMessageBody().getMessage());
+                    api.SendMessageToAllClient(ChatMsg,getServer());
+                }
             }
             catch (IOException ignored) {
             }

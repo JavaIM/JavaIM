@@ -1,10 +1,25 @@
+/*
+ * Simplified Chinese (简体中文)
+ *
+ * 版权所有 (C) 2023 QiLechan <qilechan@outlook.com> 和本程序的贡献者
+ *
+ * 本程序是自由软件：你可以再分发之和/或依照由自由软件基金会发布的 GNU 通用公共许可证修改之，无论是版本 3 许可证，还是 3 任何以后版都可以。
+ * 发布该程序是希望它能有用，但是并无保障;甚至连可销售和符合某个特定的目的都不保证。请参看 GNU 通用公共许可证，了解详情。
+ * 你应该随程序获得一份 GNU 通用公共许可证的副本。如果没有，请看 <https://www.gnu.org/licenses/>。
+ * English (英语)
+ *
+ * Copyright (C) 2023 QiLechan <qilechan@outlook.com> and contributors to this program
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or 3 any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.yuezhikong.newClient;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
-import com.mysql.cj.log.Log;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -80,7 +95,7 @@ public class ClientMain extends GeneralMethod {
         writer.newLine();
         writer.flush();
     }
-    private void UseUserNameAndPasswordLogin(@NotNull Socket client,@NotNull AES aes,@NotNull Logger logger) throws IOException {
+    private boolean UseUserNameAndPasswordLogin(@NotNull Socket client,@NotNull AES aes,@NotNull Logger logger) throws IOException {
         Scanner scanner = new Scanner(System.in);
         logger.info("请输入用户名：");
         String UserName = scanner.nextLine();
@@ -114,9 +129,10 @@ public class ClientMain extends GeneralMethod {
         NormalProtocol protocol = getClient().protocolRequest(json);
         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Login".equals(protocol.getMessageHead().getType())))
         {
-            return;
+            return false;
         }
         FileUtils.writeStringToFile(new File("./token.txt"),protocol.getMessageBody().getMessage(),StandardCharsets.UTF_8);
+        return true;
     }
     protected Logger LoggerInit()
     {
@@ -266,12 +282,20 @@ public class ClientMain extends GeneralMethod {
                 }
                 if ("Success".equals(protocol.getMessageBody().getMessage()))
                 {
-                    StartRecvMessageThread(client,aes);
+                    StartRecvMessageThread(client,aes,logger);
                 }
                 else if ("Fail".equals(protocol.getMessageBody().getMessage()))
                 {
                     logger.info("Token无效！需重新使用用户名密码登录！");
-                    UseUserNameAndPasswordLogin(client,aes,logger);
+                    if (!(UseUserNameAndPasswordLogin(client,aes,logger)))
+                    {
+                        logger.info("登录失败，用户名或密码错误");
+                        return;
+                    }
+                    else
+                    {
+                        StartRecvMessageThread(client,aes,logger);
+                    }
                 }
                 else
                 {
@@ -280,13 +304,104 @@ public class ClientMain extends GeneralMethod {
             }
             else
             {
-                UseUserNameAndPasswordLogin(client,aes,logger);
+                if (!(UseUserNameAndPasswordLogin(client,aes,logger)))
+                {
+                    logger.info("登录失败，用户名或密码错误");
+                    return;
+                }
+                else
+                {
+                    StartRecvMessageThread(client,aes,logger);
+                }
             }
+            SendMessage(logger,client,aes);
         } catch (IOException ignored) {
         }
     }
-    //启动RecvMessageThread
-    private void StartRecvMessageThread(Socket client, AES aes) {
 
+    private void SendMessage(Logger logger, Socket socket,AES aes) {
+        Scanner scanner = new Scanner(System.in);
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
+            while (true) {
+                String UserInput = scanner.nextLine();
+                if (".help".equals(UserInput)) {
+                    logger.info("客户端命令系统");
+                    logger.info(".help 查询帮助信息");
+                    logger.info(".quit 离开服务器并退出程序");
+                    if (CodeDynamicConfig.About_System) {
+                        logger.info(".about 查看程序帮助");
+                    }
+                    continue;
+                }
+                if (CodeDynamicConfig.About_System) {
+                    if (".about".equals(UserInput)) {
+                        logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
+                        logger.info("主仓库位于：https://github.com/JavaIM/JavaIM");
+                        logger.info("主要开发者名单：");
+                        logger.info("QiLechan（柒楽）");
+                        logger.info("AlexLiuDev233 （阿白）");
+                        continue;
+                    }
+                }
+                if (".quit".equals(UserInput)) {
+                    Gson gson = new Gson();
+                    NormalProtocol protocol = new NormalProtocol();
+                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                    head.setType("Leave");
+                    protocol.setMessageHead(head);
+                    NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+                    body.setMessage(UserInput);
+                    body.setFileLong(0);
+                    protocol.setMessageBody(body);
+                    writer.write(aes.encryptBase64(gson.toJson(protocol)));
+                    writer.newLine();
+                    writer.flush();
+                    break;
+                }
+                Gson gson = new Gson();
+                NormalProtocol protocol = new NormalProtocol();
+                NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                head.setType("Chat");
+                protocol.setMessageHead(head);
+                NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+                body.setMessage(UserInput);
+                body.setFileLong(0);
+                protocol.setMessageBody(body);
+                writer.write(aes.encryptBase64(gson.toJson(protocol)));
+                writer.newLine();
+                writer.flush();
+            }
+        } catch (IOException ignored) {}
+        System.exit(0);
+    }
+
+    //启动RecvMessageThread
+    private void StartRecvMessageThread(Socket client, AES aes,Logger logger) {
+        new Thread()
+        {
+            @Override
+            public void run() {
+                this.setName("RecvMessage Thread");
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8))) {
+                    String ChatMsg;
+                    while (true) {
+                        do {
+                            ChatMsg = reader.readLine();
+                        } while (ChatMsg == null);
+                        ChatMsg = unicodeToString(ChatMsg);
+                        ChatMsg = aes.decryptStr(ChatMsg);
+                        NormalProtocol protocol = getClient().protocolRequest(ChatMsg);
+                        if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Chat".equals(protocol.getMessageHead().getType())))
+                        {
+                            return;
+                        }
+                        logger.ChatMsg(protocol.getMessageBody().getMessage());
+                    }
+                } catch (IOException ignored) {}
+                System.exit(0);
+            }
+        }.start();
     }
 }
