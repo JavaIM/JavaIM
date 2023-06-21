@@ -74,6 +74,11 @@ public class api {
      */
     public static void SendMessageToUser(@NotNull user user, @NotNull @Nls String inputMessage)
     {
+        if (user.isServer())
+        {
+            ServerMain.getServer().getLogger().ChatMsg(inputMessage);
+            return;
+        }
         try {
             Thread.sleep(250);
         } catch (InterruptedException e) {

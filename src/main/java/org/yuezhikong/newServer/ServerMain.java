@@ -45,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.UUID;
 
 /**
@@ -100,7 +101,7 @@ public class ServerMain extends GeneralMethod {
                         continue;
                     }
                 }
-                user CurrentUser = new user(clientSocket,getServer().clientIDAll);//创建用户class
+                user CurrentUser = new user(clientSocket,getServer().clientIDAll,false);//创建用户class
                 getServer().Users.add(CurrentUser);
                 getServer().Users.set(getServer().clientIDAll,CurrentUser);//添加到List中
                 getServer().StartRecvMessageThread(getServer().clientIDAll);//启动RecvMessage线程
@@ -178,6 +179,7 @@ public class ServerMain extends GeneralMethod {
                             PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
                             ps.setString(1, UserName);
                             ResultSet rs = ps.executeQuery();
+                            //如果找到了这个用户，启动登录逻辑
                             if (rs.next()) {
                                 String salt;
                                 String sha256;
@@ -218,14 +220,14 @@ public class ServerMain extends GeneralMethod {
                                     return;
                                 }
                                 salt = rs.getString("salt");
+                                //为保护安全，保存密码是加盐sha256
                                 sha256 = SecureUtil.sha256(Passwd + salt);
                                 if (rs.getString("Passwd").equals(sha256)) {
+                                    //权限处理
                                     int PermissionLevel = rs.getInt("Permission");
                                     if (PermissionLevel != 0) {
                                         if (PermissionLevel != 1) {
-                                            if (PermissionLevel != -1) {
-                                                PermissionLevel = 0;
-                                            } else {
+                                            if (PermissionLevel == -1) {
                                                 api.SendMessageToUser(RequestUser, "您的账户已被永久封禁！");
                                                 Success = false;
                                                 try {
@@ -263,29 +265,36 @@ public class ServerMain extends GeneralMethod {
                                             }
                                         }
                                     }
+                                    //处理禁言
                                     long muted = rs.getLong("UserMuted");
                                     long MuteTime = rs.getLong("UserMuteTime");
                                     if (muted == 1) {
                                         RequestUser.setMuteTime(MuteTime);
                                         RequestUser.setMuted(true);
                                     }
+                                    //设置已成功并更新内存中的用户信息
                                     Success = true;
                                     RequestUser.SetUserPermission(PermissionLevel, true);
                                     RequestUser.UserLogin(UserName);
+                                    //设置用户已登录了
                                     sql = "UPDATE UserData SET UserLogged = 1 where UserName = ?;";
                                     ps = DatabaseConnection.prepareStatement(sql);
                                     ps.setString(1, UserName);
                                     ps.executeUpdate();
                                 }
-                            } else {
+                            }
+                            //如果没找到这个用户，启动注册逻辑
+                            else {
                                 String salt;
                                 do {
+                                    //寻找一个安全的盐
                                     salt = UUID.randomUUID().toString();
                                     sql = "select * from UserData where salt = ?";
                                     ps = DatabaseConnection.prepareStatement(sql);
                                     ps.setString(1, sql);
                                     rs = ps.executeQuery();
                                 } while (rs.next());
+                                //密码加盐并保存
                                 String sha256 = SecureUtil.sha256(Passwd + salt);
                                 sql = "INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`) VALUES (0,?, ?, ?);";
                                 ps = DatabaseConnection.prepareStatement(sql);
@@ -293,59 +302,71 @@ public class ServerMain extends GeneralMethod {
                                 ps.setString(2, sha256);
                                 ps.setString(3, salt);
                                 ps.executeUpdate();
+                                //设置已成功并更新内存中的用户信息
                                 Success = true;
                                 RequestUser.UserLogin(UserName);
-                            }
-                            String token;
-                            do {
-                                token = UUID.randomUUID().toString();
-                                sql = "select * from UserData where token = ?";
+                                //设置用户已登录了
+                                sql = "UPDATE UserData SET UserLogged = 1 where UserName = ?;";
                                 ps = DatabaseConnection.prepareStatement(sql);
-                                ps.setString(1, sql);
-                                rs = ps.executeQuery();
-                            } while (rs.next());
-                            sql = "UPDATE UserData SET token = ? where UserName = ?;";
-                            ps = DatabaseConnection.prepareStatement(sql);
-                            ps.setString(1, token);
-                            ps.setString(2, UserName);
-                            ps.executeUpdate();
-                            final String finalToken = token;
-                            new Thread() {
-                                @Override
-                                public void run() {
-                                    this.setName("I/O Thread");
-                                    try {
-                                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
-                                        Gson gson = new Gson();
-                                        NormalProtocol protocolData = new NormalProtocol();
-                                        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
-                                        MessageHead.setType("Login");
-                                        MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                        protocolData.setMessageHead(MessageHead);
-                                        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
-                                        MessageBody.setFileLong(0);
-                                        MessageBody.setMessage(finalToken);
-                                        protocolData.setMessageBody(MessageBody);
-                                        String data = gson.toJson(protocolData);
-                                        data = RequestUser.getUserAES().encryptBase64(data);
-                                        writer.write(data);
-                                        writer.newLine();
-                                        writer.flush();
-                                    } catch (IOException e) {
-                                        SaveStackTrace.saveStackTrace(e);
+                                ps.setString(1, UserName);
+                                ps.executeUpdate();
+                            }
+                            if (Success) {
+                                //如果登录/注册成功，开始分发Token
+                                String token;
+                                do {
+                                    //获取一个安全的，不重复的token
+                                    token = UUID.randomUUID().toString();
+                                    sql = "select * from UserData where token = ?";
+                                    ps = DatabaseConnection.prepareStatement(sql);
+                                    ps.setString(1, sql);
+                                    rs = ps.executeQuery();
+                                } while (rs.next());
+                                //将这个token填入数据库
+                                sql = "UPDATE UserData SET token = ? where UserName = ?;";
+                                ps = DatabaseConnection.prepareStatement(sql);
+                                ps.setString(1, token);
+                                ps.setString(2, UserName);
+                                ps.executeUpdate();
+                                //发送给登录的yonghu
+                                final String finalToken = token;
+                                new Thread() {
+                                    @Override
+                                    public void run() {
+                                        this.setName("I/O Thread");
+                                        try {
+                                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
+                                            Gson gson = new Gson();
+                                            NormalProtocol protocolData = new NormalProtocol();
+                                            NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
+                                            MessageHead.setType("Login");
+                                            MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                            protocolData.setMessageHead(MessageHead);
+                                            NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
+                                            MessageBody.setFileLong(0);
+                                            MessageBody.setMessage(finalToken);
+                                            protocolData.setMessageBody(MessageBody);
+                                            String data = gson.toJson(protocolData);
+                                            data = RequestUser.getUserAES().encryptBase64(data);
+                                            writer.write(data);
+                                            writer.newLine();
+                                            writer.flush();
+                                        } catch (IOException e) {
+                                            SaveStackTrace.saveStackTrace(e);
+                                        }
                                     }
-                                }
 
-                                public Thread start2() {
-                                    super.start();
-                                    return this;
-                                }
-                            }.start2().join();
+                                    public Thread start2() {
+                                        super.start();
+                                        return this;
+                                    }
+                                }.start2().join();
+                            }
                         } catch (ClassNotFoundException e) {
                             RequestUser.UserDisconnect();
                             SaveStackTrace.saveStackTrace(e);
                             org.apache.logging.log4j.Logger DEBUG = LogManager.getLogger("Debug");
-                            DEBUG.fatal("ClassNotFoundException，无法找到MySQL驱动");
+                            DEBUG.fatal("ClassNotFoundException，无法找到数据库驱动");
                             DEBUG.fatal("程序已崩溃");
                             System.exit(-2);
                             Success = false;
@@ -712,8 +733,9 @@ public class ServerMain extends GeneralMethod {
                     }
                 }
                 //登录完毕，开始聊天
-                String ChatMsg;
+                ChatRequest chatRequest = new ChatRequest();
                 while (true) {
+                    String ChatMsg;
                     do {
                         ChatMsg = reader.readLine();
                     } while (ChatMsg == null);
@@ -725,8 +747,14 @@ public class ServerMain extends GeneralMethod {
                         CurrentUser.UserDisconnect();
                         return;
                     }
-                    logger.ChatMsg(protocol.getMessageBody().getMessage());
-                    api.SendMessageToAllClient(ChatMsg,getServer());
+                    ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(CurrentUser,protocol);
+                    if (chatRequest.UserChatRequests(input))
+                    {
+                        continue;
+                    }
+                    final String ChatMessage = input.getChatMessage();
+                    logger.ChatMsg(ChatMessage);
+                    api.SendMessageToAllClient(ChatMessage,getServer());
                 }
             }
             catch (IOException ignored) {
@@ -792,6 +820,11 @@ public class ServerMain extends GeneralMethod {
     public static ServerMain getServer() {
         return server;
     }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
     //退出系统
     private void ExitSystem(int code)
     {
@@ -819,15 +852,36 @@ public class ServerMain extends GeneralMethod {
             RSA_KeyAutogenerate();
             authThread = new UserAuthThread();
             authThread.start();
-            //debugonly，后续加入指令系统
-            try {
-                authThread.join();
-            } catch (InterruptedException e) {
-                SaveStackTrace.saveStackTrace(e);
-                e.printStackTrace();
-            }
+            StartCommandSystem();
         }
         else
             throw new RuntimeException("Server is Already Started");
+    }
+
+    //命令系统
+    private void StartCommandSystem() {
+        //服务端虚拟账户初始化
+        user Console = new user(null,0,true);
+        Console.UserLogin("Server");
+        Console.SetUserPermission(1,true);
+        //IO初始化
+        Scanner scanner = new Scanner(System.in);
+        //ChatRequest初始化
+        ChatRequest chatRequest = new ChatRequest();
+        //命令系统
+        while (true)
+        {
+            String Command = "/"+scanner.nextLine();
+            if ("/quit".equals(Command))
+            {
+                logger.info("这将会强制关闭服务端");
+                logger.info("输入ForceClose来确认，其他取消");
+                if ("ForceClose".equals(scanner.nextLine()))
+                {
+                    System.exit(0);
+                }
+            }
+            chatRequest.CommandRequest(new ChatRequest.ChatRequestInput(Console,Command));
+        }
     }
 }
