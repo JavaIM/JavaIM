@@ -35,6 +35,7 @@ import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -174,7 +175,9 @@ public class ServerMain extends GeneralMethod {
                             }
                             return;
                         }
-                        try (Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd())) {
+                        try
+                        {
+                            Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                             String sql = "select * from UserData where UserName = ?";
                             PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
                             ps.setString(1, UserName);
@@ -362,46 +365,8 @@ public class ServerMain extends GeneralMethod {
                                     }
                                 }.start2().join();
                             }
-                        } catch (ClassNotFoundException e) {
-                            RequestUser.UserDisconnect();
-                            SaveStackTrace.saveStackTrace(e);
-                            org.apache.logging.log4j.Logger DEBUG = LogManager.getLogger("Debug");
-                            DEBUG.fatal("ClassNotFoundException，无法找到数据库驱动");
-                            DEBUG.fatal("程序已崩溃");
-                            System.exit(-2);
-                            Success = false;
-                            try {
-                                new Thread() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            this.setName("IO Worker");
-                                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(RequestUser.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
-                                            Gson gson = new Gson();
-                                            NormalProtocol protocolData = new NormalProtocol();
-                                            NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
-                                            MessageHead.setType("Fail");
-                                            MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                            protocolData.setMessageHead(MessageHead);
-                                            String data = gson.toJson(protocolData);
-                                            data = RequestUser.getUserAES().encryptBase64(data);
-                                            writer.write(data);
-                                            writer.newLine();
-                                            writer.flush();
-                                        } catch (IOException ignored) {
-
-                                        }
-                                    }
-
-                                    public Thread start2() {
-                                        start();
-                                        return this;
-                                    }
-                                }.start2().join();
-                            } catch (InterruptedException ex) {
-                                SaveStackTrace.saveStackTrace(ex);
-                            }
-                        } catch (SQLException e) {
+                        }
+                        catch (Database.DatabaseException | SQLException e) {
                             RequestUser.UserDisconnect();
                             SaveStackTrace.saveStackTrace(e);
                             Success = false;
@@ -438,6 +403,9 @@ public class ServerMain extends GeneralMethod {
                             }
                         } catch (InterruptedException e) {
                             SaveStackTrace.saveStackTrace(e);
+                        }
+                        finally {
+                            Database.close();
                         }
                     }
                     public IOWorker start2() {
@@ -494,8 +462,11 @@ public class ServerMain extends GeneralMethod {
                                     username.add(rs.getString("UserName"));
                                 }
                                 DatabaseConnection.close();
-                            } catch (SQLException | ClassNotFoundException e) {
+                            } catch (SQLException | Database.DatabaseException e) {
                                 SaveStackTrace.saveStackTrace(e);
+                            }
+                            finally {
+                                Database.close();
                             }
                         }
                         public Thread start2() {

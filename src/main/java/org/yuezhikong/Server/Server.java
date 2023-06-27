@@ -16,6 +16,7 @@ import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
+import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -237,6 +238,8 @@ public class Server {
                 DatabaseConnection.close();
             } catch (Exception e) {
                 SaveStackTrace.saveStackTrace(e);
+            } finally {
+                Database.close();
             }
         };
         Thread UpdateThread = new Thread(SQLUpdateThread);

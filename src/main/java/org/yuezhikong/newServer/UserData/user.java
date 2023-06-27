@@ -95,22 +95,20 @@ public class user {
                 @Override
                 public void run() {
                     this.setName("SQL Worker");
-                    try (Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd()))
+                    try
                     {
+                        Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                         String sql = "UPDATE UserData SET Permission = ? where UserName = ?";
                         PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
                         ps.setInt(1,permissionLevel);
                         ps.setString(2,user.this.getUserName());
                         ps.executeUpdate();
-                    } catch (ClassNotFoundException e)
+                    } catch (Database.DatabaseException | SQLException e)
                     {
-                        ServerMain.getServer().getLogger().error("错误，无法加载数据库的JDBC");
-                        ServerMain.getServer().getLogger().error("请检查您的数据库！");
                         SaveStackTrace.saveStackTrace(e);
                     }
-                    catch (SQLException e)
-                    {
-                        SaveStackTrace.saveStackTrace(e);
+                    finally {
+                        Database.close();
                     }
                 }
             }.start();

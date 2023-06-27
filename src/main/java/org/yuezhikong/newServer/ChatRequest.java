@@ -11,10 +11,7 @@ import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -189,7 +186,8 @@ public class ChatRequest {
                                 @Override
                                 public void run() {
                                     this.setName("SQL Worker");
-                                    try (Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd())) {
+                                    try {
+                                        Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                                         String sql = "select * from UserData where UserName = ?";
                                         PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
                                         ps.setString(1, CommandInformation.argv()[0]);
@@ -202,12 +200,11 @@ public class ChatRequest {
                                             ps.executeUpdate();
                                             api.SendMessageToUser(chatMessageInfo.getUser(), "已解封"+CommandInformation.argv()[0]);
                                         }
-                                    } catch (ClassNotFoundException e) {
-                                        ServerMain.getServer().getLogger().error("错误，无法加载数据库的JDBC");
-                                        ServerMain.getServer().getLogger().error("请检查您的数据库！");
+                                    } catch (Database.DatabaseException | SQLException e) {
                                         SaveStackTrace.saveStackTrace(e);
-                                    } catch (SQLException e) {
-                                        SaveStackTrace.saveStackTrace(e);
+                                    }
+                                    finally {
+                                        Database.close();
                                     }
                                 }
 

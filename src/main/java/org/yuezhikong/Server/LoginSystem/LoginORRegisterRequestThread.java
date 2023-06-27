@@ -184,22 +184,16 @@ public class LoginORRegisterRequestThread extends Thread{
                     return this;
                 }
             }.start2().join();
-        } catch (ClassNotFoundException e)
+        } catch (Database.DatabaseException | SQLException e)
         {
             RequestUser.UserDisconnect();
             SaveStackTrace.saveStackTrace(e);
-            DEBUG.fatal("ClassNotFoundException，无法找到MySQL驱动");
-            DEBUG.fatal("程序已崩溃");
-            System.exit(-2);
             Success = false;
         }
-        catch (SQLException e)
-        {
-            RequestUser.UserDisconnect();
+        catch (InterruptedException e) {
             SaveStackTrace.saveStackTrace(e);
-            Success = false;
-        } catch (InterruptedException e) {
-            SaveStackTrace.saveStackTrace(e);
+        } finally {
+            Database.close();
         }
     }
 

@@ -188,8 +188,10 @@ public class RecvMessageThread extends Thread{
                                                 username.add(rs.getString("UserName"));
                                             }
                                             DatabaseConnection.close();
-                                        } catch (SQLException | ClassNotFoundException e) {
+                                        } catch (Database.DatabaseException | SQLException e) {
                                             SaveStackTrace.saveStackTrace(e);
+                                        } finally {
+                                            Database.close();
                                         }
                                     }
                                     public Thread start2() {

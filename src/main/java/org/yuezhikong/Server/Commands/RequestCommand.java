@@ -14,6 +14,7 @@ import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
+import javax.xml.crypto.Data;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.ServerSocket;
@@ -238,8 +239,10 @@ public class RequestCommand {
                                 ps.setString(1,argv[0]);
                                 ps.executeUpdate();
                                 DatabaseConnect.close();
-                            } catch (ClassNotFoundException | SQLException e) {
+                            } catch (Database.DatabaseException | SQLException e) {
                                 org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+                            } finally {
+                                Database.close();
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -290,8 +293,10 @@ public class RequestCommand {
                                 ps.setString(2,argv[0]);
                                 ps.executeUpdate();
                                 DatabaseConnect.close();
-                            } catch (ClassNotFoundException | SQLException e) {
+                            } catch (Database.DatabaseException | SQLException e) {
                                 org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+                            } finally {
+                                Database.close();
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -345,8 +350,10 @@ public class RequestCommand {
                                 ps.setString(2,argv[0]);
                                 ps.executeUpdate();
                                 DatabaseConnect.close();
-                            } catch (ClassNotFoundException | SQLException e) {
+                            } catch (Database.DatabaseException | SQLException e) {
                                 org.yuezhikong.utils.SaveStackTrace.saveStackTrace(e);
+                            } finally {
+                                Database.close();
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
@@ -461,8 +468,10 @@ public class RequestCommand {
                             ps.setString(2,argv[1]);
                             ps.executeUpdate();
                             DatabaseConnect.close();
-                        } catch (ClassNotFoundException | SQLException e) {
+                        } catch (Database.DatabaseException | SQLException e) {
                             SaveStackTrace.saveStackTrace(e);
+                        } finally {
+                            Database.close();
                         }
                     };
                     Thread UpdateThread = new Thread(SQLUpdateThread);

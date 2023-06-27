@@ -45,8 +45,10 @@ public class timer
                                 ps.setString(1, ProcessUser.GetUserName());
                                 ps.executeUpdate();
                                 DatabaseConnection.close();
-                            } catch (ClassNotFoundException | SQLException e) {
+                            } catch (Database.DatabaseException | SQLException e) {
                                 SaveStackTrace.saveStackTrace(e);
+                            } finally {
+                                Database.close();
                             }
                         };
                         Thread UpdateThread = new Thread(SQLUpdateThread);
