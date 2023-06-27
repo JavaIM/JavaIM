@@ -1,3 +1,19 @@
+/*
+ * Simplified Chinese (简体中文)
+ *
+ * 版权所有 (C) 2023 QiLechan <qilechan@outlook.com> 和本程序的贡献者
+ *
+ * 本程序是自由软件：你可以再分发之和/或依照由自由软件基金会发布的 GNU 通用公共许可证修改之，无论是版本 3 许可证，还是 3 任何以后版都可以。
+ * 发布该程序是希望它能有用，但是并无保障;甚至连可销售和符合某个特定的目的都不保证。请参看 GNU 通用公共许可证，了解详情。
+ * 你应该随程序获得一份 GNU 通用公共许可证的副本。如果没有，请看 <https://www.gnu.org/licenses/>。
+ * English (英语)
+ *
+ * Copyright (C) 2023 QiLechan <qilechan@outlook.com> and contributors to this program
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or 3 any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.yuezhikong.newServer;
 
 import org.jetbrains.annotations.NotNull;
@@ -5,13 +21,17 @@ import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
+import org.yuezhikong.newServer.api.api;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -91,92 +111,93 @@ public class ChatRequest {
     public boolean CommandRequest(@NotNull ChatRequestInput chatMessageInfo) {
         if (chatMessageInfo.getChatMessage().charAt(0) == '/')
         {
-            CustomVar.Command CommandInformation = api.CommandFormat(chatMessageInfo.getChatMessage());
+            final api API = ServerMain.getServer().getServerAPI();
+            CustomVar.Command CommandInformation = API.CommandFormat(chatMessageInfo.getChatMessage());
             switch (CommandInformation.Command())
             {
                 case "/about" -> {
-                    api.SendMessageToUser(chatMessageInfo.getUser(),"JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
-                    api.SendMessageToUser(chatMessageInfo.getUser(),"主仓库位于：https://github.com/JavaIM/JavaIM");
-                    api.SendMessageToUser(chatMessageInfo.getUser(),"主要开发者名单：");
-                    api.SendMessageToUser(chatMessageInfo.getUser(),"QiLechan（柒楽）");
-                    api.SendMessageToUser(chatMessageInfo.getUser(),"AlexLiuDev233 （阿白）");
+                    API.SendMessageToUser(chatMessageInfo.getUser(),"JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
+                    API.SendMessageToUser(chatMessageInfo.getUser(),"主仓库位于：https://github.com/JavaIM/JavaIM");
+                    API.SendMessageToUser(chatMessageInfo.getUser(),"主要开发者名单：");
+                    API.SendMessageToUser(chatMessageInfo.getUser(),"QiLechan（柒楽）");
+                    API.SendMessageToUser(chatMessageInfo.getUser(),"AlexLiuDev233 （阿白）");
                 }
                 case "/help" -> {
-                    api.SendMessageToUser(chatMessageInfo.getUser(),"JavaIM Server的服务器帮助");
-                    api.SendMessageToUser(chatMessageInfo.getUser(),"/about 查询此程序有关的信息");
-                    api.SendMessageToUser(chatMessageInfo.getUser(),"/help 显示服务器帮助信息");
+                    API.SendMessageToUser(chatMessageInfo.getUser(),"JavaIM Server的服务器帮助");
+                    API.SendMessageToUser(chatMessageInfo.getUser(),"/about 查询此程序有关的信息");
+                    API.SendMessageToUser(chatMessageInfo.getUser(),"/help 显示服务器帮助信息");
                     if (Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))
                     {
-                        api.SendMessageToUser(chatMessageInfo.getUser(),"/op <用户名> 给予管理员权限");
-                        api.SendMessageToUser(chatMessageInfo.getUser(),"/deop <用户名> 剥夺管理员权限");
-                        api.SendMessageToUser(chatMessageInfo.getUser(),"/ban <用户名> 封禁一位用户");
-                        api.SendMessageToUser(chatMessageInfo.getUser(),"/unban <用户名> 解除一位用户的封禁");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"/op <用户名> 给予管理员权限");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"/deop <用户名> 剥夺管理员权限");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"/ban <用户名> 封禁一位用户");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"/unban <用户名> 解除一位用户的封禁");
                     }
                 }
                 case "/op" -> {
                     if (CommandInformation.argv().length == 1) {
                         try {
-                            user User = api.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
+                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
                             if (Permission.ADMIN.equals(User.getUserPermission()))
                             {
-                                api.SendMessageToUser(chatMessageInfo.getUser(),"无法给予权限，对方已是管理员");
+                                API.SendMessageToUser(chatMessageInfo.getUser(),"无法给予权限，对方已是管理员");
                             }
                             else {
                                 User.SetUserPermission(1, false);
-                                api.SendMessageToUser(chatMessageInfo.getUser(), "已将" + User.getUserName() + "设为管理员");
-                                api.SendMessageToUser(User,"["+chatMessageInfo.getUser()+":已将" + User.getUserName() + "设为管理员]");
+                                API.SendMessageToUser(chatMessageInfo.getUser(), "已将" + User.getUserName() + "设为管理员");
+                                API.SendMessageToUser(User,"["+chatMessageInfo.getUser()+":已将" + User.getUserName() + "设为管理员]");
                             }
                         } catch (AccountNotFoundException e) {
-                            api.SendMessageToUser(chatMessageInfo.getUser(),"您所输入的用户不存在");
+                            API.SendMessageToUser(chatMessageInfo.getUser(),"您所输入的用户不存在");
                         }
                     }
                     else
                     {
-                        api.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/op <用户名>");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/op <用户名>");
                     }
                 }
                 case "/deop" -> {
                     if (CommandInformation.argv().length == 1) {
                         try {
-                            user User = api.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
+                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
                             if (Permission.ADMIN.equals(User.getUserPermission()))
                             {
                                 User.SetUserPermission(0, false);
-                                api.SendMessageToUser(chatMessageInfo.getUser(), "已剥夺" + User.getUserName() + "的管理员权限");
-                                api.SendMessageToUser(User,"["+chatMessageInfo.getUser()+":已剥夺"+ User.getUserName()+"的管理员权限]");
+                                API.SendMessageToUser(chatMessageInfo.getUser(), "已剥夺" + User.getUserName() + "的管理员权限");
+                                API.SendMessageToUser(User,"["+chatMessageInfo.getUser()+":已剥夺"+ User.getUserName()+"的管理员权限]");
                             }
                             else {
-                                api.SendMessageToUser(chatMessageInfo.getUser(),"无法剥夺权限，对方不是管理员");
+                                API.SendMessageToUser(chatMessageInfo.getUser(),"无法剥夺权限，对方不是管理员");
                             }
                         } catch (AccountNotFoundException e) {
-                            api.SendMessageToUser(chatMessageInfo.getUser(),"您所输入的用户不存在");
+                            API.SendMessageToUser(chatMessageInfo.getUser(),"您所输入的用户不存在");
                         }
                     }
                     else
                     {
-                        api.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/deop <用户名>");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/deop <用户名>");
                     }
                 }
                 case "/ban" -> {
                     if (CommandInformation.argv().length == 1) {
                         try {
-                            user User = api.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
+                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
                             if (Permission.BAN.equals(User.getUserPermission()))
                             {
-                                api.SendMessageToUser(chatMessageInfo.getUser(),"无法封禁，对方已被封禁");
+                                API.SendMessageToUser(chatMessageInfo.getUser(),"无法封禁，对方已被封禁");
                             }
                             else {
                                 User.SetUserPermission(-1, false);
                                 User.UserDisconnect();
-                                api.SendMessageToUser(chatMessageInfo.getUser(), "已将" + User.getUserName() + "封禁");
+                                API.SendMessageToUser(chatMessageInfo.getUser(), "已将" + User.getUserName() + "封禁");
                             }
                         } catch (AccountNotFoundException e) {
-                            api.SendMessageToUser(chatMessageInfo.getUser(),"您所输入的用户不存在");
+                            API.SendMessageToUser(chatMessageInfo.getUser(),"您所输入的用户不存在");
                         }
                     }
                     else
                     {
-                        api.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/ban <用户名>");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/ban <用户名>");
                     }
                 }
                 case "/unban" -> {
@@ -198,7 +219,7 @@ public class ChatRequest {
                                             ps = DatabaseConnection.prepareStatement(sql);
                                             ps.setString(1, CommandInformation.argv()[0]);
                                             ps.executeUpdate();
-                                            api.SendMessageToUser(chatMessageInfo.getUser(), "已解封"+CommandInformation.argv()[0]);
+                                            API.SendMessageToUser(chatMessageInfo.getUser(), "已解封"+CommandInformation.argv()[0]);
                                         }
                                     } catch (Database.DatabaseException | SQLException e) {
                                         SaveStackTrace.saveStackTrace(e);
@@ -219,10 +240,10 @@ public class ChatRequest {
                     }
                     else
                     {
-                        api.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/unban <用户名>");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/unban <用户名>");
                     }
                 }
-                default -> api.SendMessageToUser(chatMessageInfo.getUser(),"未知的命令！请输入/help查看帮助！");
+                default -> API.SendMessageToUser(chatMessageInfo.getUser(),"未知的命令！请输入/help查看帮助！");
             }
             return true;
         }

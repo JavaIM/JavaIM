@@ -21,12 +21,13 @@ import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GeneralMethod;
 import org.yuezhikong.newServer.UserData.user;
+import org.yuezhikong.newServer.api.SingleAPI;
+import org.yuezhikong.newServer.api.api;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
@@ -35,7 +36,6 @@ import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -136,10 +136,11 @@ public class ServerMain extends GeneralMethod {
                     public void run() {
                         this.setUncaughtExceptionHandler((t, e) -> SaveStackTrace.saveStackTrace(e));
                         this.setName("SQL Request Thread");
+                        api API = getServer().API;
                         if ("Server".equals(UserName))
                         {
                             Success = false;
-                            api.SendMessageToUser(RequestUser,"不得使用被禁止的用户名：Server");
+                            API.SendMessageToUser(RequestUser,"不得使用被禁止的用户名：Server");
                             try {
                                 new Thread()
                                 {
@@ -188,7 +189,7 @@ public class ServerMain extends GeneralMethod {
                                 String sha256;
                                 if (rs.getInt("UserLogged") == 1) {
                                     Success = false;
-                                    api.SendMessageToUser(RequestUser, "此用户已经登录了!");
+                                    API.SendMessageToUser(RequestUser, "此用户已经登录了!");
                                     try {
                                         new Thread() {
                                             @Override
@@ -231,7 +232,7 @@ public class ServerMain extends GeneralMethod {
                                     if (PermissionLevel != 0) {
                                         if (PermissionLevel != 1) {
                                             if (PermissionLevel == -1) {
-                                                api.SendMessageToUser(RequestUser, "您的账户已被永久封禁！");
+                                                API.SendMessageToUser(RequestUser, "您的账户已被永久封禁！");
                                                 Success = false;
                                                 try {
                                                     new Thread() {
@@ -544,6 +545,7 @@ public class ServerMain extends GeneralMethod {
         public void run() {
             this.setName("RecvMessageThread");
             Logger logger = getServer().logger;
+            api API = getServer().API;
             CurrentUser.setRecvMessageThread(this);
             try (Socket CurrentUserSocket = CurrentUser.getUserSocket()) {
                 //服务器密钥加载
@@ -725,7 +727,7 @@ public class ServerMain extends GeneralMethod {
                     }
                     final String ChatMessage = input.getChatMessage();
                     logger.ChatMsg(ChatMessage);
-                    api.SendMessageToAllClient(ChatMessage,getServer());
+                    API.SendMessageToAllClient(ChatMessage,getServer());
                 }
             }
             catch (IOException ignored) {
@@ -739,6 +741,11 @@ public class ServerMain extends GeneralMethod {
     private static ServerMain server;
     private Logger logger;
     protected UserAuthThread authThread;
+    private api API;
+
+    public api getServerAPI() {
+        return API;
+    }
 
     protected void RSA_KeyAutogenerate()
     {
@@ -806,6 +813,32 @@ public class ServerMain extends GeneralMethod {
     {
         return new Logger(false,false,null,null);
     }
+    /**
+     * 重置数据库中的用户登录状态，因为服务器重启后，所有用户都会被踢出
+     */
+    protected void UserLoginStatusReset() {
+        Runnable SQLUpdateThread = () -> {
+            try {
+                Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                String sql = "UPDATE UserData SET UserLogged = 0 where UserLogged = 1;";
+                DatabaseConnection.createStatement().executeUpdate(sql);
+                DatabaseConnection.close();
+            } catch (Exception e) {
+                SaveStackTrace.saveStackTrace(e);
+            } finally {
+                Database.close();
+            }
+        };
+        Thread UpdateThread = new Thread(SQLUpdateThread);
+        UpdateThread.start();
+        UpdateThread.setName("SQL Update Thread");
+        try {
+            UpdateThread.join();
+        } catch (InterruptedException e) {
+            logger.error("发生异常InterruptedException");
+            SaveStackTrace.saveStackTrace(e);
+        }
+    }
     //服务端main
     public void start(int bindPort)
     {
@@ -821,6 +854,8 @@ public class ServerMain extends GeneralMethod {
                 throw new RuntimeException("Socket Create Failed", e);
             }
             RSA_KeyAutogenerate();
+            UserLoginStatusReset();
+            API = new SingleAPI();
             authThread = new UserAuthThread();
             authThread.start();
             StartCommandSystem();
