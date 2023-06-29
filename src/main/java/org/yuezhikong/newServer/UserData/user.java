@@ -17,134 +17,116 @@
 package org.yuezhikong.newServer.UserData;
 
 import cn.hutool.crypto.symmetric.AES;
-import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.newServer.ServerMain;
-import org.yuezhikong.newServer.ServerMain.RecvMessageThread;
-import org.yuezhikong.utils.DataBase.Database;
-import org.yuezhikong.utils.SaveStackTrace;
 
 import java.net.Socket;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 @SuppressWarnings("unused")
-public class user {
-    private String UserName;
-    private String PublicKey;
-    private final int ClientID;
-    private Socket UserSocket;
-    private boolean UserLogined;
-    private RecvMessageThread recvMessageThread;
-    private Permission PermissionLevel;
-    private AES UserAES;
-    private final boolean Server;
-    public user(Socket socket, int ClientID,boolean isServer)
-    {
-        UserSocket = socket;
-        this.ClientID = ClientID;
-        UserLogined = false;
-        Server = isServer;
-    }
+public interface user {
+    /**
+     * 设置接收消息线程
+     * @param thread 线程
+     */
+    void setRecvMessageThread(ServerMain.RecvMessageThread thread);
 
-    public void setRecvMessageThread(RecvMessageThread thread)
-    {
-        recvMessageThread = thread;
-    }
+    /**
+     * 返回用于接收消息的线程
+     * @return 线程
+     */
+    ServerMain.RecvMessageThread getRecvMessageThread();
 
-    public RecvMessageThread getRecvMessageThread() {
-        return recvMessageThread;
-    }
+    /**
+     * 返回用户的Socket
+     * @return 用户Socket
+     */
+    Socket getUserSocket();
 
-    public Socket getUserSocket() {
-        return UserSocket;
-    }
+    /**
+     * 设置用户公钥
+     * @param publicKey 用户公钥
+     */
+    void setPublicKey(String publicKey);
 
-    public void setPublicKey(String publicKey) {
-        PublicKey = publicKey;
-    }
+    /**
+     * 获取用户公钥
+     * @return 用户公钥
+     */
+    String getPublicKey();
 
-    public String getPublicKey() {
-        return PublicKey;
-    }
+    /**
+     * 设置用户的AES加密器
+     * @param userAES AES加密器
+     */
+    void setUserAES(AES userAES);
 
-    public void setUserAES(AES userAES) {
-        UserAES = userAES;
-    }
+    /**
+     * 返回用户的AES加密器
+     * @return AES加密器
+     */
+    AES getUserAES();
 
-    public AES getUserAES() {
-        return UserAES;
-    }
+    /**
+     * 获取客户端ID
+     * @return 客户端ID
+     * @apiNote 客户端ID每次重新连入均会更改，建议使用用户名
+     */
+    int getClientID();
 
-    public int getClientID() {
-        return ClientID;
-    }
+    /**
+     * 获取用户名
+     * @return 用户名
+     */
+    String getUserName();
 
-    public String getUserName() {
-        return UserName;
-    }
-    public void UserLogin(String UserName)
-    {
-        this.UserName = UserName;
-        UserLogined = true;
-    }
+    /**
+     * 使用户登录
+     * @param UserName 用户名
+     * @apiNote 请注意，此方法将会触发UserLoginEvent
+     */
+    void UserLogin(String UserName);
 
-    public boolean isUserLogined() {
-        return UserLogined;
-    }
+    /**
+     * 获取用户登录状态
+     * @return {@code true} 已登录, {@code false} 未登录
+     */
+    boolean isUserLogined();
 
-    public void UserDisconnect() {
-        recvMessageThread.interrupt();
-        UserSocket = null;
-        UserName = null;
-        PublicKey = null;
-        UserLogined = false;
-        UserAES = null;
-    }
+    /**
+     * 使用户离线（踢出用户）
+     */
+    void UserDisconnect();
 
-    public void SetUserPermission(int permissionLevel, boolean FlashPermission) {
-        if (!FlashPermission)
-        {
-            ServerMain.getServer().getLogger().info("权限发生更新，用户："+getUserName()+"获得了"+permissionLevel+"级别权限");
-            new Thread()
-            {
-                @Override
-                public void run() {
-                    this.setName("SQL Worker");
-                    try
-                    {
-                        Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-                        String sql = "UPDATE UserData SET Permission = ? where UserName = ?";
-                        PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-                        ps.setInt(1,permissionLevel);
-                        ps.setString(2,user.this.getUserName());
-                        ps.executeUpdate();
-                    } catch (Database.DatabaseException | SQLException e)
-                    {
-                        SaveStackTrace.saveStackTrace(e);
-                    }
-                    finally {
-                        Database.close();
-                    }
-                }
-            }.start();
-        }
-        PermissionLevel = Permission.ToPermission(permissionLevel);
-    }
+    /**
+     * 设置用户权限级别
+     * @param permissionLevel 权限级别
+     * @param FlashPermission 是否为刷新权限
+     * @apiNote 如果是刷新权限，权限信息将不会记录到数据库中
+     */
+    void SetUserPermission(int permissionLevel, boolean FlashPermission);
 
-    public Permission getUserPermission() {
-        return PermissionLevel;
-    }
+    /**
+     * 获取用户的权限级别
+     * @return 权限级别
+     */
+    Permission getUserPermission();
 
-    public boolean isServer() {
-        return Server;
-    }
+    /**
+     * 获取此用户是/否是服务端虚拟用户
+     * @return {@code true} 是服务端虚拟账户 {@code false} 不是服务端虚拟账户
+     */
+    boolean isServer();
 
-    //被暂缓的服务端管理功能
-    public void setMuteTime(long muteTime) {
-    }
+    /**
+     * 设置禁言时间
+     * @param muteTime 禁言时间
+     * @apiNote 暂时未使用
+     */
+    void setMuteTime(long muteTime);
 
-    public void setMuted(boolean Muted) {
-    }
-
+    /**
+     * 设置是否被禁言
+     * @param Muted 是否被禁言
+     * @apiNote 暂时未使用
+     */
+    void setMuted(boolean Muted);
 }

@@ -26,8 +26,8 @@ import org.yuezhikong.utils.Protocol.NormalProtocol;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 
-public class GeneralMethod {
-    protected String GenerateKey(@NotNull String source)
+public class GeneralMethod implements GeneralMethodInterface{
+    public String GenerateKey(@NotNull String source)
     {
         try {
             byte[] KeyByte = new byte[32];
@@ -40,7 +40,7 @@ public class GeneralMethod {
             return GenerateKey(source + source);
         }
     }
-    protected NormalProtocol protocolRequest(String json)
+    public NormalProtocol protocolRequest(String json)
     {
         try
         {
@@ -51,7 +51,7 @@ public class GeneralMethod {
             throw new RuntimeException("Json Request Failed",e);
         }
     }
-    protected static @NotNull String unicodeToString(@NotNull String unicode) {
+    public @NotNull String unicodeToString(@NotNull String unicode) {
         StringBuilder sb = new StringBuilder();
         int i = 0;
         int len = unicode.length();

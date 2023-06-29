@@ -26,8 +26,12 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GeneralMethod;
 import org.yuezhikong.newServer.UserData.user;
+import org.yuezhikong.newServer.UserData.userImpl;
 import org.yuezhikong.newServer.api.SingleAPI;
 import org.yuezhikong.newServer.api.api;
+import org.yuezhikong.newServer.plugin.PluginManager;
+import org.yuezhikong.newServer.plugin.SimplePluginManager;
+import org.yuezhikong.newServer.plugin.event.events.PreLoginEvent;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
@@ -54,10 +58,10 @@ import java.util.UUID;
  * @author AlexLiuDev233
  * @Date 2023/6/10
  */
-public class ServerMain extends GeneralMethod {
+public non-sealed class ServerMain extends GeneralMethod implements ServerInterface{
     private final List<user> Users = new ArrayList<>();
     private int clientIDAll = 0;
-    private static class UserAuthThread extends Thread
+    protected static class UserAuthThread extends Thread
     {
         private final Logger logger;
         private final ServerSocket socket;
@@ -69,10 +73,16 @@ public class ServerMain extends GeneralMethod {
         @Override
         public void run() {
             this.setName("UserAuthThread");
+            this.setDaemon(true);
             this.setUncaughtExceptionHandler((t, e) -> {
                 SaveStackTrace.saveStackTrace(e);
                 logger.error("由于出现未捕获的异常，程序出现故障，即将退出");
-                getServer().ExitSystem(1);
+                try {
+                    getServer().getPluginManager().UnLoadAllPlugin();
+                } catch (IOException ex) {
+                    SaveStackTrace.saveStackTrace(ex);
+                }
+                System.exit(0);
             });
             while (true)
             {
@@ -102,7 +112,7 @@ public class ServerMain extends GeneralMethod {
                         continue;
                     }
                 }
-                user CurrentUser = new user(clientSocket,getServer().clientIDAll,false);//创建用户class
+                user CurrentUser = new userImpl(clientSocket,getServer().clientIDAll,false);//创建用户class
                 getServer().Users.add(CurrentUser);
                 getServer().Users.set(getServer().clientIDAll,CurrentUser);//添加到List中
                 getServer().StartRecvMessageThread(getServer().clientIDAll);//启动RecvMessage线程
@@ -112,10 +122,10 @@ public class ServerMain extends GeneralMethod {
                 logger.info("远程ip地址为："+clientSocket.getRemoteSocketAddress());
                 logger.info("远程端口为："+clientSocket.getPort());
             }
-            getServer().ExitSystem(2);
         }
     }
 
+    @Override
     public List<user> getUsers() {
         return Users;
     }
@@ -135,6 +145,7 @@ public class ServerMain extends GeneralMethod {
                     @Override
                     public void run() {
                         this.setUncaughtExceptionHandler((t, e) -> SaveStackTrace.saveStackTrace(e));
+                        this.setDaemon(true);
                         this.setName("SQL Request Thread");
                         api API = getServer().API;
                         if ("Server".equals(UserName))
@@ -422,10 +433,15 @@ public class ServerMain extends GeneralMethod {
                         return this;
                     }
                 }
-                return new IOWorker()
+                if (new IOWorker()
                         .start2()
                         .join2()
-                        .isSuccess();
+                        .isSuccess())
+                {
+                    PreLoginEvent event = new PreLoginEvent(UserName,false);
+                    getServer().getPluginManager().callEvent(event);
+                    return !event.isCancel();
+                }
             } catch (InterruptedException e) {
                 SaveStackTrace.saveStackTrace(e);
             }
@@ -440,7 +456,7 @@ public class ServerMain extends GeneralMethod {
             do {
                 json = reader.readLine();
             } while (json == null);
-            json = unicodeToString(json);
+            json = getServer().unicodeToString(json);
             Gson gson = new Gson();
             json = User.getUserAES().decryptStr(json);
             protocol = gson.fromJson(json,LoginProtocol.class);
@@ -492,7 +508,7 @@ public class ServerMain extends GeneralMethod {
                     do {
                         json = reader.readLine();
                     } while (json == null);
-                    json = unicodeToString(json);
+                    json = getServer().unicodeToString(json);
                     json = User.getUserAES().decryptStr(json);
                     protocol = gson.fromJson(json,LoginProtocol.class);
                     if (!("passwd".equals(protocol.getLoginPacketHead().getType())))
@@ -511,6 +527,16 @@ public class ServerMain extends GeneralMethod {
                 }
                 else
                 {
+                    PreLoginEvent event = new PreLoginEvent(username.get(0),true);
+                    getServer().getPluginManager().callEvent(event);
+                    if (event.isCancel())
+                    {
+                        User.UserDisconnect();
+                    }
+                    else
+                    {
+                        User.UserLogin(username.get(0));
+                    }
                     head.setType("Login");
                     head.setVersion(CodeDynamicConfig.getProtocolVersion());
                     normalProtocol.setMessageHead(head);
@@ -557,11 +583,11 @@ public class ServerMain extends GeneralMethod {
                 writer.write("Hello Client");
                 writer.newLine();
                 writer.flush();
-                logger.info("正在连接的客户端返回："+unicodeToString(reader.readLine()));
+                logger.info("正在连接的客户端返回："+getServer().unicodeToString(reader.readLine()));
                 writer.write("你好，客户端");
                 writer.newLine();
                 writer.flush();
-                logger.info("正在连接的客户端返回："+unicodeToString(reader.readLine()));
+                logger.info("正在连接的客户端返回："+getServer().unicodeToString(reader.readLine()));
                 //测试通讯协议
                 Gson gson = new Gson();
                 NormalProtocol protocol = new NormalProtocol();
@@ -580,7 +606,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
-                json = unicodeToString(json);
+                json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -591,7 +617,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
-                json = unicodeToString(json);
+                json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
                 {
@@ -613,7 +639,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
-                json = unicodeToString(json);
+                json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -636,7 +662,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
-                json = unicodeToString(json);
+                json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
                 {
@@ -660,7 +686,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
-                json = unicodeToString(json);
+                json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                     if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -683,7 +709,7 @@ public class ServerMain extends GeneralMethod {
                 do {
                     json = reader.readLine();
                 } while (json == null);
-                json = unicodeToString(json);
+                json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("UpdateProtocol".equals(protocol.getMessageHead().getType())))
                 {
@@ -712,7 +738,7 @@ public class ServerMain extends GeneralMethod {
                     do {
                         ChatMsg = reader.readLine();
                     } while (ChatMsg == null);
-                    ChatMsg = unicodeToString(ChatMsg);
+                    ChatMsg = getServer().unicodeToString(ChatMsg);
                     ChatMsg = CurrentUser.getUserAES().decryptStr(ChatMsg);
                     protocol = getServer().protocolRequest(ChatMsg);
                     if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Chat".equals(protocol.getMessageHead().getType())))
@@ -736,6 +762,7 @@ public class ServerMain extends GeneralMethod {
 
     }
 
+    private PluginManager pluginManager;
     private static boolean started = false;
     protected ServerSocket socket;
     private static ServerMain server;
@@ -743,11 +770,17 @@ public class ServerMain extends GeneralMethod {
     protected UserAuthThread authThread;
     private api API;
 
+    @Override
+    public PluginManager getPluginManager() {
+        return pluginManager;
+    }
+
+    @Override
     public api getServerAPI() {
         return API;
     }
 
-    protected void RSA_KeyAutogenerate()
+    private void RSA_KeyAutogenerate()
     {
         if (!(new File("Public.txt").exists()))
         {
@@ -799,15 +832,11 @@ public class ServerMain extends GeneralMethod {
         return server;
     }
 
+    @Override
     public Logger getLogger() {
         return logger;
     }
 
-    //退出系统
-    private void ExitSystem(int code)
-    {
-        System.exit(code);
-    }
     //Logger init
     protected Logger initLogger()
     {
@@ -858,6 +887,8 @@ public class ServerMain extends GeneralMethod {
             API = new SingleAPI();
             authThread = new UserAuthThread();
             authThread.start();
+            pluginManager = new SimplePluginManager();
+            pluginManager.LoadPluginOnDirectory(new File("./plugins"));
             StartCommandSystem();
         }
         else
@@ -867,7 +898,7 @@ public class ServerMain extends GeneralMethod {
     //命令系统
     private void StartCommandSystem() {
         //服务端虚拟账户初始化
-        user Console = new user(null,0,true);
+        user Console = new userImpl(null,0,true);
         Console.UserLogin("Server");
         Console.SetUserPermission(1,true);
         //IO初始化
@@ -884,6 +915,11 @@ public class ServerMain extends GeneralMethod {
                 logger.info("输入ForceClose来确认，其他取消");
                 if ("ForceClose".equals(scanner.nextLine()))
                 {
+                    try {
+                        pluginManager.UnLoadAllPlugin();
+                    } catch (IOException e) {
+                        SaveStackTrace.saveStackTrace(e);
+                    }
                     System.exit(0);
                 }
             }

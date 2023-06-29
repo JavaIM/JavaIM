@@ -28,6 +28,7 @@ import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -132,6 +133,7 @@ public class ChatRequest {
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/deop <用户名> 剥夺管理员权限");
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/ban <用户名> 封禁一位用户");
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/unban <用户名> 解除一位用户的封禁");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"/quit 安全的退出程序");
                     }
                 }
                 case "/op" -> {
@@ -242,6 +244,20 @@ public class ChatRequest {
                     {
                         API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/unban <用户名>");
                     }
+                }
+                case "/quit" -> {
+                    ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭",ServerMain.getServer());
+                    for (user User : ServerMain.getServer().getUsers())
+                    {
+                        User.UserDisconnect();
+                    }
+                    ServerMain.getServer().authThread.interrupt();
+                    try {
+                        ServerMain.getServer().getPluginManager().UnLoadAllPlugin();
+                    } catch (IOException e) {
+                        SaveStackTrace.saveStackTrace(e);
+                    }
+                    System.exit(0);
                 }
                 default -> API.SendMessageToUser(chatMessageInfo.getUser(),"未知的命令！请输入/help查看帮助！");
             }
