@@ -69,11 +69,11 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         {
             this.logger = getServer().logger;
             this.socket = getServer().socket;
+            this.setDaemon(true);
         }
         @Override
         public void run() {
             this.setName("UserAuthThread");
-            this.setDaemon(true);
             this.setUncaughtExceptionHandler((t, e) -> {
                 SaveStackTrace.saveStackTrace(e);
                 logger.error("由于出现未捕获的异常，程序出现故障，即将退出");
@@ -135,6 +135,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         private final user CurrentUser;
         public RecvMessageThread(int ClientID)
         {
+            this.setDaemon(true);
             CurrentUser = getServer().Users.get(ClientID);
         }
         private boolean CheckPassword(String UserName,String Passwd,user RequestUser)
@@ -142,10 +143,13 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
             try {
                 class IOWorker extends Thread {
                     private boolean Success = false;
+                    public IOWorker()
+                    {
+                        this.setDaemon(true);
+                    }
                     @Override
                     public void run() {
                         this.setUncaughtExceptionHandler((t, e) -> SaveStackTrace.saveStackTrace(e));
-                        this.setDaemon(true);
                         this.setName("SQL Request Thread");
                         api API = getServer().API;
                         if ("Server".equals(UserName))
@@ -909,7 +913,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         while (true)
         {
             String Command = "/"+scanner.nextLine();
-            if ("/quit".equals(Command))
+            if ("/ForceClose".equals(Command))
             {
                 logger.info("这将会强制关闭服务端");
                 logger.info("输入ForceClose来确认，其他取消");
@@ -922,6 +926,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                     }
                     System.exit(0);
                 }
+                continue;
             }
             chatRequest.CommandRequest(new ChatRequest.ChatRequestInput(Console,Command));
         }
