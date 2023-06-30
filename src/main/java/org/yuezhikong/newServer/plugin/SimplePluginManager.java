@@ -46,9 +46,9 @@ public class SimplePluginManager implements PluginManager{
             //读取插件清单
             Properties properties = new Properties();
             properties.load(classLoader.getResourceAsStream("PluginManifest.properties"));//打开插件清单文件
-            final String Name = properties.getProperty("Name");
-            final String Version = properties.getProperty("Version");
-            final String Author = properties.getProperty("Author");
+            final String Name = properties.getProperty("Plugin-Name");
+            final String Version = properties.getProperty("Plugin-Version");
+            final String Author = properties.getProperty("Plugin-Author");
             if (Name == null || Version == null || Author == null)
             {
                 ServerMain.getServer().getLogger().error("文件："+PluginFile.getName()+"加载失败，插件清单文件错误");
