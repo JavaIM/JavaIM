@@ -926,6 +926,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                     }
                     System.exit(0);
                 }
+                System.out.print(">");
                 continue;
             }
             chatRequest.CommandRequest(new ChatRequest.ChatRequestInput(Console,Command));
