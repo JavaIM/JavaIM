@@ -22,6 +22,8 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.api.api;
+import org.yuezhikong.newServer.plugin.event.events.UserChatEvent;
+import org.yuezhikong.newServer.plugin.event.events.UserCommandEvent;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -96,6 +98,15 @@ public class ChatRequest {
             return true;
         }
 
+        //执行插件处理程序
+        UserChatEvent chatEvent = new UserChatEvent(ChatMessageInfo.getUser(), ChatMessageInfo.getChatMessage());
+        ServerMain.getServer().getPluginManager().callEvent(chatEvent);
+        if (chatEvent.isCancel())
+        {
+            //插件表明取消此事件，就不要额外处理了
+            return true;
+        }
+
         //为消息补上消息头
         ChatMessageInfo.setChatMessage(ChatPrefix+ChatMessageInfo.ChatMessage);
         //如果出现换行，把他处理为一个“新的”消息，加上一个新的消息头，这样看来就是两条消息了，防止通过换行来伪装发信
@@ -114,6 +125,12 @@ public class ChatRequest {
         {
             final api API = ServerMain.getServer().getServerAPI();
             CustomVar.Command CommandInformation = API.CommandFormat(chatMessageInfo.getChatMessage());
+            UserCommandEvent event = new UserCommandEvent(chatMessageInfo.getUser(),CommandInformation);
+            ServerMain.getServer().getPluginManager().callEvent(event);
+            if (event.isCancel())
+            {
+                return true;
+            }
             switch (CommandInformation.Command())
             {
                 case "/about" -> {

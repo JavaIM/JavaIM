@@ -45,6 +45,8 @@ public final class CodeDynamicConfig {
     //动态区，可动态通过配置文件修改
     //是否是GUI模式
     public static boolean GUIMode = Boolean.parseBoolean(LoadClientProperties().getProperty("GUIMode"));
+
+    //仅服务端
     //最大客户端数量，输入-1代表禁用
     public static int MAX_CLIENT = Integer.parseInt(LoadServerProperties().getProperty("MAX_CLIENT"));
     //是否启用登录系统
@@ -61,7 +63,13 @@ public final class CodeDynamicConfig {
     public static String MySQLDataBaseUser = LoadServerProperties().getProperty("MySQLDataBaseUser");
     //MySQL数据库密码
     public static String MySQLDataBasePasswd = LoadServerProperties().getProperty("MySQLDataBasePasswd");
+    //socket最大空闲时间，单位为：毫秒
+    //如果这么长的时间无任何数据发来，则认为客户端已断开
+    public static int SocketTimeout = 120000;
 
+    //仅客户端
+    //心跳包时间间隔，单位为：毫秒
+    public static int HeartbeatInterval = 30000;
 
     public static boolean GetPluginSystemMode() { return PluginSystem; }
     public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }

@@ -109,12 +109,20 @@ public class userImpl implements user{
 
     @Override
     public void UserDisconnect() {
-        recvMessageThread.interrupt();
+        if (UserName == null || UserName.equals(""))
+        {
+            ServerMain.getServer().getLogger().info("一个客户端已经断开连接");
+        }
+        else
+        {
+            ServerMain.getServer().getLogger().info("用户："+UserName+"已经断开连接");
+        }
         UserSocket = null;
         UserName = null;
         PublicKey = null;
         UserLogined = false;
         UserAES = null;
+        recvMessageThread.interrupt();
     }
 
     @Override

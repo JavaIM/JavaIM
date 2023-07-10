@@ -43,6 +43,7 @@ import javax.crypto.SecretKey;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -89,6 +90,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 Socket clientSocket;//接受客户端Socket请求
                 try {
                     clientSocket = socket.accept();
+                    clientSocket.setSoTimeout(CodeDynamicConfig.SocketTimeout);
                 } catch (IOException e) {
                     SaveStackTrace.saveStackTrace(e);
                     break;
@@ -175,9 +177,13 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                                             writer.write(data);
                                             writer.newLine();
                                             writer.flush();
-                                        } catch (IOException ignored)
+                                        } catch (IOException e)
                                         {
-
+                                            if (e instanceof SocketTimeoutException)
+                                            {
+                                                getServer().getLogger().info("用户："+CurrentUser.getUserName()+"长时间无回应，已断开连接");
+                                            }
+                                            CurrentUser.UserDisconnect();
                                         }
                                     }
                                     public Thread start2()
@@ -223,8 +229,12 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                                                     writer.write(data);
                                                     writer.newLine();
                                                     writer.flush();
-                                                } catch (IOException ignored) {
-
+                                                } catch (IOException e) {
+                                                    if (e instanceof SocketTimeoutException)
+                                                    {
+                                                        getServer().getLogger().info("用户："+CurrentUser.getUserName()+"长时间无回应，已断开连接");
+                                                    }
+                                                    CurrentUser.UserDisconnect();
                                                 }
                                             }
 
@@ -267,8 +277,12 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                                                                 writer.write(data);
                                                                 writer.newLine();
                                                                 writer.flush();
-                                                            } catch (IOException ignored) {
-
+                                                            } catch (IOException e) {
+                                                                if (e instanceof SocketTimeoutException)
+                                                                {
+                                                                    getServer().getLogger().info("用户："+CurrentUser.getUserName()+"长时间无回应，已断开连接");
+                                                                }
+                                                                CurrentUser.UserDisconnect();
                                                             }
                                                         }
 
@@ -371,7 +385,11 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                                             writer.newLine();
                                             writer.flush();
                                         } catch (IOException e) {
-                                            SaveStackTrace.saveStackTrace(e);
+                                            if (e instanceof SocketTimeoutException)
+                                            {
+                                                getServer().getLogger().info("用户："+CurrentUser.getUserName()+"长时间无回应，已断开连接");
+                                            }
+                                            CurrentUser.UserDisconnect();
                                         }
                                     }
 
@@ -404,8 +422,12 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                                             writer.write(data);
                                             writer.newLine();
                                             writer.flush();
-                                        } catch (IOException ignored) {
-
+                                        } catch (IOException e) {
+                                            if (e instanceof SocketTimeoutException)
+                                            {
+                                                getServer().getLogger().info("用户："+CurrentUser.getUserName()+"长时间无回应，已断开连接");
+                                            }
+                                            CurrentUser.UserDisconnect();
                                         }
                                     }
 
@@ -459,6 +481,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
             final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(User.getUserSocket().getOutputStream(),StandardCharsets.UTF_8));
             do {
                 json = reader.readLine();
+                if ("Alive".equals(json))
+                {
+                    json = null;
+                }
             } while (json == null);
             json = getServer().unicodeToString(json);
             Gson gson = new Gson();
@@ -511,6 +537,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                     writer.flush();
                     do {
                         json = reader.readLine();
+                        if ("Alive".equals(json))
+                        {
+                            json = null;
+                        }
                     } while (json == null);
                     json = getServer().unicodeToString(json);
                     json = User.getUserAES().decryptStr(json);
@@ -574,6 +604,11 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         @Override
         public void run() {
             this.setName("RecvMessageThread");
+            this.setUncaughtExceptionHandler((Thread t,Throwable throwable) -> {
+                getServer().getLogger().warning("处理用户："+CurrentUser.getUserName()+"的线程出现错误");
+                getServer().getLogger().warning("正在强行踢出此用户");
+                CurrentUser.UserDisconnect();
+            });
             Logger logger = getServer().logger;
             api API = getServer().API;
             CurrentUser.setRecvMessageThread(this);
@@ -609,6 +644,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 String json;
                 do {
                     json = reader.readLine();
+                    if ("Alive".equals(json))
+                    {
+                        json = null;
+                    }
                 } while (json == null);
                 json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
@@ -620,6 +659,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 //RSA Key传递
                 do {
                     json = reader.readLine();
+                    if ("Alive".equals(json))
+                    {
+                        json = null;
+                    }
                 } while (json == null);
                 json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
@@ -627,7 +670,18 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 {
                     return;
                 }
-                CurrentUser.setPublicKey(RSA.decrypt(protocol.getMessageBody().getMessage(), ServerPrivateKey));
+                try {
+                    CurrentUser.setPublicKey(RSA.decrypt(protocol.getMessageBody().getMessage(), ServerPrivateKey));
+                } catch (cn.hutool.crypto.CryptoException e)
+                {
+                    writer.write("Decryption Error");
+                    writer.newLine();
+                    writer.flush();
+                    getServer().getLogger().warning("正在连接的客户端发送的信息无法被解密！");
+                    getServer().getLogger().warning("即将断开对于此用户的连接");
+                    CurrentUser.UserDisconnect();
+                    return;
+                }
                 //测试RSA
                 protocol = new NormalProtocol();
                 head = new NormalProtocol.MessageHead();
@@ -642,6 +696,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 writer.flush();
                 do {
                     json = reader.readLine();
+                    if ("Alive".equals(json))
+                    {
+                        json = null;
+                    }
                 } while (json == null);
                 json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
@@ -665,6 +723,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 writer.flush();
                 do {
                     json = reader.readLine();
+                    if ("Alive".equals(json))
+                    {
+                        json = null;
+                    }
                 } while (json == null);
                 json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
@@ -689,10 +751,14 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 writer.flush();
                 do {
                     json = reader.readLine();
+                    if ("Alive".equals(json))
+                    {
+                        json = null;
+                    }
                 } while (json == null);
                 json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
-                    if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
                     return;
                 }
@@ -712,6 +778,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 writer.flush();
                 do {
                     json = reader.readLine();
+                    if ("Alive".equals(json))
+                    {
+                        json = null;
+                    }
                 } while (json == null);
                 json = getServer().unicodeToString(json);
                 protocol = getServer().protocolRequest(json);
@@ -741,6 +811,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                     String ChatMsg;
                     do {
                         ChatMsg = reader.readLine();
+                        if ("Alive".equals(ChatMsg))
+                        {
+                            ChatMsg = null;
+                        }
                     } while (ChatMsg == null);
                     ChatMsg = getServer().unicodeToString(ChatMsg);
                     ChatMsg = CurrentUser.getUserAES().decryptStr(ChatMsg);
@@ -760,7 +834,12 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                     API.SendMessageToAllClient(ChatMessage,getServer());
                 }
             }
-            catch (IOException ignored) {
+            catch (IOException e) {
+                if (e instanceof SocketTimeoutException)
+                {
+                    logger.info("用户："+CurrentUser.getUserName()+"长时间无回应，已断开连接");
+                }
+                CurrentUser.UserDisconnect();
             }
         }
 
