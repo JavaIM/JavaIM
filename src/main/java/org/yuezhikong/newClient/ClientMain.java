@@ -147,7 +147,7 @@ public class ClientMain extends GeneralMethod {
     }
     protected Logger LoggerInit()
     {
-        return new Logger(false,false,null,null);
+        return new Logger();
     }
     public void start(String ServerAddress,int ServerPort)
     {

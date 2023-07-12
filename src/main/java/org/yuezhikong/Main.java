@@ -16,24 +16,18 @@
  */
 package org.yuezhikong;
 
-import javafx.application.Application;
-import org.apache.logging.log4j.LogManager;
-import org.yuezhikong.GUITest.MainGUI.GUI;
-import org.yuezhikong.Server.Server;
-import org.yuezhikong.Server.api.ServerAPI;
+import org.yuezhikong.newClient.ClientMain;
+import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.utils.ConfigFileManager;
-import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Scanner;
 
 import static org.yuezhikong.CodeDynamicConfig.*;
-import static org.yuezhikong.Server.Commands.RequestCommand.CommandRequest;
 
 public class Main {
-    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger(false,false,null,null);
+    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
 
     public static void CreateServerProperties(){
         ConfigFileManager prop = new ConfigFileManager();
@@ -47,59 +41,31 @@ public class Main {
     {
         logger.info("欢迎来到JavaIM！版本："+getVersion());
         logger.info("使用客户端模式请输入1，服务端模式请输入2:");
-        Scanner sc = new Scanner(System.in);
-        int mode = sc.nextInt();
-        if (mode == 1) {
-            Scanner sc2 = new Scanner(System.in);
-            Scanner sc3 = new Scanner(System.in);
-            String serverName;
-            logger.info("请输入要连接的主机:");
-            serverName = sc2.nextLine();
-            logger.info("请输入端口:");
-            int port = Integer.parseInt(sc3.nextLine());
-            new Client(serverName, port);
-        } else if (mode == 2) {
-            Scanner sc4 = new Scanner(System.in);
-            logger.info("请输入监听端口:");
-            int port = Integer.parseInt(sc4.nextLine());
-            new Server(port);
-        } else {
-            logger.info("输入值错误，请重新运行程序");
+        logger.info("请输入想选择的模式");
+        logger.info("1:服务端");
+        logger.info("2:客户端");
+        Scanner scanner = new Scanner(System.in);
+        int UserInput = scanner.nextInt();
+        if (UserInput == 1)
+        {
+            logger.info("请输入绑定的端口");
+            new ServerMain().start(scanner.nextInt());
+            System.exit(0);
+        }
+        else if (UserInput == 2)
+        {
+            logger.info("请输入ip");
+            scanner.nextLine();
+            String Address = scanner.nextLine();
+            logger.info("请输入端口");
+            new ClientMain().start(Address,scanner.nextInt());
+            System.exit(0);
         }
     }
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
-        //注册未抛出的异常处理器
-        Thread.currentThread().setUncaughtExceptionHandler((t, e) -> {
-            org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-            logger_log4j.debug("程序出现错误，错误信息为：");
-            SaveStackTrace.saveStackTrace(e);
-            if (Server.GetInstance() != null)
-            {
-                Server.GetInstance().logger.error("服务端出现致命错误！正在退出服务端");
-                CustomVar.Command command = ServerAPI.CommandFormat("/quit");
-                CommandRequest(command.Command(), command.argv(), null);
-            }
-            else if (Client.getInstance() != null)
-            {
-                Client.getInstance().logger.error("客户端出现致命错误！正在退出客户端");
-                try {
-                    if (Client.getInstance().SendMessageToServer(".quit"))
-                    {
-                        Client.getInstance().logger.info("再见~");
-                        Client.getInstance().ExitSystem(0);
-                    }
-                } catch (IOException ignored) {
-                }
-            }
-            else
-            {
-                logger.error("程序出现致命错误！正在退出程序");
-            }
-            System.exit(0);
-        });
         //服务端与客户端配置文件初始化
         if (!(new File("server.properties").exists())){
             logger.info("目录下没有检测到服务端配置文件，正在创建");
@@ -125,8 +91,8 @@ public class Main {
             }
             if (isGUIMode())
             {
-                Application.launch(GUI.class, args);
-                return;
+                logger.info("GUI功能由于服务端与客户端底层重构，导致已被暂时关闭");
+                logger.info("正在为您使用控制台版本");
             }
             ConsoleMain();
         }

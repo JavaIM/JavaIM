@@ -31,7 +31,7 @@ public class ConsoleCommandRequest {
         {
             switch (arg) {
                 case "-help" -> {
-                    Logger logger = new Logger(false, false, null, null);
+                    Logger logger = new Logger();
                     logger.info("-help 显示帮助");
                     logger.info("-nogui 无需gui");
                     logger.info("-usegui 需gui");
@@ -43,7 +43,7 @@ public class ConsoleCommandRequest {
                 case "-nogui" -> CodeDynamicConfig.GUIMode = false;
                 case "-usegui" -> CodeDynamicConfig.GUIMode = true;
                 default -> {
-                    Logger logger = new Logger(false, false, null, null);
+                    Logger logger = new Logger();
                     logger.warning("警告，参数：" + arg + "与任何命令行输入不符");
                 }
             }

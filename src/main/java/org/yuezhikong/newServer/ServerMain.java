@@ -57,7 +57,6 @@ import java.util.UUID;
 /**
  * 新服务端
  * @author AlexLiuDev233
- * @Date 2023/6/10
  */
 public non-sealed class ServerMain extends GeneralMethod implements ServerInterface{
     private final List<user> Users = new ArrayList<>();
@@ -923,7 +922,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
     //Logger init
     protected Logger initLogger()
     {
-        return new Logger(false,false,null,null);
+        return new Logger();
     }
     /**
      * 重置数据库中的用户登录状态，因为服务器重启后，所有用户都会被踢出
