@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.CrashReport;
 import org.yuezhikong.GeneralMethod;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.UserData.userImpl;
@@ -74,16 +75,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         @Override
         public void run() {
             this.setName("UserAuthThread");
-            this.setUncaughtExceptionHandler((t, e) -> {
-                SaveStackTrace.saveStackTrace(e);
-                logger.error("由于出现未捕获的异常，程序出现故障，即将退出");
-                try {
-                    getServer().getPluginManager().UnLoadAllPlugin();
-                } catch (IOException ex) {
-                    SaveStackTrace.saveStackTrace(ex);
-                }
-                System.exit(0);
-            });
+            this.setUncaughtExceptionHandler(new CrashReport());
             while (true)
             {
                 Socket clientSocket;//接受客户端Socket请求
@@ -125,6 +117,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
             }
         }
     }
+
 
     @Override
     public List<user> getUsers() {
@@ -818,7 +811,17 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                     ChatMsg = getServer().unicodeToString(ChatMsg);
                     ChatMsg = CurrentUser.getUserAES().decryptStr(ChatMsg);
                     protocol = getServer().protocolRequest(ChatMsg);
-                    if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Chat".equals(protocol.getMessageHead().getType())))
+                    if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                    {
+                        CurrentUser.UserDisconnect();
+                        return;
+                    }
+                    if ("ChangePassword".equals(protocol.getMessageHead().getType()))
+                    {
+                        getServer().getServerAPI().ChangeUserPassword(CurrentUser,protocol.getMessageBody().getMessage());
+                        continue;
+                    }
+                    if (!("Chat".equals(protocol.getMessageHead().getType())))
                     {
                         CurrentUser.UserDisconnect();
                         return;
@@ -919,6 +922,18 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         return logger;
     }
 
+    private static final Object lock = new Object();
+    private static final List<Runnable> codelist = new ArrayList<>();
+
+    @Override
+    public void runOnMainThread(Runnable code) {
+        codelist.add(code);
+        synchronized (lock)
+        {
+            lock.notifyAll();
+        }
+    }
+
     //Logger init
     protected Logger initLogger()
     {
@@ -951,6 +966,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         }
     }
     //服务端main
+    @SuppressWarnings("InfiniteLoopStatement")
     public void start(int bindPort)
     {
         if (!started)
@@ -972,6 +988,20 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
             pluginManager = new SimplePluginManager();
             pluginManager.LoadPluginOnDirectory(new File("./plugins"));
             StartCommandSystem();
+            //主线程执行代码
+            while (true) {
+                try {
+                    synchronized (lock) {
+                        lock.wait();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                for (Runnable runnable : codelist) {
+                    runnable.run();
+                }
+                codelist.clear();
+            }
         }
         else
             throw new RuntimeException("Server is Already Started");
@@ -979,35 +1009,43 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
 
     //命令系统
     private void StartCommandSystem() {
-        //服务端虚拟账户初始化
-        user Console = new userImpl(null,0,true);
-        Console.UserLogin("Server");
-        Console.SetUserPermission(1,true);
-        //IO初始化
-        Scanner scanner = new Scanner(System.in);
-        //ChatRequest初始化
-        ChatRequest chatRequest = new ChatRequest();
-        //命令系统
-        while (true)
+        new Thread()
         {
-            String Command = "/"+scanner.nextLine();
-            if ("/ForceClose".equals(Command))
-            {
-                logger.info("这将会强制关闭服务端");
-                logger.info("输入ForceClose来确认，其他取消");
-                if ("ForceClose".equals(scanner.nextLine()))
+            @Override
+            public void run() {
+                this.setName("Command Thread");
+                this.setUncaughtExceptionHandler(new CrashReport());
+                //服务端虚拟账户初始化
+                user Console = new userImpl(null,0,true);
+                Console.UserLogin("Server");
+                Console.SetUserPermission(1,true);
+                //IO初始化
+                Scanner scanner = new Scanner(System.in);
+                //ChatRequest初始化
+                ChatRequest chatRequest = new ChatRequest();
+                //命令系统
+                while (true)
                 {
-                    try {
-                        pluginManager.UnLoadAllPlugin();
-                    } catch (IOException e) {
-                        SaveStackTrace.saveStackTrace(e);
+                    String Command = "/"+scanner.nextLine();
+                    if ("/ForceClose".equals(Command))
+                    {
+                        logger.info("这将会强制关闭服务端");
+                        logger.info("输入ForceClose来确认，其他取消");
+                        if ("ForceClose".equals(scanner.nextLine()))
+                        {
+                            try {
+                                pluginManager.UnLoadAllPlugin();
+                            } catch (IOException e) {
+                                SaveStackTrace.saveStackTrace(e);
+                            }
+                            System.exit(0);
+                        }
+                        System.out.print(">");
+                        continue;
                     }
-                    System.exit(0);
+                    chatRequest.CommandRequest(new ChatRequest.ChatRequestInput(Console,Command));
                 }
-                System.out.print(">");
-                continue;
             }
-            chatRequest.CommandRequest(new ChatRequest.ChatRequestInput(Console,Command));
-        }
+        }.start();
     }
 }

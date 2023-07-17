@@ -22,6 +22,7 @@ import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GeneralMethod;
@@ -111,8 +112,10 @@ public class ClientMain extends GeneralMethod {
         logger.info("请输入用户名：");
         String UserName = scanner.nextLine();
         logger.info("请输入密码：");
-        String Password = scanner.nextLine();
-
+        String Password = SecureUtil.sha256(scanner.nextLine());
+        return tryLogin(client,aes,logger,UserName,Password);
+    }
+    private boolean tryLogin(@NotNull Socket client, @NotNull AES aes, @NotNull Logger logger, @NotNull @Nls String UserName,@NotNull @Nls String Password) throws IOException {
         Gson gson = new Gson();
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream(),StandardCharsets.UTF_8));
         BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.UTF_8));
@@ -279,6 +282,47 @@ public class ClientMain extends GeneralMethod {
             writer.write(gson.toJson(protocol));
             writer.newLine();
             writer.flush();
+            logger.info("------提示------");
+            logger.info("由于密码加密逻辑变更");
+            logger.info("如您仍使用旧密码");
+            logger.info("请尽快以兼容模式登录");
+            logger.info("来进一步保护您的安全");
+            logger.info("输入1来进行兼容模式登录");
+            logger.info("输入其他，来进行普通登录");
+            Scanner scanner = new Scanner(System.in);
+            try {
+                int UserInput = Integer.parseInt(scanner.nextLine());
+                if (UserInput == 1)
+                {
+                    logger.info("请输入用户名：");
+                    String UserName = scanner.nextLine();
+                    logger.info("请输入密码：");
+                    String Password = scanner.nextLine();
+                    if (tryLogin(client,aes,logger,UserName,Password))
+                    {
+                        protocol = new NormalProtocol();
+                        head = new NormalProtocol.MessageHead();
+                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        head.setType("ChangePassword");
+                        protocol.setMessageHead(head);
+                        body = new NormalProtocol.MessageBody();
+                        body.setMessage(SecureUtil.sha256(Password));
+                        protocol.setMessageBody(body);
+                        json = gson.toJson(protocol);
+                        json = aes.encryptBase64(json);
+                        writer.write(json);
+                        writer.newLine();
+                        writer.flush();
+                        StartRecvMessageThread(client,aes,logger);
+                        SendMessage(logger,client,aes);
+                    }
+                    else
+                    {
+                        logger.info("登录失败，用户名或密码错误");
+                    }
+                    return;
+                }
+            } catch (NumberFormatException ignored) {}
             //握手完成，接下来是登录逻辑
             if (new File("./token.txt").exists() && new File("./token.txt").isFile() && new File("./token.txt").canRead())
             {
@@ -316,6 +360,13 @@ public class ClientMain extends GeneralMethod {
                     if (!(UseUserNameAndPasswordLogin(client,aes,logger)))
                     {
                         logger.info("登录失败，用户名或密码错误");
+                        logger.info("------提示------");
+                        logger.info("由于密码加密逻辑变更");
+                        logger.info("如您仍使用旧密码");
+                        logger.info("却使用标准模式登录");
+                        logger.info("同样会发生此问题");
+                        logger.info("如您是此原因");
+                        logger.info("您可使用兼容模式登录一次来解决此问题");
                         return;
                     }
                     else
@@ -333,6 +384,13 @@ public class ClientMain extends GeneralMethod {
                 if (!(UseUserNameAndPasswordLogin(client,aes,logger)))
                 {
                     logger.info("登录失败，用户名或密码错误");
+                    logger.info("------提示------");
+                    logger.info("由于密码加密逻辑变更");
+                    logger.info("如您仍使用旧密码");
+                    logger.info("却使用标准模式登录");
+                    logger.info("同样会发生此问题");
+                    logger.info("如您是此原因");
+                    logger.info("您可使用兼容模式登录一次来解决此问题");
                     return;
                 }
                 else
@@ -386,6 +444,12 @@ public class ClientMain extends GeneralMethod {
                     writer.newLine();
                     writer.flush();
                     break;
+                }
+                if (".crash".equals(UserInput))
+                {
+                    if (CodeDynamicConfig.GetDebugMode()) {
+                        throw new RuntimeException("Debug Crash");
+                    }
                 }
                 Gson gson = new Gson();
                 NormalProtocol protocol = new NormalProtocol();

@@ -16,6 +16,7 @@
  */
 package org.yuezhikong.newServer.api;
 
+import cn.hutool.crypto.SecureUtil;
 import com.google.gson.Gson;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
@@ -24,6 +25,7 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.CustomVar;
+import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -31,6 +33,9 @@ import javax.security.auth.login.AccountNotFoundException;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -181,5 +186,36 @@ public class SingleAPI implements api{
             }
         }
         throw new AccountNotFoundException("This UserName Is Not Found,if this UserName No Login?");//找不到用户时抛出异常
+    }
+
+    @Override
+    public void ChangeUserPassword(user User, String password) {
+        Runnable SQLUpdateThread = () -> {
+            try {
+                Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                String sql = "select * from UserData where UserName = ?";
+                PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next())
+                {
+                    sql = "UPDATE UserData SET Passwd = ? where UserName = ?;";
+                    ps = DatabaseConnection.prepareStatement(sql);
+                    String salt = rs.getString("salt");
+                    //为保护安全，保存密码是加盐sha256
+                    String sha256 = SecureUtil.sha256(password + salt);
+                    ps.setString(1,sha256);
+                    ps.setString(2,User.getUserName());
+                    ps.executeUpdate();
+                }
+                DatabaseConnection.close();
+            } catch (Exception e) {
+                SaveStackTrace.saveStackTrace(e);
+            } finally {
+                Database.close();
+            }
+        };
+        Thread UpdateThread = new Thread(SQLUpdateThread);
+        UpdateThread.start();
+        UpdateThread.setName("SQL Update Thread");
     }
 }

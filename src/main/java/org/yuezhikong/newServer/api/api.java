@@ -71,4 +71,11 @@ public interface api {
      * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
     @NotNull user GetUserByUserName(@NotNull @Nls String UserName, @NotNull ServerMain ServerInstance, boolean DetectLoginStatus) throws AccountNotFoundException;
+
+    /**
+     * 修改用户的密码
+     * @param User 用户
+     * @param password 密码
+     */
+    void ChangeUserPassword(user User, String password);
 }

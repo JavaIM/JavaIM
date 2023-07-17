@@ -22,13 +22,13 @@ import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
-    private static final int ProtocolVersion = 4;
+    private static final int ProtocolVersion = 5;
     //本程序版本：
     private static final String Version = "InDev";
     //目前最新的Database协议版本
     private static final int TheLatestDatabaseProtocolVersion = 2;
     //调试模式
-    private static final boolean Debug_Mode = false;
+    private static final boolean Debug_Mode = true;
     //About System
     public static final boolean About_System = true;
     //RSA加密功能

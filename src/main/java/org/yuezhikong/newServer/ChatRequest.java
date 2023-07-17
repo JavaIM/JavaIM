@@ -276,6 +276,18 @@ public class ChatRequest {
                     }
                     System.exit(0);
                 }
+                case "/crash" -> {
+                    if (CodeDynamicConfig.GetDebugMode())
+                    {
+                        ServerMain.getServer().runOnMainThread(() -> {
+                            throw new RuntimeException("Debug Crash");
+                        });
+                    }
+                    else
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"未知的命令！请输入/help查看帮助！");
+                    }
+                }
                 default -> API.SendMessageToUser(chatMessageInfo.getUser(),"未知的命令！请输入/help查看帮助！");
             }
             return true;

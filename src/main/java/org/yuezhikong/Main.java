@@ -66,6 +66,7 @@ public class Main {
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
+        Thread.currentThread().setUncaughtExceptionHandler(new CrashReport());
         //服务端与客户端配置文件初始化
         if (!(new File("server.properties").exists())){
             logger.info("目录下没有检测到服务端配置文件，正在创建");
@@ -78,27 +79,21 @@ public class Main {
         //命令行参数处理
         ConsoleCommandRequest.Request(true,args);
         //启动JavaIM启动逻辑
-        try {
-            if (isThisVersionIsExpVersion())
-            {
-                logger.info("欢迎来到JavaIM！版本："+getVersion());
-                logger.info("此版本为实验性版本！不会保证稳定性");
-                logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
-                logger.info("本版本测试性内容：");
-                logger.info(getExpVersionText());
-                ExpVersionCode code = new ExpVersionCode();
-                code.run(logger);
-            }
-            if (isGUIMode())
-            {
-                logger.info("GUI功能由于服务端与客户端底层重构，导致已被暂时关闭");
-                logger.info("正在为您使用控制台版本");
-            }
-            ConsoleMain();
-        }
-        catch (Exception e)
+        if (isThisVersionIsExpVersion())
         {
-            SaveStackTrace.saveStackTrace(e);
+            logger.info("欢迎来到JavaIM！版本："+getVersion());
+            logger.info("此版本为实验性版本！不会保证稳定性");
+            logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
+            logger.info("本版本测试性内容：");
+            logger.info(getExpVersionText());
+            ExpVersionCode code = new ExpVersionCode();
+            code.run(logger);
         }
+        if (isGUIMode())
+        {
+            logger.info("GUI功能由于服务端与客户端底层重构，导致已被暂时关闭");
+            logger.info("正在为您使用控制台版本");
+        }
+        ConsoleMain();
     }
 }
