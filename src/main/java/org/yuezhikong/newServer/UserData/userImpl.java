@@ -40,12 +40,24 @@ public class userImpl implements user{
     private Permission PermissionLevel;
     private AES UserAES;
     private final boolean Server;
+    private boolean AllowedTransferProtocol;
+
+    /**
+     * 创建一个新的用户数据
+     * @param socket 客户端套链字
+     * @param ClientID 客户端ID
+     * @param isServer 是否是服务端
+     */
     public userImpl(Socket socket, int ClientID,boolean isServer)
     {
         UserSocket = socket;
         this.ClientID = ClientID;
         UserLogined = false;
         Server = isServer;
+    }
+
+    public void setAllowedTransferProtocol(boolean allowedTransferProtocol) {
+        AllowedTransferProtocol = allowedTransferProtocol;
     }
 
     @Override
@@ -116,6 +128,23 @@ public class userImpl implements user{
         else
         {
             ServerMain.getServer().getLogger().info("用户："+UserName+"已经断开连接");
+            try {
+                Connection DatabaseConnection = Database.Init(
+                        CodeDynamicConfig.GetMySQLDataBaseHost(),
+                        CodeDynamicConfig.GetMySQLDataBasePort(),
+                        CodeDynamicConfig.GetMySQLDataBaseName(),
+                        CodeDynamicConfig.GetMySQLDataBaseUser(),
+                        CodeDynamicConfig.GetMySQLDataBasePasswd());
+                String sql = "UPDATE UserData SET UserLogged = 0 where UserName = ?;";
+                PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
+                ps.setString(1, UserName);
+                ps.executeUpdate();
+            } catch (SQLException | Database.DatabaseException e) {
+                SaveStackTrace.saveStackTrace(e);
+            }
+            finally {
+                Database.close();
+            }
         }
         UserSocket = null;
         UserName = null;
@@ -172,6 +201,11 @@ public class userImpl implements user{
     }
     @Override
     public void setMuted(boolean Muted) {
+    }
+
+    @Override
+    public boolean isAllowedTransferProtocol() {
+        return AllowedTransferProtocol;
     }
 
 }

@@ -2,6 +2,7 @@ version代表通讯版本号
 
 type代表消息类型，Chat代表聊天，FileTransfer代表文件传输，Login代表登录数据包，ChangePassword代表更改密码，
 Test代表测试通讯（仅握手过程中），Encryption代表密钥传递（仅握手过程中），UpdateProtocol代表升级通讯协议（仅握手过程中）
+NextIsTransferProtocol代表下一个请求为TransferProtocol，请进行处理，Result代表客户端请求后的返回
 
 MessageBody中的Message代表如果是Chat模式，那么消息是什么
 MessageBody中的FileLong代表如果是FileTransfer模式，那么文件长度是多少

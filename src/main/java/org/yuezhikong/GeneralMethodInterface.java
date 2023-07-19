@@ -17,6 +17,7 @@
 package org.yuezhikong;
 
 import org.jetbrains.annotations.NotNull;
+import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 
 public interface GeneralMethodInterface {
@@ -40,4 +41,12 @@ public interface GeneralMethodInterface {
      * @return 普通String
      */
     @NotNull String unicodeToString(@NotNull String unicode);
+
+    /**
+     * RSA Key制造工具
+     * @param PublicKeyFile 公钥文件
+     * @param PrivateKeyFile 私钥文件
+     * @param logger Logger
+     */
+    void RSA_KeyAutogenerate(String PublicKeyFile, String PrivateKeyFile, Logger logger);
 }

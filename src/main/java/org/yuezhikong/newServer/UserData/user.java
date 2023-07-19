@@ -129,4 +129,16 @@ public interface user {
      * @apiNote 暂时未使用
      */
     void setMuted(boolean Muted);
+
+    /**
+     * 是否允许TransferProtocol
+     * @return {@code true} 允许 {@code false} 不允许
+     */
+    boolean isAllowedTransferProtocol();
+
+    /**
+     * 设置允许TransferProtocol
+     * @param allowedTransferProtocol {@code true} 允许 {@code false} 不允许
+     */
+    void setAllowedTransferProtocol(boolean allowedTransferProtocol);
 }

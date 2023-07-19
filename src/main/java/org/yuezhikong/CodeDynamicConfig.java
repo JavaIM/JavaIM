@@ -22,7 +22,7 @@ import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
-    private static final int ProtocolVersion = 5;
+    private static final int ProtocolVersion = 6;
     //本程序版本：
     private static final String Version = "InDev";
     //目前最新的Database协议版本
@@ -45,6 +45,8 @@ public final class CodeDynamicConfig {
     //动态区，可动态通过配置文件修改
     //是否是GUI模式
     public static boolean GUIMode = Boolean.parseBoolean(LoadClientProperties().getProperty("GUIMode"));
+    //是否允许TransferProtocol协议
+    public static boolean AllowedTransferProtocol = true;
 
     //仅服务端
     //最大客户端数量，输入-1代表禁用

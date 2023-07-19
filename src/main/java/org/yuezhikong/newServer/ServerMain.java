@@ -37,10 +37,12 @@ import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.Protocol.TransferProtocol;
 import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
+import javax.security.auth.login.AccountNotFoundException;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -498,7 +500,16 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                                 ps.setString(1, finalProtocol.getLoginPacketBody().getReLogin().getToken());
                                 ResultSet rs = ps.executeQuery();
                                 if (rs.next()) {
-                                    username.add(rs.getString("UserName"));
+                                    if (rs.getInt("UserLogged") != 1)
+                                    {
+                                        sql = "UPDATE UserData SET UserLogged = 1 where UserName = ?;";
+                                        ps = DatabaseConnection.prepareStatement(sql);
+                                        ps.setString(1, rs.getString("UserName"));
+                                        ps.executeUpdate();
+                                        username.add(rs.getString("UserName"));
+                                    }
+                                    else
+                                        ServerMain.getServer().getServerAPI().SendMessageToUser(CurrentUser,"此用户已经登录了！");
                                 }
                                 DatabaseConnection.close();
                             } catch (SQLException | Database.DatabaseException e) {
@@ -597,6 +608,10 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         public void run() {
             this.setName("RecvMessageThread");
             this.setUncaughtExceptionHandler((Thread t,Throwable throwable) -> {
+                if (CodeDynamicConfig.GetDebugMode())
+                {
+                    SaveStackTrace.saveStackTrace(throwable);
+                }
                 getServer().getLogger().warning("处理用户："+CurrentUser.getUserName()+"的线程出现错误");
                 getServer().getLogger().warning("正在强行踢出此用户");
                 CurrentUser.UserDisconnect();
@@ -785,6 +800,35 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 {
                     return;
                 }
+                //询问是否允许TransferProtocol
+                protocol = new NormalProtocol();
+                head = new NormalProtocol.MessageHead();
+                head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                head.setType("options");
+                protocol.setMessageHead(head);
+                body = new NormalProtocol.MessageBody();
+                body.setMessage("AllowTransferProtocol");
+                body.setFileLong(0);
+                protocol.setMessageBody(body);
+                writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                writer.newLine();
+                writer.flush();
+
+                do {
+                    json = reader.readLine();
+                    if ("Alive".equals(json))
+                    {
+                        json = null;
+                    }
+                } while (json == null);
+                json = getServer().unicodeToString(json);
+                json = CurrentUser.getUserAES().decryptStr(json);
+                protocol = getServer().protocolRequest(json);
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("options".equals(protocol.getMessageHead().getType())))
+                {
+                    return;
+                }
+                CurrentUser.setAllowedTransferProtocol("Enable".equals(protocol.getMessageBody().getMessage()));
                 System.gc();
                 //握手全部完毕，后续是登录系统
                 try {
@@ -819,6 +863,112 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                     if ("ChangePassword".equals(protocol.getMessageHead().getType()))
                     {
                         getServer().getServerAPI().ChangeUserPassword(CurrentUser,protocol.getMessageBody().getMessage());
+                        continue;
+                    }
+                    if ("NextIsTransferProtocol".equals(protocol.getMessageHead().getType()))
+                    {
+                        do {
+                            json = reader.readLine();
+                            if ("Alive".equals(json))
+                            {
+                                json = null;
+                            }
+                        } while (json == null);
+                        json = getServer().unicodeToString(json);
+                        json = CurrentUser.getUserAES().decryptStr(json);
+                        TransferProtocol transferProtocol = gson.fromJson(json, TransferProtocol.class);
+                        if (transferProtocol.getTransferProtocolHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                        {
+                            protocol = new NormalProtocol();
+                            head = new NormalProtocol.MessageHead();
+                            head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                            head.setType("Result");
+                            protocol.setMessageHead(head);
+                            body = new NormalProtocol.MessageBody();
+                            body.setMessage("TransferProtocolVersionIsNotSupport");
+                            protocol.setMessageBody(body);
+                            writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                            writer.newLine();
+                            writer.flush();
+                            continue;
+                        }
+                        else if (!CodeDynamicConfig.AllowedTransferProtocol)
+                        {
+                            protocol = new NormalProtocol();
+                            head = new NormalProtocol.MessageHead();
+                            head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                            head.setType("Result");
+                            protocol.setMessageHead(head);
+                            body = new NormalProtocol.MessageBody();
+                            body.setMessage("ThisServerDisallowedTransferProtocol");
+                            protocol.setMessageBody(body);
+                            writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                            writer.newLine();
+                            writer.flush();
+                            continue;
+                        }
+                        else {
+                            try {
+                                user TargetUser = getServer().getServerAPI().GetUserByUserName(transferProtocol.getTransferProtocolHead().getTargetUserName(),
+                                        ServerMain.getServer(),true);
+                                if (TargetUser.isAllowedTransferProtocol())
+                                {
+                                    BufferedWriter writer1 = new BufferedWriter(new OutputStreamWriter(TargetUser
+                                            .getUserSocket().getOutputStream()));
+
+                                    protocol = new NormalProtocol();
+                                    head = new NormalProtocol.MessageHead();
+                                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                    head.setType("NextIsTransferProtocol");
+                                    protocol.setMessageHead(head);
+                                    body = new NormalProtocol.MessageBody();
+                                    body.setMessage(CurrentUser.getUserName());
+                                    protocol.setMessageBody(body);
+                                    writer1.write(TargetUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                                    writer1.newLine();
+                                    writer1.flush();
+
+                                    writer1.write(TargetUser.getUserAES().encryptBase64(json));
+                                    writer1.newLine();
+                                    writer1.flush();
+
+                                    protocol = new NormalProtocol();
+                                    head = new NormalProtocol.MessageHead();
+                                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                    head.setType("Result");
+                                    protocol.setMessageHead(head);
+                                    body = new NormalProtocol.MessageBody();
+                                    body.setMessage("Success");
+                                }
+                                else
+                                {
+                                    protocol = new NormalProtocol();
+                                    head = new NormalProtocol.MessageHead();
+                                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                    head.setType("Result");
+                                    protocol.setMessageHead(head);
+                                    body = new NormalProtocol.MessageBody();
+                                    body.setMessage("ThisUserDisallowedTransferProtocol");
+                                }
+                                protocol.setMessageBody(body);
+                                writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                                writer.newLine();
+                                writer.flush();
+                                continue;
+                            } catch (AccountNotFoundException e) {
+                                protocol = new NormalProtocol();
+                                head = new NormalProtocol.MessageHead();
+                                head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                head.setType("Result");
+                                protocol.setMessageHead(head);
+                                body = new NormalProtocol.MessageBody();
+                                body.setMessage("ThisUserNotFound");
+                                protocol.setMessageBody(body);
+                                writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                                writer.newLine();
+                                writer.flush();
+                            }
+                        }
                         continue;
                     }
                     if (!("Chat".equals(protocol.getMessageHead().getType())))
@@ -863,48 +1013,6 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
     @Override
     public api getServerAPI() {
         return API;
-    }
-
-    private void RSA_KeyAutogenerate()
-    {
-        if (!(new File("Public.txt").exists()))
-        {
-            if (!(new File("Private.txt").exists()))
-            {
-                try {
-                    RSA.generateKeyToFile("Public.txt", "Private.txt");
-                }
-                catch (Exception e)
-                {
-                    SaveStackTrace.saveStackTrace(e);
-                }
-            }
-            else
-            {
-                logger.warning("系统检测到您的目录下不存在公钥，但，存在私钥，系统将为您覆盖一个新的rsa key");
-                try {
-                    RSA.generateKeyToFile("Public.txt", "Private.txt");
-                }
-                catch (Exception e)
-                {
-                    SaveStackTrace.saveStackTrace(e);
-                }
-            }
-        }
-        else
-        {
-            if (!(new File("Private.txt").exists()))
-            {
-                logger.warning("系统检测到您的目录下存在公钥，但，不存在私钥，系统将为您覆盖一个新的rsa key");
-                try {
-                    RSA.generateKeyToFile("Public.txt", "Private.txt");
-                }
-                catch (Exception e)
-                {
-                    SaveStackTrace.saveStackTrace(e);
-                }
-            }
-        }
     }
 
     private void StartRecvMessageThread(int ClientID)
@@ -966,7 +1074,6 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
         }
     }
     //服务端main
-    @SuppressWarnings("InfiniteLoopStatement")
     public void start(int bindPort)
     {
         if (!started)
@@ -980,7 +1087,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 SaveStackTrace.saveStackTrace(e);
                 throw new RuntimeException("Socket Create Failed", e);
             }
-            RSA_KeyAutogenerate();
+            RSA_KeyAutogenerate("Public.txt","Private.txt",logger);
             UserLoginStatusReset();
             API = new SingleAPI();
             authThread = new UserAuthThread();
@@ -996,6 +1103,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    break;
                 }
                 for (Runnable runnable : codelist) {
                     runnable.run();
@@ -1017,6 +1125,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                 this.setUncaughtExceptionHandler(new CrashReport());
                 //服务端虚拟账户初始化
                 user Console = new userImpl(null,0,true);
+                Console.setAllowedTransferProtocol(false);
                 Console.UserLogin("Server");
                 Console.SetUserPermission(1,true);
                 //IO初始化

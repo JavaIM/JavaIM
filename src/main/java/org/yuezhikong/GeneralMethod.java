@@ -21,12 +21,17 @@ import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
 import org.jetbrains.annotations.NotNull;
+import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.RSA;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 public class GeneralMethod implements GeneralMethodInterface{
+    @Override
     public String GenerateKey(@NotNull String source)
     {
         try {
@@ -40,6 +45,7 @@ public class GeneralMethod implements GeneralMethodInterface{
             return GenerateKey(source + source);
         }
     }
+    @Override
     public NormalProtocol protocolRequest(String json)
     {
         try
@@ -51,6 +57,7 @@ public class GeneralMethod implements GeneralMethodInterface{
             throw new RuntimeException("Json Request Failed",e);
         }
     }
+    @Override
     public @NotNull String unicodeToString(@NotNull String unicode) {
         StringBuilder sb = new StringBuilder();
         int i = 0;
@@ -84,5 +91,47 @@ public class GeneralMethod implements GeneralMethodInterface{
         return (ch >= '0' && ch <= '9') ||
                 (ch >= 'a' && ch <= 'f') ||
                 (ch >= 'A' && ch <= 'F');
+    }
+    @Override
+    public void RSA_KeyAutogenerate(String PublicKeyFile, String PrivateKeyFile, Logger logger)
+    {
+        if (!(new File(PublicKeyFile).exists()))
+        {
+            if (!(new File(PrivateKeyFile).exists()))
+            {
+                try {
+                    RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
+                }
+                catch (Exception e)
+                {
+                    SaveStackTrace.saveStackTrace(e);
+                }
+            }
+            else
+            {
+                logger.warning("系统检测到您的目录下不存在公钥，但，存在私钥，系统将为您覆盖一个新的rsa key");
+                try {
+                    RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
+                }
+                catch (Exception e)
+                {
+                    SaveStackTrace.saveStackTrace(e);
+                }
+            }
+        }
+        else
+        {
+            if (!(new File(PrivateKeyFile).exists()))
+            {
+                logger.warning("系统检测到您的目录下存在公钥，但，不存在私钥，系统将为您覆盖一个新的rsa key");
+                try {
+                    RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
+                }
+                catch (Exception e)
+                {
+                    SaveStackTrace.saveStackTrace(e);
+                }
+            }
+        }
     }
 }
