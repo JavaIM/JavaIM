@@ -14,11 +14,50 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.yuezhikong.utils.CustomExceptions;
+package org.yuezhikong.newServer;
 
-public class UserAlreadyLoggedInException extends Exception{
-    //构造函数
-    public UserAlreadyLoggedInException(String message){
-        super(message);
+import org.yuezhikong.newServer.UserData.user;
+import org.yuezhikong.newServer.api.api;
+import org.yuezhikong.newServer.plugin.PluginManager;
+import org.yuezhikong.utils.Logger;
+
+import java.util.List;
+
+public sealed interface ServerInterface permits ServerMain {
+    /**
+     * 获取用户列表
+     * @return 包含所有用户的列表
+     */
+    List<user> getUsers();
+
+    /**
+     * 获取服务器实例
+     * @return 服务器实例
+     */
+    static ServerInterface getServer()
+    {
+        return ServerMain.getServer();
     }
+
+    /**
+     * 获取插件管理器
+     * @return 插件管理器
+     */
+    PluginManager getPluginManager();
+
+    /**
+     * 获取服务端API
+     * @return 服务端API
+     */
+    api getServerAPI();
+
+    /**
+     * 获取Logger
+     * @return Logger
+     */
+    Logger getLogger();
+    /**
+     * 在主线程执行代码
+     */
+    void runOnMainThread(Runnable code);
 }

@@ -16,111 +16,58 @@
  */
 package org.yuezhikong;
 
-import javafx.application.Application;
-import org.yuezhikong.GUITest.MainGUI.GUI;
-import org.yuezhikong.Server.Server;
-import org.yuezhikong.utils.Properties;
+import org.yuezhikong.newClient.ClientMain;
+import org.yuezhikong.newServer.ServerMain;
+import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Proxy;
-import java.net.Socket;
 import java.util.Scanner;
 
 import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Main {
-    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger(false,false,null,null);
-    private static Main instance;
-    public static Main getInstance()
-    {
-        if (instance == null)
-        {
-            instance = new Main();
-        }
-        return instance;
-    }
-    /**
-     * @apiNote 从jar中释放文件到jar文件夹下的某一子文件夹
-     * @param name 需要从jar中释放的文件在jar中的路径路径
-     * @param dir 需要释放到的文件夹
-     */
-    public void saveJarFiles(String name,String dir) {
-        File JarOnDir = new File(this.getClass().getProtectionDomain().getCodeSource().getLocation().getFile()).getParentFile();
-        File LibsDir = new File(JarOnDir.getPath()+dir);
-        if (!LibsDir.exists()) {// 父目录不存在时先创建
-            try {
-                if (!LibsDir.mkdirs())
-                {
-                    System.err.println("创建文件夹失败");
-                    System.exit(-1);
-                }
-            }
-            catch (Exception e)
-            {
-                SaveStackTrace.saveStackTrace(e);
-                System.exit(-1);
-            }
-        }
-        File CheckFile = new File(LibsDir.getPath()+name);
-        if (!CheckFile.exists())
-        {
-            try {
-                if (!CheckFile.createNewFile())
-                {
-                    System.err.println("创建文件失败");
-                    System.exit(-1);
-                }
-            }
-            catch (Exception e)
-            {
-                System.err.println("创建文件时出现异常");
-                SaveStackTrace.saveStackTrace(e);
-                System.exit(-1);
-            }
-            InputStream inputStream = this.getClass().getResourceAsStream(name);
-            try {
-                assert inputStream != null;
-                OutputStream os;
-                os = new FileOutputStream(CheckFile);
-                int index;
-                byte[] bytes = new byte[10240];
-                while ((index = inputStream.read(bytes)) != -1) {
-                    os.write(bytes, 0, index);
-                }
-                os.flush();
-                os.close();
-                inputStream.close();
-            }
-            catch (Exception e)
-            {
-                System.err.println("创建文件时出现异常");
-                SaveStackTrace.saveStackTrace(e);
-                System.exit(-1);
-            }
-        }
-    }
+    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
 
-    public static byte[] subBytes(byte[]src,int begin,int count){
-        byte[]bs=new byte[count];
-        System.arraycopy(src, begin, bs, begin, count);
-        return bs;
-    }
     public static void CreateServerProperties(){
-        Properties prop = new Properties();
+        ConfigFileManager prop = new ConfigFileManager();
         prop.CreateServerprop();
     }
     public static void CreateClientProperties(){
-        Properties prop = new Properties();
+        ConfigFileManager prop = new ConfigFileManager();
         prop.CreateClientprop();
+    }
+    public static void ConsoleMain()
+    {
+        logger.info("欢迎来到JavaIM！版本："+getVersion());
+        logger.info("使用客户端模式请输入1，服务端模式请输入2:");
+        logger.info("请输入想选择的模式");
+        logger.info("1:服务端");
+        logger.info("2:客户端");
+        Scanner scanner = new Scanner(System.in);
+        int UserInput = scanner.nextInt();
+        if (UserInput == 1)
+        {
+            logger.info("请输入绑定的端口");
+            new ServerMain().start(scanner.nextInt());
+            System.exit(0);
+        }
+        else if (UserInput == 2)
+        {
+            logger.info("请输入ip");
+            scanner.nextLine();
+            String Address = scanner.nextLine();
+            logger.info("请输入端口");
+            new ClientMain().start(Address,scanner.nextInt());
+            System.exit(0);
+        }
     }
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
+        Thread.currentThread().setUncaughtExceptionHandler(new CrashReport());
+        //服务端与客户端配置文件初始化
         if (!(new File("server.properties").exists())){
             logger.info("目录下没有检测到服务端配置文件，正在创建");
             CreateServerProperties();
@@ -129,61 +76,24 @@ public class Main {
             logger.info("目录下没有检测到客户端配置文件，正在创建");
             CreateClientProperties();
         }
-
-        try {
-            if (isThisVersionIsExpVersion())
-            {
-                logger.info("此版本为实验性版本！不会保证稳定性");
-                logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
-                logger.info("本版本测试性内容列表：");
-                logger.info(getExpVersionText());
-                logger.info("是否要启动此GUI？");
-                logger.info("1为启动，其他为正常启动");
-                Scanner sc = new Scanner(System.in);
-                int mode = sc.nextInt();
-                if (mode == 1)
-                {
-                    if (isGUIMode())
-                    {
-                        Application.launch(GUI.class, args);
-                        return;
-                    }
-                    else
-                    {
-                        logger.info("此版本不允许GUI模式");
-                    }
-                }
-            }
-            if (isGUIMode())
-            {
-                Application.launch(GUI.class, args);
-                return;
-            }
-            logger.info("欢迎来到JavaIM！版本："+getVersion());
-            logger.info("使用客户端模式请输入1，服务端模式请输入2:");
-            Scanner sc = new Scanner(System.in);
-            int mode = sc.nextInt();
-            if (mode == 1) {
-                Scanner sc2 = new Scanner(System.in);
-                Scanner sc3 = new Scanner(System.in);
-                String serverName;
-                logger.info("请输入要连接的主机:");
-                serverName = sc2.nextLine();
-                logger.info("请输入端口:");
-                int port = Integer.parseInt(sc3.nextLine());
-                new Client(serverName, port);
-            } else if (mode == 2) {
-                Scanner sc4 = new Scanner(System.in);
-                logger.info("请输入监听端口:");
-                int port = Integer.parseInt(sc4.nextLine());
-                new Server(port);
-            } else {
-                logger.info("输入值错误，请重新运行程序");
-            }
-        }
-        catch (Exception e)
+        //命令行参数处理
+        ConsoleCommandRequest.Request(true,args);
+        //启动JavaIM启动逻辑
+        if (isThisVersionIsExpVersion())
         {
-            SaveStackTrace.saveStackTrace(e);
+            logger.info("欢迎来到JavaIM！版本："+getVersion());
+            logger.info("此版本为实验性版本！不会保证稳定性");
+            logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
+            logger.info("本版本测试性内容：");
+            logger.info(getExpVersionText());
+            ExpVersionCode code = new ExpVersionCode();
+            code.run(logger);
         }
+        if (isGUIMode())
+        {
+            logger.info("GUI功能由于服务端与客户端底层重构，导致已被暂时关闭");
+            logger.info("正在为您使用控制台版本");
+        }
+        ConsoleMain();
     }
 }

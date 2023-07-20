@@ -14,11 +14,37 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.yuezhikong.utils.CustomExceptions;
+package org.yuezhikong.newServer.plugin.Plugin;
 
-public class UserAlreadyLoggedInException extends Exception{
-    //构造函数
-    public UserAlreadyLoggedInException(String message){
-        super(message);
+import org.yuezhikong.newServer.plugin.event.Listener;
+
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 插件信息
+ */
+@SuppressWarnings("unused")
+public class PluginData {
+    public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor, URLClassLoader PluginClassLoader)
+    {}
+    private final List<Listener> EventListener = new ArrayList<>();
+    private final staticData data;
+    public void AddEventListener(Listener listener)
+    {
+        EventListener.add(listener);
+    }
+    public List<Listener> getEventListener()
+    {
+        return new ArrayList<>(EventListener);
+    }
+    public PluginData(staticData data)
+    {
+        this.data = data;
+    }
+
+    public staticData getStaticData() {
+        return data;
     }
 }

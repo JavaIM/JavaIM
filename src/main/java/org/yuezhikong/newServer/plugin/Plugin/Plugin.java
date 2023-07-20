@@ -14,11 +14,13 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.yuezhikong.utils.CustomExceptions;
+package org.yuezhikong.newServer.plugin.Plugin;
 
-public class UserAlreadyLoggedInException extends Exception{
-    //构造函数
-    public UserAlreadyLoggedInException(String message){
-        super(message);
-    }
+public interface Plugin {
+    /**
+     * 当被加载时
+     * @param PluginData 插件数据
+     */
+    void onLoad(PluginData PluginData);
+    void onUnload();
 }

@@ -14,11 +14,33 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.yuezhikong.utils.CustomExceptions;
+package org.yuezhikong.newServer.plugin.event.events;
 
-public class UserAlreadyLoggedInException extends Exception{
-    //构造函数
-    public UserAlreadyLoggedInException(String message){
-        super(message);
+@SuppressWarnings("unused")
+public class PreLoginEvent implements Event {
+    private boolean Cancel = false;
+    private final String UserName;
+    private final boolean TokenLogin;
+
+    public boolean isCancel() {
+        return Cancel;
+    }
+
+    public String getUserName() {
+        return UserName;
+    }
+
+    public void setCancel(boolean cancel) {
+        Cancel = cancel;
+    }
+
+    public PreLoginEvent(String UserName,boolean TokenLogin)
+    {
+        this.UserName = UserName;
+        this.TokenLogin = TokenLogin;
+    }
+
+    public boolean isTokenLogin() {
+        return TokenLogin;
     }
 }
