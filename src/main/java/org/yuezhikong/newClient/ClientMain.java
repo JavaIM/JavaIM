@@ -999,6 +999,9 @@ public class ClientMain extends GeneralMethod {
                                                     writer.newLine();
                                                     writer.flush();
                                                     String json;
+                                                    writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                                    writer.newLine();
+                                                    writer.flush();
                                                     do {
                                                         json = reader.readLine();
                                                     } while (json == null);
@@ -1020,9 +1023,6 @@ public class ClientMain extends GeneralMethod {
                                                         logger.info("找不到目标用户");
                                                         return;
                                                     }
-                                                    writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                                    writer.newLine();
-                                                    writer.flush();
                                                     return;
                                                 } else
                                                     Trust = true;
@@ -1094,6 +1094,9 @@ public class ClientMain extends GeneralMethod {
                                                     writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
                                                     writer.newLine();
                                                     writer.flush();
+                                                    writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                                    writer.newLine();
+                                                    writer.flush();
                                                     String json;
                                                     do {
                                                         json = reader.readLine();
@@ -1116,9 +1119,6 @@ public class ClientMain extends GeneralMethod {
                                                         logger.info("找不到目标用户");
                                                         return;
                                                     }
-                                                    writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                                    writer.newLine();
-                                                    writer.flush();
                                                     return;
                                                 }
                                             }
