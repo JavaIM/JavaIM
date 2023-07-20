@@ -623,14 +623,17 @@ public class ClientMain extends GeneralMethod {
                         }
                         else if ("NextIsTransferProtocol".equals(protocol.getMessageHead().getType()))
                         {
+                            //端到端加密
                             String UserNameOfSender = protocol.getMessageBody().getMessage();
                             String json;
+                            //读取TransferProtocol
                             do {
                                 json = reader.readLine();
                             } while (json == null);
                             json = unicodeToString(json);
                             json = aes.decryptStr(json);
                             TransferProtocol transferProtocol = new Gson().fromJson(json, TransferProtocol.class);
+                            //检测这个用户是否在黑名单，如果在，禁止他的聊天
                             if (ThisSessionForbiddenUserNameList.contains(UserNameOfSender))
                             {
                                 logger.info("用户："+UserNameOfSender+" 试图为您发送端到端安全通信");
@@ -689,6 +692,7 @@ public class ClientMain extends GeneralMethod {
                             }
                             if ("first".equals(transferProtocol.getTransferProtocolHead().getType())) {
                                 //说明是被接收方
+                                //检测文件夹与文件是否存在
                                 String CounterpartClientPublicKey = transferProtocol.getTransferProtocolBody().getData();
                                 if (!(new File("./end-to-end_encryption_saved").exists())) {
                                     Files.createDirectory(Paths.get("./end-to-end_encryption_saved"));
@@ -701,6 +705,8 @@ public class ClientMain extends GeneralMethod {
                                 if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
                                 ).exists() && new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
                                 ).isFile()) {
+                                    //文件如果存在，直接检测RSA key
+                                    //与保存的不一致，断开连接，一致则直接放行
                                     if (!(FileUtils.readFileToString(new File("./end-to-end_encryption_saved/client-"
                                             + Address + "-" + UserNameOfSender), StandardCharsets.UTF_8).equals(CounterpartClientPublicKey))) {
                                         logger.warning("用户：" + UserNameOfSender + "试图发送端到端安全通讯");
@@ -754,11 +760,16 @@ public class ClientMain extends GeneralMethod {
                                         Trust = true;
                                 }
                                 if (!Trust) {
+                                    //处理未保存的key的流程
                                     logger.info("用户：" + protocol.getMessageBody().getMessage() + " 试图为您发送端到端安全通讯");
                                     logger.info("但是他是第一次和您聊天");
                                     logger.info("是否要信任他的公钥");
                                     logger.info("对等机客户端公钥：" + CounterpartClientPublicKey);
                                     logger.info("输入1信任，输入其他为不信任");
+                                    //等待ConsoleInputLock锁
+                                    //等到下一次发生控制台输入时
+                                    //会将needConsoleInput改为false,然后notify ConsoleInputLock锁
+                                    //然后将ConsoleInput设置为输入
                                     needConsoleInput = true;
                                     synchronized (ConsoleInputLock) {
                                         try {
@@ -769,6 +780,7 @@ public class ClientMain extends GeneralMethod {
                                         }
                                     }
                                     if ("1".equals(ConsoleInput)) {
+                                        //如果用户信任了key，就发送信任包并保存到文件
                                         protocol = new NormalProtocol();
                                         NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
                                         head.setVersion(CodeDynamicConfig.getProtocolVersion());
@@ -798,6 +810,7 @@ public class ClientMain extends GeneralMethod {
                                         }
                                     }
                                     else {
+                                        //不信任就断开，然后拉黑客户端
                                         logger.info("已断开与此客户端的通信");
                                         logger.info("并且已自动拉黑");
                                         ThisSessionForbiddenUserNameList.add(UserNameOfSender);
@@ -818,6 +831,9 @@ public class ClientMain extends GeneralMethod {
                                         transferProtocol.setTransferProtocolBody(transferProtocolBody);
                                         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
                                         writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
+                                        writer.newLine();
+                                        writer.flush();
+                                        writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                         writer.newLine();
                                         writer.flush();
                                         do {
@@ -841,9 +857,6 @@ public class ClientMain extends GeneralMethod {
                                             logger.info("找不到目标用户");
                                             continue;
                                         }
-                                        writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                        writer.newLine();
-                                        writer.flush();
                                         continue;
                                     }
                                 }
@@ -870,6 +883,7 @@ public class ClientMain extends GeneralMethod {
                                 writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                 writer.newLine();
                                 writer.flush();
+                                //等待服务端回传
                                 boolean tmp;
                                 do {
                                     tmp = false;
@@ -902,11 +916,42 @@ public class ClientMain extends GeneralMethod {
                                             tmp = true;
                                             continue;
                                         }
+                                        if (!("Encryption".equals(transferProtocol.getTransferProtocolHead().getType())))
+                                        {
+                                            //如果是其他客户端发信，阻止他的聊天
+                                            ThisSessionForbiddenUserNameList.add(UserNameOfSender);
+                                            protocol = new NormalProtocol();
+                                            head = new NormalProtocol.MessageHead();
+                                            head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                            head.setType("NextIsTransferProtocol");
+                                            protocol.setMessageHead(head);
+
+                                            transferProtocol = new TransferProtocol();
+                                            transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+                                            transferProtocolHead.setTargetUserName(UserNameOfSender);
+                                            transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                            transferProtocolHead.setType("reply");
+                                            transferProtocol.setTransferProtocolHead(transferProtocolHead);
+                                            transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+                                            transferProtocolBody.setData("Untrusted");
+                                            transferProtocol.setTransferProtocolBody(transferProtocolBody);
+                                            writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
+                                            writer.newLine();
+                                            writer.flush();
+                                            writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                            writer.newLine();
+                                            writer.flush();
+                                            //后续这里要新增服务端私聊，向他发送提示
+                                            logger.info(protocol.getMessageBody().getMessage()+"想要进行端到端通讯，但是系统已经在处理一个端到端了");
+                                            tmp = true;
+                                            continue;
+                                        }
                                         new Thread() {
                                             @Override
                                             public void run() {
                                                 this.setName("end-to-end encryption Thread");
                                                 try {
+                                                    //logger输出聊天消息
                                                     logger.info("[端到端安全通讯] [" + finalProtocol.getMessageBody().getMessage() + "] "
                                                             + RSA.decrypt(finalTransferProtocol.getTransferProtocolBody().getData(),
                                                             FileUtils.readFileToString(new File("ClientPrivateKey.txt"),
@@ -918,6 +963,7 @@ public class ClientMain extends GeneralMethod {
                                         }.start();
                                     }
                                     else if ("Result".equals(protocol.getMessageHead().getType())) {
+                                        //extIsTrasferProtocol的处理
                                         if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
                                             logger.info("协议版本不受到服务端的支持");
                                         } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
@@ -927,7 +973,7 @@ public class ClientMain extends GeneralMethod {
                                         } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
                                             logger.info("找不到目标用户");
                                         }
-                                        tmp = true;
+                                        break;
                                     }
                                     else if (!("Chat".equals(protocol.getMessageHead().getType()))) {
                                         return;
@@ -941,7 +987,7 @@ public class ClientMain extends GeneralMethod {
                             }
                             else if ("reply".equals(transferProtocol.getTransferProtocolHead().getType()))
                             {
-                                //说明是发送方
+                                //发送方前半段处理
                                 if ("Untrusted".equals(transferProtocol.getTransferProtocolBody().getData()))
                                 {
                                     logger.ChatMsg("您试图与 "+protocol.getMessageBody().getMessage()+" 发送端到端安全通讯");
@@ -952,6 +998,7 @@ public class ClientMain extends GeneralMethod {
                             }
                             else if ("Encryption".equals(transferProtocol.getTransferProtocolHead().getType()))
                             {
+                                //发送方的后半段处理
                                 TransferProtocol finalTransferProtocol1 = transferProtocol;
                                 NormalProtocol finalProtocol1 = protocol;
                                 new Thread()
@@ -960,9 +1007,11 @@ public class ClientMain extends GeneralMethod {
                                     public void run() {
                                         this.setName("end-to-end encryption Thread");
                                         try {
+                                            //获取接收方回传的公钥
                                             String key = RSA.decrypt(finalTransferProtocol1.getTransferProtocolBody().getData(),FileUtils.readFileToString(new File("ClientPrivateKey.txt"),StandardCharsets.UTF_8));
                                             String UserNameOfSender = finalProtocol1.getMessageBody().getMessage();
                                             //检查这个key是否被信任
+                                            //此段代码复制自接收端
                                             if (!(new File("./end-to-end_encryption_saved").exists())) {
                                                 Files.createDirectory(Paths.get("./end-to-end_encryption_saved"));
                                             }
@@ -1122,7 +1171,7 @@ public class ClientMain extends GeneralMethod {
                                                     return;
                                                 }
                                             }
-                                            //正常的加密系统
+                                            //正常的加密与发送系统
                                             NormalProtocol protocol = new NormalProtocol();
                                             NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
                                             head.setVersion(CodeDynamicConfig.getProtocolVersion());
