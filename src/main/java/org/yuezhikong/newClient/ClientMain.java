@@ -48,10 +48,10 @@ public class ClientMain extends GeneralMethod {
     private CustomVar.KeyData keyData;
     private static ClientMain Instance;
     private String Address;
-    private String endToEndEncryptionData = "";
-    private final Object ConsoleInputLock = new Object();
-    private String ConsoleInput = "";
-    private boolean needConsoleInput = false;
+    protected String endToEndEncryptionData = "";
+    protected final Object ConsoleInputLock = new Object();
+    protected String ConsoleInput = "";
+    protected boolean needConsoleInput = false;
 
     public static ClientMain getClient() {
         return Instance;
@@ -470,7 +470,11 @@ public class ClientMain extends GeneralMethod {
         timer.cancel();
     }
 
-    private void SendMessage(Logger logger, Socket socket,AES aes) {
+    public String getAddress() {
+        return Address;
+    }
+
+    protected void SendMessage(Logger logger, Socket socket, AES aes) {
         Scanner scanner = new Scanner(System.in);
         try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
             while (true) {
