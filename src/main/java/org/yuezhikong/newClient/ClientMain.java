@@ -494,16 +494,6 @@ public class ClientMain extends GeneralMethod {
      */
     @Contract(pure = true)
     protected boolean CommandRequest(AES aes,Logger logger,String UserInput,BufferedWriter writer) throws IOException, LeaveException {
-        if (".help".equals(UserInput)) {
-            logger.info("客户端命令系统");
-            logger.info(".help 查询帮助信息");
-            logger.info(".secure-tell 安全私聊");
-            logger.info(".quit 离开服务器并退出程序");
-            if (CodeDynamicConfig.About_System) {
-                logger.info(".about 查看程序帮助");
-            }
-            return true;
-        }
         String command;
         String[] argv;
         {
@@ -521,44 +511,53 @@ public class ClientMain extends GeneralMethod {
                 i++;
             }
         }
-        if (".secure-tell".equals(command))
+        switch (command)
         {
-            if (argv.length == 2)
-            {
-                endToEndEncryptionData = argv[1];
-                Gson gson = new Gson();
-                NormalProtocol protocol = new NormalProtocol();
-                NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                head.setType("NextIsTransferProtocol");
-                protocol.setMessageHead(head);
-                writer.write(aes.encryptBase64(gson.toJson(protocol)));
-                writer.newLine();
-                writer.flush();
-
-                TransferProtocol transferProtocol = new TransferProtocol();
-                TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                transferProtocolHead.setTargetUserName(argv[0]);
-                transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                transferProtocolHead.setType("first");
-                transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                transferProtocolBody.setData(FileUtils.readFileToString(new File("ClientPublicKey.txt"),StandardCharsets.UTF_8));
-                transferProtocol.setTransferProtocolBody(transferProtocolBody);
-
-                writer.write(aes.encryptBase64(gson.toJson(transferProtocol)));
-                writer.newLine();
-                writer.flush();
+            case ".help" -> {
+                logger.info("客户端命令系统");
+                logger.info(".help 查询帮助信息");
+                logger.info(".secure-tell 安全私聊");
+                logger.info(".quit 离开服务器并退出程序");
+                logger.info(".change-password 修改密码");
+                logger.info(".about 查看程序帮助");
+                return true;
             }
-            else
-            {
-                logger.info("不符合命令语法！");
-                logger.info("此命令的语法为：.secure-tell <用户名> <消息>");
+            case ".secure-tell" -> {
+                if (argv.length == 2)
+                {
+                    endToEndEncryptionData = argv[1];
+                    Gson gson = new Gson();
+                    NormalProtocol protocol = new NormalProtocol();
+                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                    head.setType("NextIsTransferProtocol");
+                    protocol.setMessageHead(head);
+                    writer.write(aes.encryptBase64(gson.toJson(protocol)));
+                    writer.newLine();
+                    writer.flush();
+
+                    TransferProtocol transferProtocol = new TransferProtocol();
+                    TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+                    transferProtocolHead.setTargetUserName(argv[0]);
+                    transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                    transferProtocolHead.setType("first");
+                    transferProtocol.setTransferProtocolHead(transferProtocolHead);
+                    TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+                    transferProtocolBody.setData(FileUtils.readFileToString(new File("ClientPublicKey.txt"),StandardCharsets.UTF_8));
+                    transferProtocol.setTransferProtocolBody(transferProtocolBody);
+
+                    writer.write(aes.encryptBase64(gson.toJson(transferProtocol)));
+                    writer.newLine();
+                    writer.flush();
+                }
+                else
+                {
+                    logger.info("不符合命令语法！");
+                    logger.info("此命令的语法为：.secure-tell <用户名> <消息>");
+                }
+                return true;
             }
-            return true;
-        }
-        if (CodeDynamicConfig.About_System) {
-            if (".about".equals(UserInput)) {
+            case ".about" -> {
                 logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件)");
                 logger.info("主仓库位于：https://github.com/JavaIM/JavaIM");
                 logger.info("主要开发者名单：");
@@ -566,30 +565,60 @@ public class ClientMain extends GeneralMethod {
                 logger.info("AlexLiuDev233 （阿白)");
                 return true;
             }
-        }
-        if (".quit".equals(UserInput)) {
-            Gson gson = new Gson();
-            NormalProtocol protocol = new NormalProtocol();
-            NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-            head.setVersion(CodeDynamicConfig.getProtocolVersion());
-            head.setType("Leave");
-            protocol.setMessageHead(head);
-            NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-            body.setMessage(UserInput);
-            body.setFileLong(0);
-            protocol.setMessageBody(body);
-            writer.write(aes.encryptBase64(gson.toJson(protocol)));
-            writer.newLine();
-            writer.flush();
-            throw new LeaveException("SystemQuit");
-        }
-        if (".crash".equals(UserInput))
-        {
-            if (CodeDynamicConfig.GetDebugMode()) {
-                throw new RuntimeException("Debug Crash");
+            case ".quit" -> {
+                Gson gson = new Gson();
+                NormalProtocol protocol = new NormalProtocol();
+                NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                head.setType("Leave");
+                protocol.setMessageHead(head);
+                NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+                body.setMessage(UserInput);
+                body.setFileLong(0);
+                protocol.setMessageBody(body);
+                writer.write(aes.encryptBase64(gson.toJson(protocol)));
+                writer.newLine();
+                writer.flush();
+                throw new LeaveException("UserRequestQuit");
+            }
+            case ".crash" -> {
+                if (CodeDynamicConfig.GetDebugMode()) {
+                    throw new RuntimeException("Debug Crash");
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            case ".change-password" -> {
+                if (argv.length == 1)
+                {
+                    NormalProtocol protocol = new NormalProtocol();//开始构造协议
+                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                    head.setType("ChangePassword");//类型是更改密码数据包
+                    protocol.setMessageHead(head);
+                    NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+                    body.setMessage(SecureUtil.sha256(argv[0]));//对用户输入的明文密码进行sha256哈希计算
+                    protocol.setMessageBody(body);
+                    String json = new Gson().toJson(protocol);//生成json
+                    json = aes.encryptBase64(json);//aes加密
+                    writer.write(json);//写入到socket Buffer
+                    writer.newLine();//新行
+                    writer.flush();//发送
+                }
+                else
+                {
+                    logger.info("不符合命令语法！");
+                    logger.info("此命令的语法为：.change-password <新密码>");
+                }
+                return true;
+            }
+            default -> {
+                return false;
             }
         }
-        return false;
+
     }
     protected void SendMessage(Logger logger, Socket socket, AES aes) {
         Scanner scanner = new Scanner(System.in);
