@@ -19,6 +19,7 @@ package org.yuezhikong;
 import org.yuezhikong.newClient.ClientMain;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.utils.ConfigFileManager;
+import org.yuezhikong.utils.Notice;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
@@ -66,6 +67,7 @@ public class Main {
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
+        new Notice();
         Thread.currentThread().setUncaughtExceptionHandler(new CrashReport());
         //服务端与客户端配置文件初始化
         if (!(new File("server.properties").exists())){
