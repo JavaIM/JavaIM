@@ -18,7 +18,7 @@ public class Notice {
                 System.out.println("本软件是一种具有端对端通讯功能的加密通讯软件，我们强烈建议您在遵守当地法律法规的前提下使用。");
                 System.out.println("我们提醒您，使用本软件可能涉及到数据安全和隐私保护等问题，您应自行评估风险。我们不对您使用本软件所造成的任何直接、间接、特殊、偶然的损失或伤害承担任何责任。");
                 System.out.println("我们对本软件的正确性、安全性、连续性、及时性和性能不作任何明示或暗示的保证。您应自行承担使用本软件的风险。");
-                System.out.println("使用本软件即表示您已阅读并清楚了解了以上注意事项,请输入1");
+                System.out.println("使用本软件即表示您已阅读并清楚了解了以上注意事项，请输入1以继续");
                 scanner = new Scanner(System.in);
                 Input = scanner.nextInt();
             } while (Input != 1);
