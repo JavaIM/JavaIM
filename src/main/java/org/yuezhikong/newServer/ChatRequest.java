@@ -151,6 +151,7 @@ public class ChatRequest {
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/ban <用户名> 封禁一位用户");
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/unban <用户名> 解除一位用户的封禁");
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/quit 安全的退出程序");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"/change-password <用户名> <密码> 强制修改某用户密码");
                     }
                 }
                 case "/op" -> {
@@ -286,6 +287,43 @@ public class ChatRequest {
                     else
                     {
                         API.SendMessageToUser(chatMessageInfo.getUser(),"未知的命令！请输入/help查看帮助！");
+                    }
+                }
+                case "/change-password" -> {
+                    if (CommandInformation.argv().length == 2)
+                    {
+                        StringBuilder argv = new StringBuilder();//使用StringBuilder而非String，效率更高，string拼接效率较慢
+                        for (String arg : CommandInformation.argv())
+                        {
+                            argv.append(arg).append(" ");//将每个arg均append到argv中
+                        }
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"请输入/change-password force "+ argv);//向用户发送提示
+                    }
+                    else if (CommandInformation.argv().length == 3)
+                    {
+                        if ("force".equals(CommandInformation.argv()[0]))
+                        {
+                            try {
+                                API.ChangeUserPassword(
+                                        API.GetUserByUserName(
+                                                CommandInformation.argv()[1],
+                                                ServerMain.getServer(),
+                                                true),
+                                CommandInformation.argv()[2]);//根据用户名获取用户，并强制修改密码
+                            } catch (AccountNotFoundException e) {
+                                API.SendMessageToUser(chatMessageInfo.getUser(),"无法找到用户："+CommandInformation.argv()[1]);
+                                return true;//返回“这是一条命令”并不再继续执行代码
+                            }
+                            API.SendMessageToUser(chatMessageInfo.getUser(),"操作成功完成。");
+                        }
+                        else
+                        {
+                            API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/change-password <用户名> <密码>");
+                        }
+                    }
+                    else
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/change-password <用户名> <密码>");
                     }
                 }
                 default -> API.SendMessageToUser(chatMessageInfo.getUser(),"未知的命令！请输入/help查看帮助！");

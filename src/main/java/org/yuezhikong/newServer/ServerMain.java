@@ -1116,7 +1116,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
     }
 
     //命令系统
-    private void StartCommandSystem() {
+    protected void StartCommandSystem() {
         new Thread()
         {
             @Override
