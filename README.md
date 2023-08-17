@@ -15,8 +15,6 @@ JavaIM目前通过RSA+AES算法对通信内容进行加密。
 项目维护现在主要由AlexLiuDev233负责。
 
 
-本仓库已经在2023年5月21日迁移至[此处](https://github.com/JavaIM/JavaIM)
-
 ## 现在开始！
 ### 💻 使用JavaIM
 请参阅[指南](https://docs.qileoffice.top/start/server-start)以使用JavaIM
