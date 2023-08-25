@@ -910,7 +910,7 @@ public non-sealed class ServerMain extends GeneralMethod implements ServerInterf
                         else {
                             try {
                                 user TargetUser = getServer().getServerAPI().GetUserByUserName(transferProtocol.getTransferProtocolHead().getTargetUserName(),
-                                        ServerMain.getServer(),true);
+                                        ServerMain.getServer());
                                 if (TargetUser.isAllowedTransferProtocol())
                                 {
                                     BufferedWriter writer1 = new BufferedWriter(new OutputStreamWriter(TargetUser

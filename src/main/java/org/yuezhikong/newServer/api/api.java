@@ -19,7 +19,7 @@ package org.yuezhikong.newServer.api;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.newServer.ServerMain;
+import org.yuezhikong.newServer.ServerInterface;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.CustomVar;
 
@@ -53,24 +53,22 @@ public interface api {
      * @param inputMessage 要发信的信息
      * @param ServerInstance 服务器实例
      */
-    void SendMessageToAllClient(@NotNull @Nls String inputMessage,@NotNull ServerMain ServerInstance);
+    void SendMessageToAllClient(@NotNull @Nls String inputMessage, @NotNull ServerInterface ServerInstance);
     /**
      * 获取有效的客户端列表
      * @param ServerInstance 服务端实例
-     * @param DetectLoginStatus 是否检测已登录
      * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      * @return 有效的客户端列表
      */
-    @NotNull List<user> GetValidClientList(@NotNull ServerMain ServerInstance, boolean DetectLoginStatus);
+    @NotNull List<user> GetValidClientList(@NotNull ServerInterface ServerInstance);
     /**
      * 新的获取用户User Data Class api
      * @param UserName 用户名
      * @param ServerInstance 服务器实例
-     * @param DetectLoginStatus 是否检测已登录
      * @return 用户User Data Class
      * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
-    @NotNull user GetUserByUserName(@NotNull @Nls String UserName, @NotNull ServerMain ServerInstance, boolean DetectLoginStatus) throws AccountNotFoundException;
+    @NotNull user GetUserByUserName(@NotNull @Nls String UserName, @NotNull ServerInterface ServerInstance) throws AccountNotFoundException;
 
     /**
      * 修改用户的密码

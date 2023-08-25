@@ -152,12 +152,19 @@ public class ChatRequest {
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/unban <用户名> 解除一位用户的封禁");
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/quit 安全的退出程序");
                         API.SendMessageToUser(chatMessageInfo.getUser(),"/change-password <用户名> <密码> 强制修改某用户密码");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"/kick <用户名> 踢出某用户");
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"/Send-UnModify-Message <消息> 发送不会被服务端修改的消息");
                     }
                 }
                 case "/op" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
                     if (CommandInformation.argv().length == 1) {
                         try {
-                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
+                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer());
                             if (Permission.ADMIN.equals(User.getUserPermission()))
                             {
                                 API.SendMessageToUser(chatMessageInfo.getUser(),"无法给予权限，对方已是管理员");
@@ -177,9 +184,14 @@ public class ChatRequest {
                     }
                 }
                 case "/deop" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
                     if (CommandInformation.argv().length == 1) {
                         try {
-                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
+                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer());
                             if (Permission.ADMIN.equals(User.getUserPermission()))
                             {
                                 User.SetUserPermission(0, false);
@@ -199,9 +211,14 @@ public class ChatRequest {
                     }
                 }
                 case "/ban" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
                     if (CommandInformation.argv().length == 1) {
                         try {
-                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer(), true);
+                            user User = API.GetUserByUserName(CommandInformation.argv()[0], ServerMain.getServer());
                             if (Permission.BAN.equals(User.getUserPermission()))
                             {
                                 API.SendMessageToUser(chatMessageInfo.getUser(),"无法封禁，对方已被封禁");
@@ -221,6 +238,11 @@ public class ChatRequest {
                     }
                 }
                 case "/unban" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
                     if (CommandInformation.argv().length == 1) {
                         try {
                             new Thread() {
@@ -264,6 +286,11 @@ public class ChatRequest {
                     }
                 }
                 case "/quit" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
                     ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭",ServerMain.getServer());
                     for (user User : ServerMain.getServer().getUsers())
                     {
@@ -278,6 +305,11 @@ public class ChatRequest {
                     System.exit(0);
                 }
                 case "/crash" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
                     if (CodeDynamicConfig.GetDebugMode())
                     {
                         ServerMain.getServer().runOnMainThread(() -> {
@@ -290,6 +322,11 @@ public class ChatRequest {
                     }
                 }
                 case "/change-password" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
                     if (CommandInformation.argv().length == 2)
                     {
                         StringBuilder argv = new StringBuilder();//使用StringBuilder而非String，效率更高，string拼接效率较慢
@@ -307,8 +344,8 @@ public class ChatRequest {
                                 API.ChangeUserPassword(
                                         API.GetUserByUserName(
                                                 CommandInformation.argv()[1],
-                                                ServerMain.getServer(),
-                                                true),
+                                                ServerMain.getServer()
+                                        ),
                                 CommandInformation.argv()[2]);//根据用户名获取用户，并强制修改密码
                             } catch (AccountNotFoundException e) {
                                 API.SendMessageToUser(chatMessageInfo.getUser(),"无法找到用户："+CommandInformation.argv()[1]);
@@ -324,6 +361,47 @@ public class ChatRequest {
                     else
                     {
                         API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/change-password <用户名> <密码>");
+                    }
+                }
+                case "/kick" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
+                    if (CommandInformation.argv().length == 1)
+                    {
+                        user kickUser;
+                        try
+                        {
+                            kickUser = API.GetUserByUserName(CommandInformation.argv()[0],ServerMain.getServer());
+                        } catch (AccountNotFoundException e)
+                        {
+                            API.SendMessageToUser(chatMessageInfo.getUser(),"此用户不存在");
+                            break;
+                        }
+                        String UserName = kickUser.getUserName();
+                        kickUser.UserDisconnect();
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"已成功踢出用户："+UserName);
+                    }
+                    else
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/kick <用户名>");
+                    }
+                }
+                case "/Send-UnModify-Message" -> {
+                    if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN)))
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"你没有权限这样做");
+                        break;
+                    }
+                    if (CommandInformation.argv().length == 1)
+                    {
+                        API.SendMessageToAllClient(CommandInformation.argv()[0],ServerMain.getServer());
+                    }
+                    else
+                    {
+                        API.SendMessageToUser(chatMessageInfo.getUser(),"语法错误，正确的语法为：/Send-UnModify-Message <消息>");
                     }
                 }
                 default -> API.SendMessageToUser(chatMessageInfo.getUser(),"未知的命令！请输入/help查看帮助！");

@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.newServer.ServerInterface;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.CustomVar;
@@ -129,9 +130,9 @@ public class SingleAPI implements api{
      * @param ServerInstance 服务器实例
      */
     @Override
-    public void SendMessageToAllClient(@NotNull @Nls String inputMessage,@NotNull ServerMain ServerInstance)
+    public void SendMessageToAllClient(@NotNull @Nls String inputMessage, @NotNull ServerInterface ServerInstance)
     {
-        List<user> ValidClientList = GetValidClientList(ServerInstance,true);
+        List<user> ValidClientList = GetValidClientList(ServerInstance);
         for (user User : ValidClientList)
         {
             SendMessageToUser(User,inputMessage);
@@ -140,12 +141,11 @@ public class SingleAPI implements api{
     /**
      * 获取有效的客户端列表
      * @param ServerInstance 服务端实例
-     * @param DetectLoginStatus 是否检测已登录
      * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      * @return 有效的客户端列表
      */
     @Override
-    public @NotNull List<user> GetValidClientList(@NotNull ServerMain ServerInstance, boolean DetectLoginStatus)
+    public @NotNull List<user> GetValidClientList(@NotNull ServerInterface ServerInstance)
     {
         List<user> AllClientList = ServerInstance.getUsers();
         List<user> ValidClientList = new ArrayList<>();
@@ -153,15 +153,15 @@ public class SingleAPI implements api{
         {
             if (User == null)
                 continue;
-            if (DetectLoginStatus) {
-                if (!User.isUserLogined())
-                    continue;
-            }
+            if (!User.isUserLogined())
+                continue;
             if (User.getUserSocket() == null)
                 continue;
             if (User.getPublicKey() == null)
                 continue;
             if (User.getUserAES() == null)
+                continue;
+            if (User.isServer())
                 continue;
             ValidClientList.add(User);
         }
@@ -172,13 +172,12 @@ public class SingleAPI implements api{
      * 新的获取用户User Data Class api
      * @param UserName 用户名
      * @param ServerInstance 服务器实例
-     * @param DetectLoginStatus 是否检测已登录
      * @return 用户User Data Class
      * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
     @Override
-    public @NotNull user GetUserByUserName(@NotNull @Nls String UserName, @NotNull ServerMain ServerInstance, boolean DetectLoginStatus) throws AccountNotFoundException {
-        List<user> ValidClientList = GetValidClientList(ServerInstance,DetectLoginStatus);
+    public @NotNull user GetUserByUserName(@NotNull @Nls String UserName, @NotNull ServerInterface ServerInstance) throws AccountNotFoundException {
+        List<user> ValidClientList = GetValidClientList(ServerInstance);
         for (user User : ValidClientList)
         {
             if (User.getUserName().equals(UserName)) {
