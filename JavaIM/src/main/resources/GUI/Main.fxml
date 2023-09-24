@@ -8,6 +8,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
+<?import com.jfoenix.controls.JFXButton?>
 
 <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GraphicalUserInterface.MainUI">
     <MenuBar>
@@ -39,7 +40,7 @@
                 <Font size="17.0" />
             </font>
         </Label>
-        <Button layoutX="84.0" layoutY="229.0" mnemonicParsing="false" onAction="#StartByServerMode" text="服务端模式" />
-        <Button layoutX="430.0" layoutY="229.0" mnemonicParsing="false" onAction="#StartByClientMode" text="客户端模式" />
+        <JFXButton layoutX="84.0" layoutY="229.0" mnemonicParsing="false" onAction="#StartByServerMode" text="服务端模式" style="-fx-background-color: #99ccff;" />
+        <JFXButton layoutX="430.0" layoutY="229.0" mnemonicParsing="false" onAction="#StartByClientMode" text="客户端模式" style="-fx-background-color: #99ccff;" />
     </AnchorPane>
 </VBox>
