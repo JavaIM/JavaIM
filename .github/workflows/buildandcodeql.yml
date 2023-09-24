@@ -67,7 +67,7 @@ jobs:
       run: mvn -B package --file pom.xml
       
     - name: Preupload artifact
-      run: mkdir artifact && cp target/JavaIM*.jar artifact
+      run: mkdir artifact && cp JavaIM/target/JavaIM*.jar artifact
 
     - name: Upload artifact
       uses: actions/upload-artifact@v1
