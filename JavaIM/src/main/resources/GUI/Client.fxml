@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GraphicalUserInterface.ClientUI">
+   <MenuBar>
+      <Menu mnemonicParsing="false" text="程序">
+         <Menu mnemonicParsing="false" text="模式相关">
+            <MenuItem mnemonicParsing="false" onAction="#StartByServerMode" text="服务端模式" />
+            <MenuItem mnemonicParsing="false" onAction="#StartByClientMode" text="客户端模式" />
+         </Menu>
+         <MenuItem mnemonicParsing="false" onAction="#AboutJavaIM" text="关于" />
+         <MenuItem mnemonicParsing="false" onAction="#StopAllTaskAndExitProgram" text="退出" />
+      </Menu>
+      <Menu mnemonicParsing="false" text="公钥管理器">
+         <MenuItem mnemonicParsing="false" onAction="#UseKeyManagement" text="使用公钥管理器" />
+      </Menu>
+   </MenuBar>
+   <AnchorPane prefHeight="494.0" prefWidth="600.0">
+      <Label layoutX="259.0" layoutY="32.0" text="客户端">
+         <font>
+            <Font size="27.0" />
+         </font>
+      </Label>
+      <Label layoutX="198.0" layoutY="68.0" text="用于发送或接收消息的程序">
+         <font>
+            <Font size="17.0" />
+         </font>
+      </Label>
+      <Label layoutX="68.0" layoutY="102.0" text="聊天信息" />
+      <TextArea fx:id="ChatMessage" editable="false" layoutX="39.0" layoutY="123.0" prefHeight="138.0" prefWidth="106.0" />
+      <TextField fx:id="InputMessage" layoutX="79.0" layoutY="299.0" />
+      <Label layoutX="136.0" layoutY="273.0" text="发送消息" />
+      <Button layoutX="140.0" layoutY="334.0" mnemonicParsing="false" onAction="#SendMessage" text="发送" />
+      <Separator layoutX="331.0" layoutY="124.0" prefWidth="200.0" />
+      <Label layoutX="538.0" layoutY="118.0" text="功能配置" textFill="#828282" />
+      <Separator layoutX="328.0" layoutY="124.0" orientation="VERTICAL" prefHeight="233.0" prefWidth="4.0" />
+      <CheckBox fx:id="TransferProtocolConfig" layoutX="360.0" layoutY="155.0" mnemonicParsing="false" onAction="#UpdateConfig" text="启用TransferProtocol" />
+      <TextField fx:id="ServerAddress" layoutX="421.0" layoutY="212.0" />
+      <Separator layoutX="331.0" layoutY="192.0" prefHeight="3.0" prefWidth="171.0" />
+      <Label layoutX="509.0" layoutY="185.0" text="服务器连接相关" textFill="#828282" />
+      <Label layoutX="350.0" layoutY="216.0" text="服务器ip" />
+      <Label layoutX="344.0" layoutY="254.0" text="服务器端口" />
+      <TextField fx:id="ServerPort" layoutX="421.0" layoutY="250.0" />
+      <Button layoutX="397.0" layoutY="311.0" mnemonicParsing="false" onAction="#ConnectorDisconnectToServer" text="连接或断开连接服务器" />
+      <TextArea fx:id="SystemLog" editable="false" layoutX="175.0" layoutY="123.0" prefHeight="138.0" prefWidth="106.0" />
+      <Label layoutX="204.0" layoutY="102.0" text="系统日志" />
+   </AnchorPane>
+</VBox>
