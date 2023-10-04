@@ -41,7 +41,7 @@ public class GUIServer extends ServerMain{
         UserRequestThreadPool.execute(() -> {
             ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(getConsoleUser(),ChatMessage);
             getRequest().ChatFormat(input);
-            getServerAPI().SendMessageToAllClient("[服务端消息] "+input.getChatMessage(),getServer());
+            getServerAPI().SendMessageToAllClient("[服务端消息] "+input.getChatMessage());
             getLogger().ChatMsg("[服务端消息] "+input.getChatMessage());
         });
     }
@@ -103,7 +103,7 @@ public class GUIServer extends ServerMain{
     }
 
     public void StopServer() {
-        getServerAPI().SendMessageToAllClient("服务器已关闭",ServerMain.getServer());
+        getServerAPI().SendMessageToAllClient("服务器已关闭");
         for (user User : getUsers())
         {
             User.UserDisconnect();

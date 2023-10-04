@@ -18,12 +18,16 @@ package org.yuezhikong.newServer.plugin;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.yuezhikong.newServer.ChatRequest;
 import org.yuezhikong.newServer.ServerMain;
+import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.Plugin.Plugin;
 import org.yuezhikong.newServer.plugin.Plugin.PluginData;
+import org.yuezhikong.newServer.plugin.command.CommandExecutor;
 import org.yuezhikong.newServer.plugin.event.EventHandler;
 import org.yuezhikong.newServer.plugin.event.Listener;
 import org.yuezhikong.newServer.plugin.event.events.Event;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
@@ -35,7 +39,8 @@ import java.net.URLClassLoader;
 import java.util.*;
 
 public class SimplePluginManager implements PluginManager{
-    private final List<PluginData> pluginList = new ArrayList<>();
+    private final List<Plugin> pluginList = new ArrayList<>();
+    private final List<PluginData> pluginDataList = new ArrayList<>();
     @Override
     public void LoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         //启动classloader
@@ -55,8 +60,9 @@ public class SimplePluginManager implements PluginManager{
                 return;
             }
             ServerMain.getServer().getLogger().info("正在加载插件 " + Name + " v" + Version + " by " + Author);
-            for (PluginData data : pluginList)
+            for (Plugin plugin : pluginList)
             {
+                PluginData data = plugin.getPluginData();
                 if (Name.equals(data.getStaticData().PluginName()))
                 {
                     ServerMain.getServer().getLogger().info("无法加载插件 " + Name + " v" + Version + " by " + Author+"因为已安装了同名插件"
@@ -73,10 +79,17 @@ public class SimplePluginManager implements PluginManager{
             //写入插件的信息到PluginData
             PluginData.staticData staticData = new PluginData.staticData(plugin, Name, Version, Author, classLoader);
             PluginData pluginData = new PluginData(staticData);
+            //设定PluginData
+            plugin.setPluginData(pluginData);
+            if (plugin.getPluginData() == null) {
+                ServerMain.getServer().getLogger().info("无法加载插件 " + Name + " v" + Version + " by " + Author + "因为他的getPluginData方法返回null");
+                return;
+            }
             //调用插件的onLoad方法
-            plugin.onLoad(pluginData);
+            plugin.onLoad();
             //保存插件到插件列表
-            pluginList.add(pluginData);
+            pluginList.add(plugin);
+            pluginDataList.add(pluginData);
             ServerMain.getServer().getLogger().info("插件 " + Name + "加载成功");
         }
         catch (Throwable e)
@@ -92,13 +105,79 @@ public class SimplePluginManager implements PluginManager{
         }
     }
 
+    private record CommandSavedData(String Command,String Description,CommandExecutor executor,Plugin plugin) {}
+    private final List<CommandSavedData> commandSavedData = new ArrayList<>();
+
     @Override
-    public void UnLoadPlugin(@NotNull PluginData pluginData) throws IOException {
+    public boolean RequestPluginCommand(CustomVar.Command CommandInformation, user User) {
+        for (CommandSavedData savedData : commandSavedData)
+        {
+            if (savedData.Command().equals(CommandInformation.Command()))
+            {
+                savedData.executor().execute(User,CommandInformation.Command(),CommandInformation.argv());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public List<String> getPluginCommandsDescription() {
+        List<String> ReturnList = new ArrayList<>();
+        for (CommandSavedData savedData : commandSavedData)
+        {
+            ReturnList.add("/"+savedData.Command()+" "+savedData.Description());
+        }
+        return ReturnList;
+    }
+
+    @Override
+    public boolean RegisterCommand(String CommandName, String Description, CommandExecutor executor, Plugin plugin) {
+        if (CommandName == null || executor == null || plugin == null)
+            return false;
+        for (CommandSavedData savedData : commandSavedData)
+        {
+            if (savedData.Command().equals(CommandName))
+                return false;
+        }
+        return commandSavedData.add(new CommandSavedData(CommandName,Description,executor,plugin));
+    }
+
+    @Override
+    public boolean UnRegisterCommand(String CommandName) {
+        if (CommandName == null)
+            return false;
+        return commandSavedData.removeIf(commandSavedData -> commandSavedData.Command().equals(CommandName));
+    }
+
+    @Override
+    public void AddEventListener(Listener listener, Plugin plugin) {
+        plugin.getPluginData().AddEventListener(listener);
+    }
+
+    @Override
+    public List<Listener> getEventListener(Plugin plugin) {
+        return plugin.getPluginData().getEventListener();
+    }
+
+    @Override
+    public void RemoveEventListener(Listener listener, Plugin plugin) {
+        plugin.getPluginData().RemoveEventListener(listener);
+    }
+
+    @Override
+    public void UnLoadPlugin(@NotNull Plugin plugin) throws IOException {
+        PluginData pluginData = plugin.getPluginData();
         ServerMain.getServer().getLogger().info("正在卸载插件"+pluginData.getStaticData().PluginName()+
                 "v"+pluginData.getStaticData().PluginVersion()+
                 " by"+pluginData.getStaticData().PluginAuthor());
+        for (Listener listener : plugin.getPluginData().getEventListener())
+        {
+            RemoveEventListener(listener,plugin);
+        }
         pluginData.getStaticData().plugin().onUnload();
-        pluginList.remove(pluginData);
+        pluginList.remove(plugin);
+        pluginDataList.remove(pluginData);
         try {
             pluginData.getStaticData().PluginClassLoader().close();
         } catch (IOException e)
@@ -117,11 +196,15 @@ public class SimplePluginManager implements PluginManager{
     public void UnLoadAllPlugin() throws IOException {
         record Data(String Name,String Version,String Author,URLClassLoader classLoader){}
         List<Data> DataList = new ArrayList<>();
-        for (PluginData pluginData : pluginList)
+        for (PluginData pluginData : pluginDataList)
         {
             ServerMain.getServer().getLogger().info("正在卸载插件"+pluginData.getStaticData().PluginName()+
                     "v"+pluginData.getStaticData().PluginVersion()+
                     " by"+pluginData.getStaticData().PluginAuthor());
+            for (Listener listener : pluginData.getEventListener())
+            {
+                RemoveEventListener(listener,pluginData.getStaticData().plugin());
+            }
             pluginData.getStaticData().plugin().onUnload();
             DataList.add(new Data(pluginData.getStaticData().PluginName(),
                     pluginData.getStaticData().PluginVersion(),
@@ -129,6 +212,7 @@ public class SimplePluginManager implements PluginManager{
                     pluginData.getStaticData().PluginClassLoader()));
         }
         pluginList.clear();
+        pluginDataList.clear();
         for (Data data : DataList)
         {
             try {
@@ -247,8 +331,9 @@ public class SimplePluginManager implements PluginManager{
         List<MethodData> LowPriorityMethod = new ArrayList<>();
         List<MethodData> NormalPriorityMethod = new ArrayList<>();
         List<MethodData> HighPriorityMethod = new ArrayList<>();
-        for (PluginData data : pluginList)
+        for (Plugin plugin : pluginList)
         {
+            PluginData data = plugin.getPluginData();
             for (Listener listener : data.getEventListener())//获取PluginData中的EventListener后遍历
             {
                 Method[] methods = listener.getClass().getDeclaredMethods();//获取方法列表
@@ -293,12 +378,12 @@ public class SimplePluginManager implements PluginManager{
     }
 
     @Override
-    public @Nullable PluginData getPluginByName(@NotNull String name) {
-        for (PluginData pluginData : pluginList)
+    public @Nullable Plugin getPluginByName(@NotNull String name) {
+        for (Plugin plugin : pluginList)
         {
-            if (name.equals(pluginData.getStaticData().PluginName()))
+            if (name.equals(plugin.getPluginData().getStaticData().PluginName()))
             {
-                return pluginData;
+                return plugin;
             }
         }
         return null;

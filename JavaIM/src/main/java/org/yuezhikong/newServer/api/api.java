@@ -19,7 +19,6 @@ package org.yuezhikong.newServer.api;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.newServer.ServerInterface;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.CustomVar;
 
@@ -51,25 +50,22 @@ public interface api {
     /**
      * 新的向所有客户端发信api
      * @param inputMessage 要发信的信息
-     * @param ServerInstance 服务器实例
      */
-    void SendMessageToAllClient(@NotNull @Nls String inputMessage, @NotNull ServerInterface ServerInstance);
+    void SendMessageToAllClient(@NotNull @Nls String inputMessage);
     /**
      * 获取有效的客户端列表
-     * @param ServerInstance 服务端实例
      * @param CheckLoginStatus 是否检查登录状态
      * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      * @return 有效的客户端列表
      */
-    @NotNull List<user> GetValidClientList(@NotNull ServerInterface ServerInstance,boolean CheckLoginStatus);
+    @NotNull List<user> GetValidClientList(boolean CheckLoginStatus);
     /**
      * 新的获取用户User Data Class api
      * @param UserName 用户名
-     * @param ServerInstance 服务器实例
      * @return 用户User Data Class
      * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
-    @NotNull user GetUserByUserName(@NotNull @Nls String UserName, @NotNull ServerInterface ServerInstance) throws AccountNotFoundException;
+    @NotNull user GetUserByUserName(@NotNull @Nls String UserName) throws AccountNotFoundException;
 
     /**
      * 修改用户的密码

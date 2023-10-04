@@ -110,7 +110,7 @@ public final class UserAuthentication implements IUserAuthentication{
             {
                 UserName = rs.getString("UserName");
                 try {
-                    ServerMain.getServer().getServerAPI().GetUserByUserName(UserName, ServerMain.getServer());
+                    ServerMain.getServer().getServerAPI().GetUserByUserName(UserName);
                     //说明目前是已经有同一名字的用户登录了
                     //因此，禁止登录
                     return false;
@@ -258,7 +258,7 @@ public final class UserAuthentication implements IUserAuthentication{
             return RetryLogin();
         }
         try {
-            ServerMain.getServer().getServerAPI().GetUserByUserName(UserName, ServerMain.getServer());
+            ServerMain.getServer().getServerAPI().GetUserByUserName(UserName);
             //说明目前是已经有同一名字的用户登录了
             //因此，禁止登录
             return false;

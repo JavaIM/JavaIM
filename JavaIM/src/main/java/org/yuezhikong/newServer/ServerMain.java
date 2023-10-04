@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 新服务端
  * @author AlexLiuDev233
  */
-public class ServerMain extends GeneralMethod implements ServerInterface{
+public class ServerMain extends GeneralMethod implements IServerMain {
     static {
         request = new ChatRequest();//初始化ChatRequest
     }
@@ -105,7 +105,7 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
                     break;
                 }
                 //检查是否超过用户上限
-                if (CodeDynamicConfig.getMaxClient() != -1 && getServer().getServerAPI().GetValidClientList(ServerMain.getServer(),false).size() >= CodeDynamicConfig.getMaxClient() -1)
+                if (CodeDynamicConfig.getMaxClient() != -1 && getServer().getServerAPI().GetValidClientList(false).size() >= CodeDynamicConfig.getMaxClient() -1)
                 {
                     try {
                         clientSocket.close();
@@ -519,8 +519,8 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
                         }
                         else {
                             try {
-                                user TargetUser = getServer().getServerAPI().GetUserByUserName(transferProtocol.getTransferProtocolHead().getTargetUserName(),
-                                        ServerMain.getServer());
+                                user TargetUser = getServer().getServerAPI().GetUserByUserName(transferProtocol.getTransferProtocolHead().getTargetUserName()
+                                );
                                 if (TargetUser.isAllowedTransferProtocol())
                                 {
                                     BufferedWriter writer1 = new BufferedWriter(new OutputStreamWriter(TargetUser
@@ -599,7 +599,7 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
                     }
                     final String ChatMessage = input.getChatMessage();
                     logger.ChatMsg(ChatMessage);
-                    API.SendMessageToAllClient(ChatMessage,getServer());
+                    API.SendMessageToAllClient(ChatMessage);
                 }
             }
             catch (IOException e) {
@@ -737,7 +737,7 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
                 }
                 //初始化RSA、数据库、API、UserAuthThread、插件系统
                 RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", logger);
-                API = new SingleAPI();
+                API = new SingleAPI(this);
                 authThread = new UserAuthThread(ServerGroup, "UserAuthThread");
                 authThread.start();
                 pluginManager = new SimplePluginManager();

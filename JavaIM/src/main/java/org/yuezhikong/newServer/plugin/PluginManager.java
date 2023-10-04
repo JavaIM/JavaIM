@@ -18,12 +18,18 @@ package org.yuezhikong.newServer.plugin;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.yuezhikong.newServer.UserData.user;
+import org.yuezhikong.newServer.plugin.Plugin.Plugin;
 import org.yuezhikong.newServer.plugin.Plugin.PluginData;
+import org.yuezhikong.newServer.plugin.command.CommandExecutor;
+import org.yuezhikong.newServer.plugin.event.Listener;
 import org.yuezhikong.newServer.plugin.event.events.Event;
+import org.yuezhikong.utils.CustomVar;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 @SuppressWarnings("unused")
 public interface PluginManager {
@@ -41,11 +47,49 @@ public interface PluginManager {
     void LoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException;
 
     /**
+     * 注册一个新的命令
+     * @param CommandName 指令名称
+     * @param Description 指令描述
+     * @param executor 指令执行者
+     * @param plugin 插件实例
+     * @return 是否成功(一般失败都是因为已经注册)
+     */
+    boolean RegisterCommand(String CommandName, String Description ,CommandExecutor executor, Plugin plugin);
+
+    /**
+     * 取消注册一个新的命令
+     * @param CommandName 指令名称
+     * @return 是否成功(一般失败都是因为未注册)
+     */
+    boolean UnRegisterCommand(String CommandName);
+
+    /**
+     * 添加一个事件监听器
+     * @param listener 监听器实例
+     * @param plugin 插件实例
+     */
+    void AddEventListener(Listener listener, Plugin plugin);
+
+    /**
+     * 获取注册的所有事件监听器
+     * @param plugin 插件实例
+     * @return 监听器实例
+     */
+    List<Listener> getEventListener(Plugin plugin);
+
+    /**
+     * 取消注册一个事件监听器
+     * @param listener 事件监听器实例
+     * @param plugin 插件实例
+     */
+    void RemoveEventListener(Listener listener, Plugin plugin);
+
+    /**
      * 卸载一个插件
-     * @param pluginData 插件信息
+     * @param plugin 插件信息
      * @throws IOException 无法关闭URLClassLoader
      */
-    void UnLoadPlugin(@NotNull PluginData pluginData) throws IOException;
+    void UnLoadPlugin(@NotNull Plugin plugin) throws IOException;
 
     /**
      * 卸载所有插件
@@ -66,9 +110,23 @@ public interface PluginManager {
     void callEvent(@NotNull Event event);
 
     /**
+     * 处理插件命令
+     * @param CommandInformation 命令详情
+     * @param User 执行此命令的用户
+     * @return 是否是一条插件命令
+     */
+    boolean RequestPluginCommand(CustomVar.Command CommandInformation, user User);
+
+    /**
+     * 获取插件命令描述列表
+     * @return 返回已经格式化完毕的命令描述列表
+     */
+    List<String> getPluginCommandsDescription();
+
+    /**
      * 根据插件名获取插件信息
      * @param name 插件名
      * @return 插件信息
      */
-    @Nullable PluginData getPluginByName(@NotNull String name);
+    @Nullable Plugin getPluginByName(@NotNull String name);
 }

@@ -11,7 +11,6 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.CrashReport;
@@ -21,7 +20,6 @@ import org.yuezhikong.newServer.GUIServer;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
-import org.yuezhikong.utils.SaveStackTrace;
 
 import java.awt.*;
 import java.io.BufferedWriter;
@@ -147,14 +145,14 @@ public class DefaultController {
     {
         if (ServerMain.getServer() != null) {
             ServerMain.getServer().getLogger().info("正在关闭服务器...");
-            ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭", ServerMain.getServer());
+            ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭");
             for (user User : ServerMain.getServer().getUsers()) {
                 User.UserDisconnect();
             }
             if (!(ServerMain.getServer() instanceof GUIServer)) {
                 try {
                     //提示用户服务器已关闭并踢出
-                    ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭",ServerMain.getServer());
+                    ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭");
                     for (user User : ServerMain.getServer().getUsers())
                     {
                         User.UserDisconnect();

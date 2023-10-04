@@ -22,8 +22,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.newServer.ServerInterface;
-import org.yuezhikong.newServer.ServerMain;
+import org.yuezhikong.newServer.IServerMain;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
@@ -41,6 +40,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SingleAPI implements api{
+    private final IServerMain ServerInstance;
+
+    /**
+     * 初始化服务端API
+     * @param serverInstance 服务端实例
+     */
+    public SingleAPI(IServerMain serverInstance)
+    {
+        ServerInstance = serverInstance;
+    }
     /**
      * 将命令进行格式化
      * @param Command 原始命令信息
@@ -102,7 +111,7 @@ public class SingleAPI implements api{
     {
         if (user.isServer())
         {
-            ServerMain.getServer().getLogger().info(inputMessage);
+            ServerInstance.getLogger().info(inputMessage);
             return;
         }
         String Message = ChatProtocolRequest(inputMessage, CodeDynamicConfig.getProtocolVersion());
@@ -128,12 +137,12 @@ public class SingleAPI implements api{
     /**
      * 新的向所有客户端发信api
      * @param inputMessage 要发信的信息
-     * @param ServerInstance 服务器实例
+     *
      */
     @Override
-    public void SendMessageToAllClient(@NotNull @Nls String inputMessage, @NotNull ServerInterface ServerInstance)
+    public void SendMessageToAllClient(@NotNull @Nls String inputMessage)
     {
-        List<user> ValidClientList = GetValidClientList(ServerInstance,true);
+        List<user> ValidClientList = GetValidClientList(true);
         for (user User : ValidClientList)
         {
             SendMessageToUser(User,inputMessage);
@@ -141,12 +150,11 @@ public class SingleAPI implements api{
     }
     /**
      * 获取有效的客户端列表
-     * @param ServerInstance 服务端实例
      * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      * @return 有效的客户端列表
      */
     @Override
-    public @NotNull List<user> GetValidClientList(@NotNull ServerInterface ServerInstance,boolean CheckLoginStatus)
+    public @NotNull List<user> GetValidClientList(boolean CheckLoginStatus)
     {
         List<user> AllClientList = ServerInstance.getUsers();
         List<user> ValidClientList = new ArrayList<>();
@@ -172,13 +180,12 @@ public class SingleAPI implements api{
     /**
      * 新的获取用户User Data Class api
      * @param UserName 用户名
-     * @param ServerInstance 服务器实例
      * @return 用户User Data Class
      * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
     @Override
-    public @NotNull user GetUserByUserName(@NotNull @Nls String UserName, @NotNull ServerInterface ServerInstance) throws AccountNotFoundException {
-        List<user> ValidClientList = GetValidClientList(ServerInstance,true);
+    public @NotNull user GetUserByUserName(@NotNull @Nls String UserName) throws AccountNotFoundException {
+        List<user> ValidClientList = GetValidClientList(true);
         for (user User : ValidClientList)
         {
             if (User.getUserName().equals(UserName)) {

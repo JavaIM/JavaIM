@@ -19,8 +19,9 @@ package org.yuezhikong.newServer.plugin.Plugin;
 public interface Plugin {
     /**
      * 当被加载时
-     * @param PluginData 插件数据
      */
-    void onLoad(PluginData PluginData);
+    void onLoad();
+    void setPluginData(PluginData pluginData);
+    PluginData getPluginData();
     void onUnload();
 }

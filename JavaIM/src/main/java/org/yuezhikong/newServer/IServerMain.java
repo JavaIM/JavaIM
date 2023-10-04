@@ -23,7 +23,10 @@ import org.yuezhikong.utils.Logger;
 
 import java.util.List;
 
-public interface ServerInterface {
+/**
+ * 此类被设计为仅供插件跨版本调用使用，请最好不要新增实现
+ */
+public interface IServerMain {
     /**
      * 获取用户列表
      * @return 包含所有用户的列表
