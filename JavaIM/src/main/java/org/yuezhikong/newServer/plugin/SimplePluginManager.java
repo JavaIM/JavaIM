@@ -106,13 +106,11 @@ public class SimplePluginManager implements PluginManager{
             ServerMain.getServer().getLogger().info("无法卸载插件"+pluginData.getStaticData().PluginName()+
                     "v"+pluginData.getStaticData().PluginVersion()+
                     " by"+pluginData.getStaticData().PluginAuthor());
-            System.gc();
             throw e;
         }
         ServerMain.getServer().getLogger().info("已卸载插件"+pluginData.getStaticData().PluginName()+
                 "v"+pluginData.getStaticData().PluginVersion()+
                 " by"+pluginData.getStaticData().PluginAuthor());
-        System.gc();
     }
 
     @Override
@@ -141,7 +139,6 @@ public class SimplePluginManager implements PluginManager{
                         "v"+data.Version()+
                         " by"+data.Author());
                 DataList.clear();
-                System.gc();
                 throw e;
             }
             ServerMain.getServer().getLogger().info("已卸载插件"+data.Name()+
@@ -149,7 +146,6 @@ public class SimplePluginManager implements PluginManager{
                     " by"+data.Author());
         }
         DataList.clear();
-        System.gc();
     }
 
     /**
@@ -251,12 +247,12 @@ public class SimplePluginManager implements PluginManager{
         List<MethodData> LowPriorityMethod = new ArrayList<>();
         List<MethodData> NormalPriorityMethod = new ArrayList<>();
         List<MethodData> HighPriorityMethod = new ArrayList<>();
-        for (PluginData data : pluginList)//遍历插件
+        for (PluginData data : pluginList)
         {
-            for (Listener listener : data.getEventListener())
+            for (Listener listener : data.getEventListener())//获取PluginData中的EventListener后遍历
             {
-                Method[] methods = listener.getClass().getDeclaredMethods();//获取
-                for (Method method : methods) {
+                Method[] methods = listener.getClass().getDeclaredMethods();//获取方法列表
+                for (Method method : methods) {//遍历所有方法
                     Class<?>[] parameterTypes = method.getParameterTypes();
                     if (
                             parameterTypes.length == 1 //判断此方法要求提供的参数是1个
@@ -282,19 +278,18 @@ public class SimplePluginManager implements PluginManager{
             try {
                 methodData.method().invoke(methodData.listener(), event);
             } catch (IllegalAccessException e) {
-                ServerMain.getServer().getLogger().info("没有权限访问 插件 "+methodData.pluginData().getStaticData().PluginName()+
+                ServerMain.getServer().getLogger().error("没有权限访问 插件 "+methodData.pluginData().getStaticData().PluginName()+
                         "v"+methodData.pluginData().getStaticData().PluginVersion()+
                         " by "+methodData.pluginData().getStaticData().PluginAuthor()+
                         "的事件处理程序");
             } catch (InvocationTargetException e) {
                 e.getCause().printStackTrace();
-                ServerMain.getServer().getLogger().info("插件 "+methodData.pluginData().getStaticData().PluginName()+
+                ServerMain.getServer().getLogger().error("插件 "+methodData.pluginData().getStaticData().PluginName()+
                         "v"+methodData.pluginData().getStaticData().PluginVersion()+
                         " by "+methodData.pluginData().getStaticData().PluginAuthor()+
                         "的事件处理程序出现内部错误");
             }
         }
-        System.gc();
     }
 
     @Override

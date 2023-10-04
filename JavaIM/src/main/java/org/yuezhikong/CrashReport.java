@@ -14,8 +14,38 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 
 public class CrashReport implements Thread.UncaughtExceptionHandler {
+
+    private static volatile CrashReport Instance;
+    /**
+     * 单例，使用getCrashReport()方法获取实例
+     */
+    private CrashReport()
+    {
+
+    }
+
+    public static CrashReport getCrashReport()
+    {
+        if (Instance == null)
+        {
+            synchronized (CrashReport.class)
+            {
+                if (Instance == null)
+                {
+                    Instance = new CrashReport();
+                }
+            }
+        }
+        return Instance;
+    }
+
     @Override
     public void uncaughtException(Thread t, Throwable e) {
+        JavaIMCrashReport("uncaughtException",e,t);
+    }
+
+    protected static void JavaIMCrashReport(String type,Throwable e,Thread t)
+    {
         long StartTimeMills = System.currentTimeMillis();
         String StackTraceOfThrowable;
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
@@ -39,7 +69,7 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
             String time = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss").format(StartTimeMills);
             writeStringToFileChannel(channel,"----JavaIM Crash Report----");
             writeStringToFileChannel(channel,"Time: "+time);
-            writeStringToFileChannel(channel,"Description: uncaughtException");
+            writeStringToFileChannel(channel,"Description: "+type);
             writeStringToFileChannel(channel,"JavaIMVersion: "+CodeDynamicConfig.getVersion());
             writeStringToFileChannel(channel,"Thread: "+t.getName());
             writeStringToFileChannelNoAutoAddLineBreak(channel,"\n");
@@ -64,8 +94,7 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
             SaveStackTrace.saveStackTrace(ex);
         }
     }
-
-    private void writeStringToFileChannelNoAutoAddLineBreak(FileChannel channel, String writeData) throws IOException{
+    private static void writeStringToFileChannelNoAutoAddLineBreak(FileChannel channel, String writeData) throws IOException{
         ByteBuffer buf = ByteBuffer.allocate(5);
         byte[] data = writeData.getBytes(StandardCharsets.UTF_8);
         for (int i = 0; i < data.length; ) {
@@ -76,7 +105,11 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
         }
     }
 
-    public void writeStringToFileChannel(@NotNull FileChannel channel, @NotNull String writeData) throws IOException {
+    public static void writeStringToFileChannel(@NotNull FileChannel channel, @NotNull String writeData) throws IOException {
         writeStringToFileChannelNoAutoAddLineBreak(channel,writeData+"\n");
+    }
+
+    public static void failedException(Throwable e) {
+        JavaIMCrashReport("Failed by Exception",e,Thread.currentThread());
     }
 }

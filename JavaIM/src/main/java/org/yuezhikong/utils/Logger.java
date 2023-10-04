@@ -18,9 +18,11 @@ package org.yuezhikong.utils;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.jetbrains.annotations.Contract;
 import org.yuezhikong.GraphicalUserInterface.DefaultController;
 
 import java.io.PrintStream;
+import java.lang.annotation.Documented;
 
 //import java.util.logging.Level;
 
@@ -30,6 +32,20 @@ public class Logger {
         Out = System.out;
     }
     private static final PrintStream Out;
+
+    /**
+     * 获取原始Java标注输出流
+     * @deprecated 插件等应当尽可能的使用Log4j2 Logger，而非使用System.out!
+     * @see System#out
+     * @return 标准输出流
+     */
+    @Deprecated
+    @SuppressWarnings("unused")
+    @Contract(pure = true)
+    public static PrintStream getStdOut() {
+        return Out;
+    }
+
     public static final org.apache.logging.log4j.Logger logger_root = LogManager.getLogger(Logger.class.getName());//配置文件没配置Log的class名字，所以用默认的Root
     private boolean isStdOutRedistribution;
     /**
@@ -84,7 +100,6 @@ public class Logger {
     public void info(String msg, Object... params)
     {
         GUIRequest("[info] "+msg, false);
-        Out.print("\b");
         logger_root.info(msg,params);
     }
     public void info(String msg)

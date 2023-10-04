@@ -47,14 +47,11 @@
       <Label layoutX="538.0" layoutY="118.0" text="功能配置" textFill="#828282" />
       <Separator layoutX="328.0" layoutY="124.0" orientation="VERTICAL" prefHeight="233.0" prefWidth="4.0" />
       <CheckBox fx:id="TransferProtocolConfig" layoutX="360.0" layoutY="155.0" mnemonicParsing="false" onAction="#UpdateConfig" text="启用TransferProtocol" />
-      <TextField fx:id="ServerAddress" layoutX="421.0" layoutY="212.0" />
       <Separator layoutX="331.0" layoutY="192.0" prefHeight="3.0" prefWidth="171.0" />
       <Label layoutX="509.0" layoutY="185.0" text="服务器连接相关" textFill="#828282" />
-      <Label layoutX="350.0" layoutY="216.0" text="服务器ip" />
-      <Label layoutX="344.0" layoutY="254.0" text="服务器端口" />
-      <TextField fx:id="ServerPort" layoutX="421.0" layoutY="250.0" />
-      <Button layoutX="397.0" layoutY="311.0" mnemonicParsing="false" onAction="#ConnectorDisconnectToServer" text="连接或断开连接服务器" />
+      <Button layoutX="378.0" layoutY="217.0" mnemonicParsing="false" onAction="#DirectConnectOrDisconnectToServer" text="直接连接或断开连接服务器" />
       <TextArea fx:id="SystemLog" editable="false" layoutX="175.0" layoutY="123.0" prefHeight="138.0" prefWidth="106.0" />
       <Label layoutX="204.0" layoutY="102.0" text="系统日志" />
+      <!--- <Button layoutX="414.0" layoutY="269.0" mnemonicParsing="false" text="连接到服务器" /> -->
    </AnchorPane>
 </VBox>

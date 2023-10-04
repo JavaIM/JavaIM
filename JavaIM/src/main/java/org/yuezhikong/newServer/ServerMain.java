@@ -83,6 +83,7 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
     {
         private final Logger logger;
         private final ServerSocket socket;
+        @Contract("_,null -> fail")
         public UserAuthThread(ThreadGroup group, String name)
         {
             super(group,name);
@@ -92,7 +93,7 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
         }
         @Override
         public void run() {
-            this.setUncaughtExceptionHandler(new CrashReport());
+            this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
             while (true)
             {
                 Socket clientSocket;//接受客户端Socket请求
@@ -140,6 +141,7 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
     public static class RecvMessageThread extends Thread
     {
         private final user CurrentUser;
+        @Contract("_,_,null -> fail")
         public RecvMessageThread(int ClientID,ThreadGroup group,String name)
         {
             super(group,name);
@@ -431,7 +433,6 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
                     return;
                 }
                 CurrentUser.setAllowedTransferProtocol("Enable".equals(protocol.getMessageBody().getMessage()));
-                System.gc();
                 //握手全部完毕，后续是登录系统
                 try {
                     LoginSystem(CurrentUser);
@@ -715,7 +716,7 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
                 new Thread(ServerGroup, "waitInterruptThread") {
                     @Override
                     public void run() {
-                        this.setUncaughtExceptionHandler(new CrashReport());
+                        this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
                         synchronized (this) {
                             try {
                                 this.wait();
@@ -793,7 +794,7 @@ public class ServerMain extends GeneralMethod implements ServerInterface{
         {
             @Override
             public void run() {
-                this.setUncaughtExceptionHandler(new CrashReport());
+                this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
                 //IO初始化
                 Scanner scanner = new Scanner(System.in);
                 //ChatRequest初始化

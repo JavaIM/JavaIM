@@ -250,7 +250,7 @@ public class Main {
                 {
                     @Override
                     public void run() {
-                        this.setUncaughtExceptionHandler(new CrashReport());
+                        this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
                         new ServerMain().start(scanner.nextInt());
                     }
                     public Thread start2()
@@ -280,7 +280,7 @@ public class Main {
     public static void main(String[] args) {
         new Notice();
         stdoutRedistribution();
-        Thread.currentThread().setUncaughtExceptionHandler(new CrashReport());
+        Thread.currentThread().setUncaughtExceptionHandler(CrashReport.getCrashReport());
         //服务端与客户端配置文件初始化
         if (!(new File("server.properties").exists())){
             logger.info("目录下没有检测到服务端配置文件，正在创建");
@@ -303,11 +303,13 @@ public class Main {
             ExpVersionCode code = new ExpVersionCode();
             code.run(logger);
         }
-        if (isGUIMode())
+        else if (isGUIMode())
         {
             logger.info("GUI功能由于服务端与客户端底层重构，导致已被暂时关闭");
             logger.info("正在为您使用控制台版本");
+            ConsoleMain();
         }
-        ConsoleMain();
+        else
+            ConsoleMain();
     }
 }

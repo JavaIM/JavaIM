@@ -19,6 +19,7 @@ package org.yuezhikong.newServer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.CrashReport;
 import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.api.api;

@@ -44,6 +44,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @SuppressWarnings("unused")
 public class ClientMain extends GeneralMethod {
@@ -88,6 +93,7 @@ public class ClientMain extends GeneralMethod {
     public static ClientMain getClient() {
         return Instance;
     }
+
     private void RequestRSA(@NotNull String key, @NotNull Socket client) throws IOException {
 
         RSA_KeyAutogenerate("./ClientRSAKey/ClientPublicKey.txt","./ClientRSAKey/ClientPrivateKey.txt",logger);
@@ -160,6 +166,7 @@ public class ClientMain extends GeneralMethod {
         writer.newLine();
         writer.flush();
     }
+    @Contract(pure = true)
     protected String[] RequestUserNameAndPassword()
     {
         Scanner scanner = new Scanner(System.in);
@@ -169,7 +176,8 @@ public class ClientMain extends GeneralMethod {
         String Password = scanner.nextLine();
         return new String[] { UserName , Password };
     }
-    private boolean UseUserNameAndPasswordLogin(@NotNull Socket client,@NotNull AES aes) throws IOException {
+
+    private boolean UseUserNameAndPasswordLogin() throws IOException {
         String[] UserData = RequestUserNameAndPassword();
         if (UserData.length != 2)
             throw new RuntimeException("The RequestUserNameAndPassword Method Returned Data Is Not Support");
@@ -182,6 +190,7 @@ public class ClientMain extends GeneralMethod {
      * LegacyLoginAndUpdateEncryption的附属函数，用于获取是否为旧版登录模式
      * @return true为是，false为否
      */
+    @Contract(pure = true)
     protected boolean isLegacyLoginORNormalLogin()
     {
         logger.info("------提示------");
@@ -243,7 +252,7 @@ public class ClientMain extends GeneralMethod {
         }
         return false;
     }
-    private boolean tryLogin(@NotNull Socket client, @NotNull AES aes, @NotNull @Nls String UserName, @NotNull @Nls String Password) throws IOException {
+    private boolean tryLogin(@NotNull Socket client, @NotNull AES aes, @NotNull String UserName, @NotNull String Password) throws IOException {
         Gson gson = new Gson();
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream(),StandardCharsets.UTF_8));
         BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.UTF_8));
@@ -280,7 +289,7 @@ public class ClientMain extends GeneralMethod {
         {
             logger.info("登录失败，理由："+protocol.getMessageBody().getMessage());
             logger.info("正在重新开启登录过程");
-            return UseUserNameAndPasswordLogin(client, aes);
+            return UseUserNameAndPasswordLogin();
         }
         if (!("Login".equals(protocol.getMessageHead().getType())))
             return false;
@@ -290,6 +299,10 @@ public class ClientMain extends GeneralMethod {
     protected Logger LoggerInit()
     {
         return new Logger(null);
+    }
+    protected File getServerPublicKeyFile()
+    {
+        return new File("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt");
     }
     public void start(String ServerAddress,int ServerPort)
     {
@@ -314,20 +327,19 @@ public class ClientMain extends GeneralMethod {
             writer.write("你好，服务端");
             writer.newLine();
             writer.flush();
-            TimerTask task = new TimerTask()
-            {
-                @Override
-                public void run() {
-                    try {
-                        writer.write("Alive");
-                        writer.newLine();
-                        writer.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
+            getTimerThreadPool().scheduleWithFixedDelay(() -> {
+                try {
+                    if (client.isClosed())
+                    {
+                        timer.cancel();
                     }
+                    writer.write("Alive");
+                    writer.newLine();
+                    writer.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            };
-            timer.schedule(task,0,CodeDynamicConfig.HeartbeatInterval);
+            },0,CodeDynamicConfig.HeartbeatInterval,TimeUnit.SECONDS);
             //测试通讯协议
             NormalProtocol protocol = protocolRequest(unicodeToString(reader.readLine()));
             if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
@@ -349,13 +361,13 @@ public class ClientMain extends GeneralMethod {
             writer.newLine();
             writer.flush();
             //加密处理
-            if (!(new File("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt").exists()))
+            if (!getServerPublicKeyFile().exists())
             {
                 QuitReason = "服务端公钥未被配置";
                 return;
             }
 
-            final String ServerPublicKey = FileUtils.readFileToString(new File("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt"), StandardCharsets.UTF_8);
+            final String ServerPublicKey = FileUtils.readFileToString(getServerPublicKeyFile(), StandardCharsets.UTF_8);
             if (ServerPublicKey.equals(""))
             {
                 QuitReason = "服务端公钥未被配置";
@@ -523,7 +535,7 @@ public class ClientMain extends GeneralMethod {
                 {
                     return;
                 }
-                if (!(UseUserNameAndPasswordLogin(client,aes)))
+                if (!(UseUserNameAndPasswordLogin()))
                 {
                     logger.info("登录失败，用户名或密码错误");
                     logger.info("------提示------");
@@ -559,12 +571,34 @@ public class ClientMain extends GeneralMethod {
             {
                 QuitReason = "客户端没有设置退出原因";
             }
-            timer.cancel();
+            if (AllowShutdownScheduledExecutorService())
+                TimerThreadPool.shutdownNow();
             getLogger().info("程序即将退出");
             getLogger().info("理由：");
             getLogger().info(QuitReason);
             getLogger().OutDate();
         }
+    }
+
+    protected ScheduledExecutorService TimerThreadPool;
+    protected boolean AllowShutdownScheduledExecutorService()
+    {
+        return !TimerThreadPool.isShutdown();
+    }
+    @Contract(pure = true)
+    protected synchronized ScheduledExecutorService getTimerThreadPool() {
+        if (TimerThreadPool == null)
+        {
+            TimerThreadPool = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+                @Override
+                public Thread newThread(@NotNull Runnable r) {
+                    return new Thread(ClientThreadGroup,r, "Timer Thread #" + threadNumber.getAndIncrement());
+                }
+            });
+        }
+        return TimerThreadPool;
     }
 
     protected static class QuitException extends Exception
@@ -606,7 +640,7 @@ public class ClientMain extends GeneralMethod {
         else if ("Fail".equals(protocol.getMessageBody().getMessage()))
         {
             logger.info("Token无效！需重新使用用户名密码登录！");
-            if (!(UseUserNameAndPasswordLogin(client,aes)))
+            if (!(UseUserNameAndPasswordLogin()))
             {
                 logger.info("登录失败，用户名或密码错误");
                 logger.info("------提示------");
@@ -830,7 +864,7 @@ public class ClientMain extends GeneralMethod {
             @Override
             public void run() {
                 List<String> ThisSessionForbiddenUserNameList = new ArrayList<>();
-                this.setUncaughtExceptionHandler(new CrashReport());
+                this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
                 recvMessageThread = Thread.currentThread();
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8))) {
                     String ChatMsg;
@@ -933,7 +967,7 @@ public class ClientMain extends GeneralMethod {
                                 if (!(new File("./end-to-end_encryption_saved").exists())) {
                                     Files.createDirectory(Paths.get("./end-to-end_encryption_saved"));
                                 }
-                                if (!(new File("./end-to-end_encryption_saved").isDirectory())) {
+                                if (new File("./end-to-end_encryption_saved").isFile()) {
                                     Files.delete(Paths.get("./end-to-end_encryption_saved"));
                                     Files.createDirectory(Paths.get("./end-to-end_encryption_saved"));
                                 }

@@ -13,14 +13,16 @@ import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.nio.Buffer;
 import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class GUIClient extends ClientMain {
 
+    private File ServerPublicKeyFile = new File("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt");
     private volatile boolean ClientStartedSuccessful = false;
     private final Object ClientStartedLock = new Object();
     private final ClientUI GUIController;
@@ -29,6 +31,15 @@ public class GUIClient extends ClientMain {
     protected Logger LoggerInit() {
         logger = new Logger(GUIController);
         return logger;
+    }
+
+    public void setServerPublicKeyFile(File serverPublicKeyFile) {
+        ServerPublicKeyFile = serverPublicKeyFile;
+    }
+
+    @Override
+    protected File getServerPublicKeyFile() {
+        return ServerPublicKeyFile;
     }
 
     public GUIClient(ClientUI controller)
@@ -305,4 +316,19 @@ public class GUIClient extends ClientMain {
         UserData = new String[] { userName , password };
         LegacyLogin = isLegacyLogin;
     }
+
+    private boolean AllowShutdownTimerThreadPool = true;
+    public void setTimerThreadPool(ScheduledExecutorService timerThreadPool,boolean AllowShutdownTimerThreadPool)
+    {
+        if (timerThreadPool == null)
+            return;
+        this.AllowShutdownTimerThreadPool = AllowShutdownTimerThreadPool;
+        TimerThreadPool = timerThreadPool;
+    }
+
+    @Override
+    protected boolean AllowShutdownScheduledExecutorService() {
+        return AllowShutdownTimerThreadPool;
+    }
+
 }

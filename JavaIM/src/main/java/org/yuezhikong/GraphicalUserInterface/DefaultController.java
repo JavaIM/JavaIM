@@ -11,7 +11,10 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.CrashReport;
 import org.yuezhikong.newClient.ClientMain;
 import org.yuezhikong.newClient.GUIClient;
 import org.yuezhikong.newServer.GUIServer;
@@ -20,6 +23,7 @@ import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
+import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -32,6 +36,9 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class DefaultController {
+    //全局共享SystemTray Icon和PopupMenu
+    public static TrayIcon SystemTrayIcon;
+    protected static PopupMenu SystemTrayMenu;
     //全局共享stage
     protected static Stage stage;
 
@@ -55,7 +62,7 @@ public class DefaultController {
         alert.showAndWait();
     }
 
-    public void StopClient()
+    public static void StopClient()
     {
         if (ClientMain.getClient() != null)
         {
@@ -68,7 +75,7 @@ public class DefaultController {
                     instance.set(null,null);
                     instance.setAccessible(false);
                 } catch (NoSuchFieldException | IllegalAccessException e) {
-                    SaveStackTrace.saveStackTrace(e);
+                    CrashReport.failedException(e);
                 }
             }
             if (ClientMain.getClient() instanceof GUIClient)
@@ -131,12 +138,12 @@ public class DefaultController {
                     recvMessageThread.setAccessible(false);
 
                 } catch (NoSuchFieldException | IllegalAccessException | IOException e) {
-                    SaveStackTrace.saveStackTrace(e);
+                    CrashReport.failedException(e);
                 }
             }
         }
     }
-    public void StopServer()
+    public static void StopServer()
     {
         if (ServerMain.getServer() != null) {
             ServerMain.getServer().getLogger().info("正在关闭服务器...");
@@ -193,7 +200,7 @@ public class DefaultController {
                     ServerGroup.setAccessible(false);
                     group.interrupt();
                 } catch (NoSuchFieldException | IllegalAccessException | IOException | NoSuchMethodException | InvocationTargetException e) {
-                    SaveStackTrace.saveStackTrace(e);
+                    CrashReport.failedException(e);
                 }
             }
             else
@@ -212,8 +219,9 @@ public class DefaultController {
      * 切换到指定fxml页
      * @param ResourcePath fxml resource路径
      * @param TitleName 新的标题名称
+     * @throws NullPointerException ResourcePath是null
      */
-    public void SwitchToPage(String ResourcePath,String TitleName)
+    public void SwitchToPage(@NotNull String ResourcePath, @NotNull String TitleName)
     {
         if (ServerMain.getServer() != null)
         {
@@ -262,9 +270,13 @@ public class DefaultController {
                     getClass().getResource(ResourcePath)));
             Scene scene = new Scene(root);
             stage.setScene(scene);
+            //更新最小尺寸
+            stage.setMinHeight(stage.getHeight());
+            stage.setMinWidth(stage.getWidth());
+            //更新标题
             stage.setTitle(TitleName);
         } catch (IOException e) {
-            SaveStackTrace.saveStackTrace(e);
+            CrashReport.failedException(e);
         }
     }
     public void UseKeyManagement(ActionEvent actionEvent) {

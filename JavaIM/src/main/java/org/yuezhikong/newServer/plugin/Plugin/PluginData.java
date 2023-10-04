@@ -39,6 +39,10 @@ public class PluginData {
     {
         return new ArrayList<>(EventListener);
     }
+    public void RemoveEventListener(Listener listener)
+    {
+        EventListener.remove(listener);
+    }
     public PluginData(staticData data)
     {
         this.data = data;

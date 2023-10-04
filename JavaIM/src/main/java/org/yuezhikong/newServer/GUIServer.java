@@ -2,6 +2,7 @@ package org.yuezhikong.newServer;
 
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CrashReport;
+import org.yuezhikong.GraphicalUserInterface.DefaultController;
 import org.yuezhikong.GraphicalUserInterface.ServerUI;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.Logger;
@@ -58,7 +59,7 @@ public class GUIServer extends ServerMain{
     @Override
     public void start(int bindPort) {
         Thread ServerThread = new Thread(ServerThreadGroup,() -> super.start(bindPort),"Server Thread");
-        ServerThread.setUncaughtExceptionHandler(new CrashReport());
+        ServerThread.setUncaughtExceptionHandler(CrashReport.getCrashReport());
         ServerThread.start();
     }
 
@@ -68,7 +69,7 @@ public class GUIServer extends ServerMain{
         {
             @Override
             public void run() {
-                this.setUncaughtExceptionHandler(new CrashReport());
+                this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
                 //IO初始化
                 Scanner scanner = new Scanner(System.in);
                 //ChatRequest初始化
@@ -132,7 +133,7 @@ public class GUIServer extends ServerMain{
         if (Command.equals("/quit"))
         {
             getLogger().info("正在关闭服务器...");
-            GUIController.StopServer();
+            DefaultController.StopServer();
             return;
         }
         UserRequestThreadPool.execute(() -> getRequest().CommandRequest(

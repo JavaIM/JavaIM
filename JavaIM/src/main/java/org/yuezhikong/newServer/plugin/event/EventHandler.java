@@ -21,6 +21,7 @@ import java.lang.annotation.*;
 /**
  * 事件处理器标记
  */
+@Documented
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EventHandler {

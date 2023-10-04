@@ -5,13 +5,16 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.PortInputDialog;
 import org.yuezhikong.newServer.GUIServer;
 import org.yuezhikong.newServer.ServerMain;
-import org.yuezhikong.utils.SaveStackTrace;
 
+import java.awt.*;
 import java.net.URL;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -59,6 +62,12 @@ public class ServerUI extends DefaultController implements Initializable {
 
     @Override
     public void WriteChatMessage(String msg) {
+        //如果系统支持SystemTray，则显示信息(Windows7 气泡、Windows 10 通知等）
+        if (SystemTrayIcon != null)
+        {
+            SystemTrayIcon.displayMessage("JavaIM 服务端",msg, TrayIcon.MessageType.INFO);
+        }
+        //显示在GUI
         Platform.runLater(() -> ChatMessage.appendText(msg+"\n"));
     }
 
@@ -133,33 +142,21 @@ public class ServerUI extends DefaultController implements Initializable {
         if (ServerMain.getServer() == null)
         {
             int ServerPort;
-            try {
-                PortInputDialog portInputDialog = new PortInputDialog();
-                portInputDialog.initOwner(stage);
-                portInputDialog.setTitle("JavaIM --- 启动服务器");
-                portInputDialog.setHeaderText("如果要启动服务器，请提供以下信息");
-                portInputDialog.setContentText("请输入服务器端口：");
-                Optional<String> PortOfUserInput = portInputDialog.showAndWait();
-                if (PortOfUserInput.isPresent())
-                {
-                    ServerPort = Integer.parseInt(PortOfUserInput.get());
-                }
-                else
-                {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setHeaderText("已取消启动服务器");
-                    alert.setContentText("因为您已经取消了输入必须信息");
-                    alert.showAndWait();
-                    return;
-                }
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                SaveStackTrace.saveStackTrace(e);
-                Alert alert = new Alert(Alert.AlertType.NONE);
-                alert.initOwner(stage);
-                alert.setContentText(
-                        "由于出现错误，无法成功开启服务器，请更新程序后重新尝试。\n" +
-                        "如问题仍然出现，请联系开发人员。");
-                alert.getButtonTypes().add(ButtonType.OK);
+            PortInputDialog portInputDialog = new PortInputDialog();
+            portInputDialog.initOwner(stage);
+            portInputDialog.setTitle("JavaIM --- 启动服务器");
+            portInputDialog.setHeaderText("如果要启动服务器，请提供以下信息");
+            portInputDialog.setContentText("请输入服务器端口：");
+            Optional<String> PortOfUserInput = portInputDialog.showAndWait();
+            if (PortOfUserInput.isPresent())
+            {
+                ServerPort = Integer.parseInt(PortOfUserInput.get());
+            }
+            else
+            {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setHeaderText("已取消启动服务器");
+                alert.setContentText("因为您已经取消了输入必须信息");
                 alert.showAndWait();
                 return;
             }

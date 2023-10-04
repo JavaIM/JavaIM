@@ -31,6 +31,8 @@ public final class CodeDynamicConfig {
     private static final boolean ThisVersionIsExpVersion = true;
     //如果为测试性版本，则信息为：
     private static final String ExpVersionText = "此版本包含GUI测试";
+    //是否为Windows操作系统
+    public final static boolean isWindowsSystem = System.getProperty("os.name")!= null && System.getProperty("os.name").startsWith("Windows");
 
     //动态区，可动态通过配置文件修改
     //是否是GUI模式
@@ -58,8 +60,8 @@ public final class CodeDynamicConfig {
     public static int SocketTimeout = 120000;
 
     //仅客户端
-    //心跳包时间间隔，单位为：毫秒
-    public static int HeartbeatInterval = 30000;
+    //心跳包时间间隔，单位为：秒
+    public static int HeartbeatInterval = 30;
 
     public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }
 
@@ -89,5 +91,14 @@ public final class CodeDynamicConfig {
 
     public static boolean isGUIMode() {
         return GUIMode;
+    }
+
+
+    /**
+     * Static Config不得被实例化
+     */
+    private CodeDynamicConfig()
+    {
+
     }
 }
