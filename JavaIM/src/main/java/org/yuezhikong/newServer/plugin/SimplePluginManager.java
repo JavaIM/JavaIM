@@ -126,7 +126,7 @@ public class SimplePluginManager implements PluginManager{
         List<String> ReturnList = new ArrayList<>();
         for (CommandSavedData savedData : commandSavedData)
         {
-            ReturnList.add("/"+savedData.Command()+" "+savedData.Description());
+            ReturnList.add(savedData.Command()+" "+savedData.Description());
         }
         return ReturnList;
     }
@@ -135,19 +135,20 @@ public class SimplePluginManager implements PluginManager{
     public boolean RegisterCommand(String CommandName, String Description, CommandExecutor executor, Plugin plugin) {
         if (CommandName == null || executor == null || plugin == null)
             return false;
+        String command = "/"+CommandName;
         for (CommandSavedData savedData : commandSavedData)
         {
-            if (savedData.Command().equals(CommandName))
+            if (savedData.Command().equals(command))
                 return false;
         }
-        return commandSavedData.add(new CommandSavedData(CommandName,Description,executor,plugin));
+        return commandSavedData.add(new CommandSavedData(command,Description,executor,plugin));
     }
 
     @Override
     public boolean UnRegisterCommand(String CommandName) {
         if (CommandName == null)
             return false;
-        return commandSavedData.removeIf(commandSavedData -> commandSavedData.Command().equals(CommandName));
+        return commandSavedData.removeIf(commandSavedData -> commandSavedData.Command().equals("/"+CommandName));
     }
 
     @Override
