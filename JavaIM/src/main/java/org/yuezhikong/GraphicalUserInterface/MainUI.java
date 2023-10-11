@@ -8,7 +8,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
-import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.utils.Logger;
 
 import java.awt.*;
@@ -91,11 +90,12 @@ public class MainUI extends DefaultController implements Initializable {
                     Platform.runLater(stage::close);//JavaFX Application Thread关闭窗口，AWT Queue不能操作JavaFX窗口
                     GUIShutdownJavaIM();
                 });
+
                 DefaultController.SystemTrayMenu.add(ExitProgram);
             }
             //设定最小尺寸
-            stage.setMinHeight(stage.getHeight());
-            stage.setMinWidth(stage.getWidth());
+            stage.setMinHeight(437);
+            stage.setMinWidth(614);
             //设置图标等
             stage.getIcons().clear();
             stage.getIcons().add(new Image(ProgramIcon.toString()));

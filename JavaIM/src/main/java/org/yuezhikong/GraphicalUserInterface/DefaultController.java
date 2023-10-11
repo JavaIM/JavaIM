@@ -268,9 +268,6 @@ public class DefaultController {
                     getClass().getResource(ResourcePath)));
             Scene scene = new Scene(root);
             stage.setScene(scene);
-            //更新最小尺寸
-            stage.setMinHeight(stage.getHeight());
-            stage.setMinWidth(stage.getWidth());
             //更新标题
             stage.setTitle(TitleName);
         } catch (IOException e) {
