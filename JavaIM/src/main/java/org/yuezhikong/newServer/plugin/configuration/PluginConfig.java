@@ -127,7 +127,7 @@ public class PluginConfig {
     @Contract(pure = true,value = "null,null -> fail; null,_ -> fail; _,null -> fail")
     public static @Nullable Properties getConfiguration(Plugin plugin, String FileName)
     {
-        File ConfigurationFile = new File("./plugins/"+plugin.getPluginData().getStaticData().PluginName());
+        File ConfigurationFile = new File("./plugins/"+plugin.getPluginData().getStaticData().PluginName()+"/"+FileName);
         if (!ConfigurationFile.exists())
             return null;
         if (!ConfigurationFile.isFile())

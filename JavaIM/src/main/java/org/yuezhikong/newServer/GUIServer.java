@@ -77,11 +77,16 @@ public class GUIServer extends ServerMain{
                 //命令系统
                 while (true)
                 {
-                    String Command = "/"+scanner.nextLine();
-                    if ("/ShutdownConsoleCommandSystem".equals(Command))
+                    String Command = scanner.nextLine();
+                    if ("ShutdownConsoleCommandSystem".equals(Command))
                     {
-                        getLogger().info("已退出控制台命令系统");
+                        getLogger().info("已关闭控制台命令系统");
                         break;
+                    }
+                    else if (Command.startsWith("help"))
+                    {
+                        getLogger().info("JavaIM服务器控制台帮助");
+                        getLogger().info("/ShutdownConsoleCommandSystem 关闭控制台指令系统");
                     }
                     ServerCommandSend(Command);
                 }

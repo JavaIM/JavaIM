@@ -173,7 +173,7 @@ public class ChatRequest {
                         ServerMain.getServer().getLogger().info("已经完成内存释放，并且踢出了所有用户");
                     }
                     case "/help" -> {
-                        API.SendMessageToUser(chatMessageInfo.getUser(), "JavaIM Server的服务器帮助");
+                        API.SendMessageToUser(chatMessageInfo.getUser(), "JavaIM服务器帮助");
                         API.SendMessageToUser(chatMessageInfo.getUser(), "/about 查询此程序有关的信息");
                         API.SendMessageToUser(chatMessageInfo.getUser(), "/help 显示服务器帮助信息");
                         API.SendMessageToUser(chatMessageInfo.getUser(), "/tell <用户> <消息> 发送私聊");
