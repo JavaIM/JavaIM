@@ -33,6 +33,7 @@ import org.yuezhikong.newServer.api.SingleAPI;
 import org.yuezhikong.newServer.api.api;
 import org.yuezhikong.newServer.plugin.PluginManager;
 import org.yuezhikong.newServer.plugin.SimplePluginManager;
+import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -136,6 +137,17 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     @Override
     public List<user> getUsers() {
         return Users;
+    }
+
+    @Override
+    public boolean RegisterUser(user User) {
+        try {
+            getServerAPI().GetUserByUserName(User.getUserName());
+            return false;
+        } catch (AccountNotFoundException e) {
+            Users.add(User);
+            return true;
+        }
     }
 
     public static class RecvMessageThread extends Thread

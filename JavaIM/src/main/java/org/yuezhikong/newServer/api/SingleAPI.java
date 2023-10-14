@@ -24,6 +24,8 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.newServer.IServerMain;
 import org.yuezhikong.newServer.UserData.user;
+import org.yuezhikong.newServer.plugin.Plugin.Plugin;
+import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -122,6 +124,12 @@ public class SingleAPI implements api{
     public void SendJsonToClient(@NotNull user User,@NotNull String InputData)
     {
         String Data = InputData;
+        if (User instanceof PluginUser)
+        {
+            //如果是插件用户，则直接调用插件用户中的方法
+            ((PluginUser) User).WriteData(Data);
+            return;
+        }
         Data = User.getUserAES().encryptBase64(Data);
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(User.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
@@ -164,12 +172,14 @@ public class SingleAPI implements api{
                 continue;
             if (CheckLoginStatus && !User.isUserLogined())
                 continue;
-            if (User.getUserSocket() == null)
-                continue;
-            if (User.getPublicKey() == null)
-                continue;
-            if (User.getUserAES() == null)
-                continue;
+            if (!(User instanceof PluginUser)) {
+                if (User.getUserSocket() == null)
+                    continue;
+                if (User.getPublicKey() == null)
+                    continue;
+                if (User.getUserAES() == null)
+                    continue;
+            }
             if (User.isServer())
                 continue;
             ValidClientList.add(User);

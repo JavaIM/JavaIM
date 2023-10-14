@@ -9,6 +9,7 @@ import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.event.events.PreLoginEvent;
+import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -27,6 +28,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * 请注意！请在异步线程调用此class中的DoLogin方法！
+ */
 public final class UserAuthentication implements IUserAuthentication{
 
     //用户数据区
@@ -40,6 +44,11 @@ public final class UserAuthentication implements IUserAuthentication{
 
     private final ExecutorService IOThreadPool;
 
+    /**
+     * 实例化用户Auth实现
+     * @param User 用户
+     * @param IOThreadPool io线程池
+     */
     public UserAuthentication(@NotNull user User, @NotNull ExecutorService IOThreadPool)
     {
         this.User = User;
@@ -164,19 +173,23 @@ public final class UserAuthentication implements IUserAuthentication{
     {
         String json;
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(User.getUserSocket().getInputStream()));
-            do {
-                json = reader.readLine();
-                if (User.getUserSocket().isClosed()) {
-                    User.UserDisconnect();
-                    return false;
-                }
-                if ("Alive".equals(json)) {
-                    json = null;
-                }
-            } while (json == null);
-            json = ServerMain.getServer().unicodeToString(json);
-            json = User.getUserAES().decryptStr(json);
+            if (!(User instanceof PluginUser)) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(User.getUserSocket().getInputStream()));
+                do {
+                    json = reader.readLine();
+                    if (User.getUserSocket().isClosed()) {
+                        User.UserDisconnect();
+                        return false;
+                    }
+                    if ("Alive".equals(json)) {
+                        json = null;
+                    }
+                } while (json == null);
+                json = ServerMain.getServer().unicodeToString(json);
+                json = User.getUserAES().decryptStr(json);
+            }
+            else
+                json = ((PluginUser) User).waitData();//如果为插件用户，则等待插件返回
             LoginProtocol loginProtocol = new Gson().fromJson(json,LoginProtocol.class);
             if ("token".equals(loginProtocol.getLoginPacketHead().getType()))
             {

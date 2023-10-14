@@ -34,6 +34,14 @@ public interface IServerMain {
     List<user> getUsers();
 
     /**
+     * 将一个用户注册到Users
+     * @param User 用户
+     * @return 是否成功注册(失败一般是因为同用户名的用户已经登录
+     */
+    @SuppressWarnings("unused")
+    boolean RegisterUser(user User);
+
+    /**
      * 获取插件管理器
      * @return 插件管理器
      */
