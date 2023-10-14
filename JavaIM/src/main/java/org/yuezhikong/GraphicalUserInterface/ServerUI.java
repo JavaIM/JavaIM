@@ -129,11 +129,15 @@ public class ServerUI extends DefaultController implements Initializable {
     }
 
     public void SendCommand(ActionEvent actionEvent) {
+        if (ServerInstance == null)
+            return;
         ServerInstance.ServerCommandSend(CommandInput.getText());
         CommandInput.clear();
     }
 
     public void SendMessage(ActionEvent actionEvent) {
+        if (ServerInstance == null)
+            return;
         ServerInstance.ServerChatMessageSend(MessageInput.getText());
         MessageInput.clear();
     }

@@ -389,4 +389,14 @@ public class SimplePluginManager implements PluginManager{
         }
         return null;
     }
+
+    @Override
+    public int getPluginNumber() {
+        return pluginList.size();
+    }
+
+    @Override
+    public List<PluginData> getPluginDataList() {
+        return new ArrayList<>(pluginDataList);
+    }
 }

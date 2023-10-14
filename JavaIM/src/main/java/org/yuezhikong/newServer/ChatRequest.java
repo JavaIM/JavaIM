@@ -22,6 +22,7 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.api.api;
+import org.yuezhikong.newServer.plugin.Plugin.PluginData;
 import org.yuezhikong.newServer.plugin.event.events.UserChatEvent;
 import org.yuezhikong.newServer.plugin.event.events.UserCommandEvent;
 import org.yuezhikong.utils.CustomVar;
@@ -190,10 +191,22 @@ public class ChatRequest {
                         if (chatMessageInfo.getUser().isServer()) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "/kick-all-user-and-free-memory 踢出所有用户，并且尽可能释放内存");
                         }
-                        API.SendMessageToUser(chatMessageInfo.getUser(),"插件指令帮助");
+                        if (ServerMain.getServer().getPluginManager().getPluginNumber() > 0)
+                            API.SendMessageToUser(chatMessageInfo.getUser(),"插件指令帮助");
                         for (String msg : ServerMain.getServer().getPluginManager().getPluginCommandsDescription())
                         {
                             API.SendMessageToUser(chatMessageInfo.getUser(),msg);
+                        }
+                        if (Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))
+                        {
+                            if (ServerMain.getServer().getPluginManager().getPluginNumber() > 0)
+                                API.SendMessageToUser(chatMessageInfo.getUser(),"插件详细信息 ("+ServerMain.getServer().getPluginManager().getPluginNumber()+"个插件)");
+                            for (PluginData data : ServerMain.getServer().getPluginManager().getPluginDataList())
+                            {
+                                API.SendMessageToUser(chatMessageInfo.getUser(),"插件："+data.getStaticData().PluginName()+
+                                        "v"+data.getStaticData().PluginVersion()+
+                                        "by"+data.getStaticData().PluginAuthor()+"目前处于加载状态");
+                            }
                         }
                     }
                     case "/op" -> {
@@ -396,19 +409,50 @@ public class ChatRequest {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
-                        if (CommandInformation.argv().length == 1) {
-                            API.SendMessageToAllClient(CommandInformation.argv()[0]);
-                        } else {
+                        if (CommandInformation.argv().length == 0)
+                        {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "语法错误，正确的语法为：/Send-UnModify-Message <消息>");
+                            break;
                         }
+                        StringBuilder stringBuilder = new StringBuilder();
+                        for (String arg : CommandInformation.argv())
+                        {
+                            stringBuilder.append(arg).append(" ");
+                            if (stringBuilder.length() > 0)
+                            {
+                                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                            }
+                        }
+
+                        String arg = stringBuilder.toString();
+                        API.SendMessageToAllClient(arg);
+                        ServerMain.getServer().getLogger().ChatMsg(arg);
                     }
                     case "/tell" -> {
-                        if (CommandInformation.argv().length == 2) {
-                            ChatRequestInput input = new ChatRequestInput(chatMessageInfo.getUser(), CommandInformation.argv()[1]);
+                        if (CommandInformation.argv().length >= 2) {
+                            StringBuilder stringBuilder = new StringBuilder();
+                            for (String arg : CommandInformation.argv())
+                            {
+                                stringBuilder.append(arg).append(" ");
+                            }
+
+                            if (stringBuilder.length() > 0)
+                            {
+                                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                            }
+
+                            String ChatMessage = stringBuilder.toString();
+                            ChatRequestInput input = new ChatRequestInput(chatMessageInfo.getUser(), ChatMessage);
                             ChatFormat(input);
+
+                            if (CommandInformation.argv()[0].equals("Server"))
+                            {
+                                ServerMain.getServer().getLogger().ChatMsg("[私聊] " + input.getChatMessage());
+                                break;
+                            }
                             try {
                                 API.SendMessageToUser(API.GetUserByUserName(CommandInformation.argv()[0]), "[私聊] " + input.getChatMessage());
-                                API.SendMessageToUser(chatMessageInfo.getUser(), "你对" + CommandInformation.argv()[0] + "发送了私聊：" + CommandInformation.argv()[1]);
+                                API.SendMessageToUser(chatMessageInfo.getUser(), "你对" + CommandInformation.argv()[0] + "发送了私聊：" + ChatMessage);
                             } catch (AccountNotFoundException e) {
                                 API.SendMessageToUser(chatMessageInfo.getUser(), "此用户不存在");
                             }

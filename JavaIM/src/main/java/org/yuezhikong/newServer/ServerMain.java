@@ -136,7 +136,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
 
     @Override
     public List<user> getUsers() {
-        return Users;
+        return new ArrayList<>(Users);
     }
 
     @Override

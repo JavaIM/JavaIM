@@ -129,4 +129,16 @@ public interface PluginManager {
      * @return 插件信息
      */
     @Nullable Plugin getPluginByName(@NotNull String name);
+
+    /**
+     * 获取插件数量
+     * @return 已加载的插件数量
+     */
+    int getPluginNumber();
+
+    /**
+     * 获取插件数据集
+     * @return 插件数据集
+     */
+    List<PluginData> getPluginDataList();
 }
