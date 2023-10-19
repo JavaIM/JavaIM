@@ -22,11 +22,15 @@ import org.yuezhikong.newServer.plugin.PluginManager;
 import org.yuezhikong.utils.Logger;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * 此类被设计为仅供插件跨版本调用使用，请最好不要新增实现
  */
 public interface IServerMain {
+    @SuppressWarnings("unused")
+    ExecutorService getIOThreadPool();
+
     /**
      * 获取用户列表
      * @return 包含所有用户的列表
@@ -40,6 +44,10 @@ public interface IServerMain {
      */
     @SuppressWarnings("unused")
     boolean RegisterUser(user User);
+
+    ChatRequest getRequest();
+
+    user getConsoleUser();
 
     /**
      * 获取插件管理器

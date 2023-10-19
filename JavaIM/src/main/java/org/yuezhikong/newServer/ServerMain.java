@@ -33,7 +33,6 @@ import org.yuezhikong.newServer.api.SingleAPI;
 import org.yuezhikong.newServer.api.api;
 import org.yuezhikong.newServer.plugin.PluginManager;
 import org.yuezhikong.newServer.plugin.SimplePluginManager;
-import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -68,6 +67,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     private ExecutorService IOThreadPool;
 
     @SuppressWarnings("unused")
+    @Override
     public ExecutorService getIOThreadPool() {
         return IOThreadPool;
     }
@@ -638,10 +638,12 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     private static final ChatRequest request;
     private api API;
 
+    @Override
     public ChatRequest getRequest() {
         return request;
     }
 
+    @Override
     public user getConsoleUser() {
         return ConsoleUser;
     }
