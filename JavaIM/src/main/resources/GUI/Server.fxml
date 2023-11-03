@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Button?>
+<?import com.jfoenix.controls.JFXButton?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Menu?>
@@ -9,46 +9,81 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GraphicalUserInterface.ServerUI">
-   <MenuBar>
-      <Menu mnemonicParsing="false" text="程序">
-         <Menu mnemonicParsing="false" text="模式相关">
-            <MenuItem mnemonicParsing="false" onAction="#StartByServerMode" text="服务端模式" />
-            <MenuItem mnemonicParsing="false" onAction="#StartByClientMode" text="客户端模式" />
+   <MenuBar style="-fx-background-color: #202648; -fx-use-system-menu-bar: true;">
+      <menus>
+         <Menu mnemonicParsing="false" style="-fx-use-system-menu-bar: true; -fx-background-color: #808080;" text="程序">
+            <items>
+               <Menu mnemonicParsing="false" text="模式相关">
+                  <items>
+                     <MenuItem mnemonicParsing="false" onAction="#StartByServerMode" text="服务端模式" />
+                     <MenuItem mnemonicParsing="false" onAction="#StartByClientMode" text="客户端模式" />
+                  </items>
+               </Menu>
+               <MenuItem mnemonicParsing="false" onAction="#AboutJavaIM" text="关于" />
+               <MenuItem mnemonicParsing="false" onAction="#StopAllTaskAndExitProgram" text="退出" />
+            </items>
          </Menu>
-         <MenuItem mnemonicParsing="false" onAction="#AboutJavaIM" text="关于" />
-         <MenuItem mnemonicParsing="false" onAction="#StopAllTaskAndExitProgram" text="退出" />
-      </Menu>
-      <Menu mnemonicParsing="false" text="公钥管理器">
-         <MenuItem mnemonicParsing="false" onAction="#UseKeyManagement" text="使用公钥管理器" />
-      </Menu>
+         <Menu mnemonicParsing="false" style="-fx-use-system-menu-bar: true; -fx-background-color: #808080;" text="公钥管理器">
+            <items>
+               <MenuItem mnemonicParsing="false" onAction="#UseKeyManagement" text="使用公钥管理器" />
+            </items>
+         </Menu>
+      </menus>
    </MenuBar>
-   <AnchorPane prefHeight="426.0" prefWidth="600.0">
-      <Label layoutX="259.0" layoutY="14.0" text="服务端">
+   <AnchorPane prefHeight="426.0" prefWidth="600.0" style="-fx-background-image: url('https://blog.qileoffice.top/images/IMG_0886.JPG');" VBox.vgrow="ALWAYS">
+      <Label alignment="CENTER" contentDisplay="CENTER" layoutX="259.0" layoutY="14.0" text="服务端" textAlignment="CENTER" textFill="WHITE" AnchorPane.leftAnchor="259.0" AnchorPane.rightAnchor="259.4" AnchorPane.topAnchor="14.0">
          <font>
             <Font size="27.0" />
          </font>
       </Label>
-      <Label layoutX="146.0" layoutY="59.0" text="用于进行所有通讯中转与通讯处理的程序">
+      <Label alignment="CENTER" contentDisplay="CENTER" layoutX="148.0" layoutY="49.0" prefHeight="23.0" prefWidth="310.0" text="用于进行所有通讯中转与通讯处理的程序" textAlignment="CENTER" textFill="WHITE" AnchorPane.leftAnchor="148.0" AnchorPane.rightAnchor="142.0" AnchorPane.topAnchor="49.0">
          <font>
             <Font size="17.0" />
          </font>
       </Label>
-      <Label layoutX="41.0" layoutY="90.0" text="用户列表" />
-      <ListView fx:id="UserList" layoutX="24.0" layoutY="112.0" prefHeight="219.0" prefWidth="82.0" />
-      <TextArea fx:id="ChatMessage" editable="false" layoutX="159.0" layoutY="112.0" prefHeight="114.0" prefWidth="197.0" />
-      <Label layoutX="235.0" layoutY="90.0" text="聊天信息" />
-      <Button layoutX="474.0" layoutY="331.0" mnemonicParsing="false" onAction="#StartorCloseServer" text="启动或关闭服务器" />
-      <TextArea fx:id="SystemLog" editable="false" layoutX="388.0" layoutY="112.0" prefHeight="114.0" prefWidth="189.0" />
-      <Label layoutX="456.0" layoutY="90.0" text="系统日志" />
-      <TextField fx:id="MessageInput" layoutX="178.0" layoutY="263.0" />
-      <TextField fx:id="CommandInput" layoutX="399.0" layoutY="263.0" />
-      <Label layoutX="235.0" layoutY="243.0" text="发送聊天" />
-      <Label layoutX="459.0" layoutY="243.0" text="发送命令" />
-      <Button layoutX="239.0" layoutY="297.0" mnemonicParsing="false" onAction="#SendMessage" text="发送" />
-      <Button layoutX="454.0" layoutY="297.0" mnemonicParsing="false" onAction="#SendCommand" text="发送" />
+      <JFXButton layoutX="474.0" layoutY="336.0" mnemonicParsing="false" onAction="#StartorCloseServer" style="-fx-background-color: #99ccff;" text="启动或关闭服务器" AnchorPane.bottomAnchor="15.199999999999978" AnchorPane.rightAnchor="14.0" />
+      <GridPane alignment="CENTER" hgap="10.0" layoutX="27.0" layoutY="82.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="248.0" prefWidth="548.0" vgap="10.0" AnchorPane.bottomAnchor="44.0" AnchorPane.leftAnchor="27.0" AnchorPane.rightAnchor="25.0" AnchorPane.topAnchor="82.0">
+        <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="179.20001220703125" minWidth="10.0" prefWidth="99.19998779296876" />
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="297.60003662109375" minWidth="10.0" prefWidth="216.80001220703124" />
+            <ColumnConstraints hgrow="SOMETIMES" maxWidth="211.0" minWidth="10.0" prefWidth="206.20001220703125" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+         <children>
+            <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="124.0" prefWidth="16.0" GridPane.hgrow="ALWAYS" GridPane.vgrow="ALWAYS">
+               <children>
+                  <ListView fx:id="UserList" layoutY="29.0" prefHeight="221.0" prefWidth="103.0" AnchorPane.bottomAnchor="-2.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="29.0" />
+                  <Label alignment="BOTTOM_CENTER" contentDisplay="CENTER" layoutX="26.0" layoutY="14.0" prefHeight="15.0" prefWidth="48.0" text="用户列表" textAlignment="CENTER" textFill="WHITE" AnchorPane.leftAnchor="26.0" AnchorPane.rightAnchor="25.0" AnchorPane.topAnchor="14.0" />
+               </children>
+            </AnchorPane>
+            <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="226.0" prefWidth="218.0" GridPane.columnIndex="1" GridPane.vgrow="SOMETIMES">
+               <children>
+                  <TextArea fx:id="ChatMessage" editable="false" layoutX="2.0" layoutY="32.0" prefHeight="122.0" prefWidth="218.0" AnchorPane.bottomAnchor="92.0" AnchorPane.leftAnchor="2.0" AnchorPane.rightAnchor="-2.0" AnchorPane.topAnchor="32.0" />
+                  <Label alignment="BOTTOM_CENTER" layoutX="85.0" layoutY="14.0" text="聊天信息" textFill="WHITE" AnchorPane.leftAnchor="85.0" AnchorPane.rightAnchor="84.6" AnchorPane.topAnchor="14.0" />
+                  <TextField fx:id="MessageInput" layoutY="180.0" prefHeight="23.0" prefWidth="218.0" AnchorPane.bottomAnchor="43.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+                  <Label alignment="BOTTOM_CENTER" contentDisplay="CENTER" layoutX="85.0" layoutY="164.0" prefHeight="15.0" prefWidth="48.0" text="发送聊天" textAlignment="CENTER" textFill="WHITE" AnchorPane.bottomAnchor="67.20000000000002" AnchorPane.leftAnchor="85.0" AnchorPane.rightAnchor="85.0" />
+                  <JFXButton layoutX="89.0" layoutY="208.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#SendMessage" style="-fx-background-color: #99ccff;" text="发送" AnchorPane.bottomAnchor="15.200000000000017" AnchorPane.leftAnchor="89.0" AnchorPane.rightAnchor="89.19999999999999" />
+               </children>
+            </AnchorPane>
+            <AnchorPane prefHeight="218.0" prefWidth="173.0" GridPane.columnIndex="2" GridPane.vgrow="SOMETIMES">
+               <children>
+                  <TextArea fx:id="SystemLog" editable="false" layoutX="-1.0" layoutY="30.0" prefHeight="129.0" prefWidth="206.0" AnchorPane.bottomAnchor="87.0" AnchorPane.leftAnchor="-1.0" AnchorPane.rightAnchor="1.0" AnchorPane.topAnchor="30.0" />
+                  <Label layoutX="82.0" layoutY="14.0" prefHeight="15.0" prefWidth="48.0" text="系统日志" textFill="WHITE" AnchorPane.leftAnchor="82.0" AnchorPane.rightAnchor="76.0" AnchorPane.topAnchor="14.0" />
+                  <TextField fx:id="CommandInput" layoutX="4.0" layoutY="176.0" prefHeight="23.0" prefWidth="199.0" AnchorPane.bottomAnchor="47.0" AnchorPane.leftAnchor="4.0" AnchorPane.rightAnchor="3.0" />
+                  <Label layoutX="82.0" layoutY="160.0" prefHeight="15.0" prefWidth="48.0" text="发送命令" textFill="WHITE" AnchorPane.bottomAnchor="71.0" AnchorPane.leftAnchor="82.0" AnchorPane.rightAnchor="76.0" />
+                  <JFXButton layoutX="86.0" layoutY="208.0" mnemonicParsing="false" onAction="#SendCommand" prefHeight="23.0" prefWidth="39.0" style="-fx-background-color: #99ccff;" text="发送" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="86.0" AnchorPane.rightAnchor="81.0" />
+               </children>
+            </AnchorPane>
+         </children>
+      </GridPane>
    </AnchorPane>
 </VBox>

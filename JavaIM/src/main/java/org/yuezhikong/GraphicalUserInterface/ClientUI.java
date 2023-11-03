@@ -1,12 +1,23 @@
 package org.yuezhikong.GraphicalUserInterface;
 
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.shape.Polygon;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -33,6 +44,8 @@ public class ClientUI extends DefaultController implements Initializable {
     public TextField InputMessage;
     public TextArea ChatMessage;
     public TextArea SystemLog;
+    public FlowPane messages;
+    public ScrollPane scrollpane;
 
     private GUIClient Instance;
     public static ScheduledExecutorService TimerThreadPool;
@@ -45,9 +58,75 @@ public class ClientUI extends DefaultController implements Initializable {
         {
             SystemTrayIcon.displayMessage("JavaIM 客户端",msg, TrayIcon.MessageType.INFO);
         }
-
+        
+        //测试版GUI
+        TestDisplayGUI(msg);
         //显示在GUI
         Platform.runLater(() -> ChatMessage.appendText(msg+"\n"));
+    }
+
+    private void TestDisplayGUI(String msg) {
+        TestDisplayGUI(msg,"未知",false);
+    }
+
+    private boolean last = false;
+    private void TestDisplayGUI(String msg,String name,boolean isMine)
+    {
+        if (!Platform.isFxApplicationThread())
+        {
+            Platform.runLater(() -> TestDisplayGUI(msg,name,isMine));
+            return;
+        }
+        Label head = new Label(name);
+        head.setPrefSize(40,40);
+        head.setMinSize(40,40);
+        head.setMaxSize(40,40);
+        head.setCenterShape(true);
+        head.setStyle("-fx-background-color: rgb(179,231,244);");
+
+        Label messageBubble = new Label(msg);
+        messageBubble.setWrapText(true);
+        messageBubble.setMaxWidth(220);
+        messageBubble.setStyle("-fx-background-color: rgb(179,231,244); -fx-background-radius: 8px;");
+        messageBubble.setPadding(new Insets(6));
+        messageBubble.setFont(new Font(14));
+        HBox.setMargin(messageBubble,new Insets(8,0,0,0));
+
+        double[] points;
+        if (isMine)
+        {
+            points = new double[] {
+                    0.0, 0.0,
+                    0.0,10.0,
+                    10.0,5.0
+            };
+        }
+        else
+        {
+            points = new double[] {
+                    0.0, 5.0,
+                    10.0,0.0,
+                    10.0,10.0
+            };
+        }
+        Polygon triangle = new Polygon(points);
+        triangle.setFill(Color.rgb(179,231,244));
+        HBox messageBox = new HBox();
+        messageBox.setPrefWidth(366);
+        messageBox.setPadding(new Insets(10,5,10,5));
+        if (isMine)
+        {
+            HBox.setMargin(triangle,new Insets(15,10,0,0));
+            messageBox.getChildren().addAll(messageBubble,triangle,head);
+            messageBox.setAlignment(Pos.TOP_RIGHT);
+        }
+        else
+        {
+            HBox.setMargin(triangle,new Insets(15,0,0,10));
+            messageBox.getChildren().addAll(head,triangle,messageBubble);
+        }
+        last = scrollpane.getVvalue() == 1.0;
+        messages.getChildren().add(messageBox);
     }
 
     @Override
@@ -56,6 +135,15 @@ public class ClientUI extends DefaultController implements Initializable {
     }
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        scrollpane.vvalueProperty().addListener((observableValue, number, t1) -> {
+            if (last)
+            {
+                scrollpane.setVvalue(1.0);
+                last = false;
+            }
+        });
+        TestDisplayGUI("测试1——他人","测试",false);
+        TestDisplayGUI("测试2——自己","测试",true);
         TransferProtocolConfig.setSelected(CodeDynamicConfig.AllowedTransferProtocol);
         ChatMessage.textProperty().addListener(
                 (observableValue, oldValue, newValue) -> ChatMessage.setScrollTop(Double.MAX_VALUE)
