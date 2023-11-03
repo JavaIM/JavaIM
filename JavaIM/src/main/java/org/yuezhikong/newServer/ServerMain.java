@@ -65,6 +65,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     private int clientIDAll = 0;
     private ThreadGroup IOGroup;
     private ExecutorService IOThreadPool;
+    private ExecutorService RecvMessageThreadPool;
 
     @SuppressWarnings("unused")
     @Override
@@ -150,14 +151,11 @@ public class ServerMain extends GeneralMethod implements IServerMain {
         }
     }
 
-    public static class RecvMessageThread extends Thread
+    public static class RecvMessageThread
     {
         private final user CurrentUser;
-        @Contract("_,_,null -> fail")
-        public RecvMessageThread(int ClientID,ThreadGroup group,String name)
+        public RecvMessageThread(int ClientID)
         {
-            super(group,name);
-            this.setDaemon(true);
             CurrentUser = getServer().Users.get(ClientID);
         }
         public void LoginSystem(@NotNull user User) throws IOException
@@ -181,9 +179,13 @@ public class ServerMain extends GeneralMethod implements IServerMain {
             else
                 User.UserDisconnect();
         }
-        @Override
-        public void run() {
-            this.setUncaughtExceptionHandler((Thread t,Throwable throwable) -> {
+        public void run()
+        {
+            try
+            {
+                run0();
+            } catch (Throwable throwable)
+            {
                 if (CodeDynamicConfig.GetDebugMode())
                 {
                     SaveStackTrace.saveStackTrace(throwable);
@@ -191,7 +193,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 getServer().getLogger().warning("处理用户："+CurrentUser.getUserName()+"的线程出现错误");
                 getServer().getLogger().warning("正在强行踢出此用户");
                 CurrentUser.UserDisconnect();
-            });
+            }
+        }
+        private void run0() {
             CurrentUser.setRecvMessageThread(this);
             Logger logger = getServer().logger;
             api API = getServer().API;
@@ -517,11 +521,10 @@ public class ServerMain extends GeneralMethod implements IServerMain {
         return API;
     }
 
-    private final AtomicInteger recvMessagethreadNumber = new AtomicInteger(1);
     protected void StartRecvMessageThread(int ClientID)
     {
-        RecvMessageThread recvMessageThread = new RecvMessageThread(ClientID,recvMessageThreadGroup,"RecvMessageThread #"+recvMessagethreadNumber.getAndIncrement());
-        recvMessageThread.start();
+        RecvMessageThread recvMessageThread = new RecvMessageThread(ClientID);
+        RecvMessageThreadPool.execute(recvMessageThread::run);
     }
     @Contract(pure = true)
     public static ServerMain getServer() {
@@ -566,6 +569,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
         if (!IOThreadPool.isShutdown()) {
             IOThreadPool.shutdownNow();
         }
+        if (!RecvMessageThreadPool.isShutdown()) {
+            RecvMessageThreadPool.shutdownNow();
+        }
     }
     //服务端main
     public void start(int bindPort)
@@ -584,6 +590,13 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                     public Thread newThread(@NotNull Runnable r) {
                         return new Thread(new ThreadGroup(IOGroup, "UserRequestDispose ThreadGroup"),
                                 r, "IO Thread #" + threadNumber.getAndIncrement());
+                    }
+                });
+                RecvMessageThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+                    private final AtomicInteger threadNumber = new AtomicInteger(1);
+                    @Override
+                    public Thread newThread(@NotNull Runnable r) {
+                        return new Thread(recvMessageThreadGroup,r,"RecvMessageThread #" + threadNumber.getAndIncrement());
                     }
                 });
                 new Thread(ServerGroup, "waitInterruptThread") {
