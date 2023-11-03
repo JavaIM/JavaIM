@@ -1529,6 +1529,10 @@ public class ClientMain extends GeneralMethod {
                         if (!SpecialMode) {
                             System.exit(0);
                         }
+                        else
+                        {
+                            getClientThreadGroup().interrupt();
+                        }
                     }
                 }
                 if (this.isInterrupted())
@@ -1537,6 +1541,10 @@ public class ClientMain extends GeneralMethod {
                 }
                 if (!SpecialMode) {
                     System.exit(0);
+                }
+                else
+                {
+                    getClientThreadGroup().interrupt();
                 }
             }
         }.start();

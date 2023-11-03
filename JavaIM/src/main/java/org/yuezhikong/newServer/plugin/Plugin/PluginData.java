@@ -16,11 +16,12 @@
  */
 package org.yuezhikong.newServer.plugin.Plugin;
 
+import org.yuezhikong.newServer.plugin.PluginClassLoader;
 import org.yuezhikong.newServer.plugin.event.Listener;
 
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 插件信息
@@ -28,9 +29,9 @@ import java.util.List;
 @SuppressWarnings("unused")
 public class PluginData {
 
-    public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor, URLClassLoader PluginClassLoader)
+    public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor, PluginClassLoader PluginClassLoader)
     {}
-    private final List<Listener> EventListener = new ArrayList<>();
+    private final List<Listener> EventListener = new CopyOnWriteArrayList<>();
     private final staticData data;
 
     /**

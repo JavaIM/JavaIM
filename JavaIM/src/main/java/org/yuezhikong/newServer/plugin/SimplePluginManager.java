@@ -18,7 +18,6 @@ package org.yuezhikong.newServer.plugin;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.newServer.ChatRequest;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.Plugin.Plugin;
@@ -35,18 +34,18 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SimplePluginManager implements PluginManager{
-    private final List<Plugin> pluginList = new ArrayList<>();
-    private final List<PluginData> pluginDataList = new ArrayList<>();
+    private final List<Plugin> pluginList = new CopyOnWriteArrayList<>();
+    private final List<PluginData> pluginDataList = new CopyOnWriteArrayList<>();
     @Override
     public void LoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
         //启动classloader
-        URLClassLoader classLoader = new URLClassLoader(new URL[]{
+        PluginClassLoader classLoader = new PluginClassLoader(new URL[]{
                 PluginFile.toURI().toURL()
-        }, ClassLoader.getSystemClassLoader());
+        }, ClassLoader.getSystemClassLoader(),this);
         try {
             //读取插件清单
             Properties properties = new Properties();
@@ -106,7 +105,7 @@ public class SimplePluginManager implements PluginManager{
     }
 
     private record CommandSavedData(String Command,String Description,CommandExecutor executor,Plugin plugin) {}
-    private final List<CommandSavedData> commandSavedData = new ArrayList<>();
+    private final List<CommandSavedData> commandSavedData = new CopyOnWriteArrayList<>();
 
     @Override
     public boolean RequestPluginCommand(CustomVar.Command CommandInformation, user User) {
@@ -195,7 +194,7 @@ public class SimplePluginManager implements PluginManager{
 
     @Override
     public void UnLoadAllPlugin() throws IOException {
-        record Data(String Name,String Version,String Author,URLClassLoader classLoader){}
+        record Data(String Name,String Version,String Author,PluginClassLoader classLoader){}
         List<Data> DataList = new ArrayList<>();
         for (PluginData pluginData : pluginDataList)
         {

@@ -211,10 +211,25 @@ public class ClientUI extends DefaultController implements Initializable {
     }
 
     public void onClientShutdown() {
-        Instance = null;
-        if (ClientMain.getClient() != null)
+        try {
+            if (ClientMain.getClient() != null) {
+                StopClient();
+            }
+        } catch (Throwable throwable)
         {
-            StopClient();
+            SaveStackTrace.saveStackTrace(throwable);
+        }
+        finally {
+            if (Instance.getTimerThreadPool() != null)
+                Instance.getTimerThreadPool().shutdownNow();
+            if (Instance.getClientThreadGroup() != null)
+                Instance.getClientThreadGroup().interrupt();
+            if (Instance.getSocket() != null && !Instance.getSocket().isClosed()) {
+                try {
+                    Instance.getSocket().close();
+                } catch (IOException ignored) {}
+            }
+            Instance = null;
         }
     }
 }

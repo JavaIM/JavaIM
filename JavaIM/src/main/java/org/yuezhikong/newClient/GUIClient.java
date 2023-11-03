@@ -272,6 +272,21 @@ public class GUIClient extends ClientMain {
     }
 
     @Override
+    public synchronized ScheduledExecutorService getTimerThreadPool() {
+        return super.getTimerThreadPool();
+    }
+
+    @Override
+    public ThreadGroup getClientThreadGroup() {
+        return super.getClientThreadGroup();
+    }
+
+    @Override
+    public Socket getSocket() {
+        return super.getSocket();
+    }
+
+    @Override
     public void start(String ServerAddress, int ServerPort) {
         ThreadGroup ClientGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ClientThreadGroup");
         new Thread(ClientGroup,"waitInterrupt Thread")
