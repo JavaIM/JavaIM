@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.LoginDialog;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.PortInputDialog;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newClient.ClientMain;
 import org.yuezhikong.newClient.GUIClient;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -130,7 +131,7 @@ public class ClientUI extends DefaultController implements Initializable {
             textInputDialog.setContentText("请输入服务器IP地址：");
             ((Button) (textInputDialog.getDialogPane().lookupButton(ButtonType.OK))).setOnAction((actionEvent1) -> textInputDialog.getEditor().clear());
             Optional<String> ServerAddressOfUserInput = textInputDialog.showAndWait();
-            if (ServerAddressOfUserInput.isEmpty() || ServerAddressOfUserInput.get().equals(""))
+            if (ServerAddressOfUserInput.isEmpty() || ServerAddressOfUserInput.get().isEmpty())
             {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setHeaderText("已取消启动客户端");
@@ -146,7 +147,7 @@ public class ClientUI extends DefaultController implements Initializable {
             textInputDialog.setHeaderText("如果要启动客户端，请提供以下信息");
             textInputDialog.setContentText("请输入服务器端口：");
             Optional<String> ServerPortOfUserInput = textInputDialog.showAndWait();
-            if (ServerPortOfUserInput.isEmpty() || ServerPortOfUserInput.get().equals(""))
+            if (ServerPortOfUserInput.isEmpty() || ServerPortOfUserInput.get().isEmpty())
             {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("JavaIM --- 提示");
@@ -224,10 +225,11 @@ public class ClientUI extends DefaultController implements Initializable {
                 Instance.getTimerThreadPool().shutdownNow();
             if (Instance.getClientThreadGroup() != null)
                 Instance.getClientThreadGroup().interrupt();
-            if (Instance.getSocket() != null && !Instance.getSocket().isClosed()) {
-                try {
-                    Instance.getSocket().close();
-                } catch (IOException ignored) {}
+            try {
+                if (Instance.getClientNetworkData() != null)
+                    NetworkManager.ShutdownTCPConnection(Instance.getClientNetworkData());
+            } catch (IOException e) {
+                SaveStackTrace.saveStackTrace(e);
             }
             Instance = null;
         }

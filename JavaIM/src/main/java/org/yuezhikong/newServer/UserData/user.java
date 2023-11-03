@@ -18,6 +18,7 @@ package org.yuezhikong.newServer.UserData;
 
 import cn.hutool.crypto.symmetric.AES;
 import org.jetbrains.annotations.Nullable;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
 
@@ -38,10 +39,10 @@ public interface user {
     ServerMain.RecvMessageThread getRecvMessageThread();
 
     /**
-     * 返回用户的Socket
-     * @return 用户Socket
+     * 返回用户的网络数据
+     * @return 用户网络数据
      */
-    Socket getUserSocket();
+    NetworkManager.NetworkData getUserNetworkData();
 
     /**
      * 设置用户公钥

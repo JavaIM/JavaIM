@@ -23,6 +23,7 @@ import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Notice;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -260,7 +261,7 @@ public class Main {
                     }
                 }.start2().join();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                SaveStackTrace.saveStackTrace(e);
             }
             System.exit(0);
         }

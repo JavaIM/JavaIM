@@ -121,12 +121,11 @@ public class GUIServer extends ServerMain{
         }
         getLogger().OutDate();
         started = false;
-        if (socket != null && !socket.isClosed())
+        if (ServerTCPNetworkData != null)
         {
             try {
-                socket.close();
+                ServerTCPNetworkData.close();
             } catch (IOException e) {
-                e.printStackTrace();
                 SaveStackTrace.saveStackTrace(e);
             }
         }

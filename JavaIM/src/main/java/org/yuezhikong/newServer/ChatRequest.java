@@ -418,7 +418,7 @@ public class ChatRequest {
                         for (String arg : CommandInformation.argv())
                         {
                             stringBuilder.append(arg).append(" ");
-                            if (stringBuilder.length() > 0)
+                            if (!stringBuilder.isEmpty())
                             {
                                 stringBuilder.deleteCharAt(stringBuilder.length() - 1);
                             }
@@ -436,7 +436,7 @@ public class ChatRequest {
                                 stringBuilder.append(arg).append(" ");
                             }
 
-                            if (stringBuilder.length() > 0)
+                            if (!stringBuilder.isEmpty())
                             {
                                 stringBuilder.deleteCharAt(stringBuilder.length() - 1);
                             }
@@ -464,7 +464,6 @@ public class ChatRequest {
                 }
             } catch (Throwable throwable)
             {
-                throwable.printStackTrace();
                 SaveStackTrace.saveStackTrace(throwable);
                 API.SendMessageToUser(chatMessageInfo.getUser(),"在执行此命令的过程中出现了意外的错误");
             }

@@ -23,11 +23,11 @@ import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.CrashReport;
 import org.yuezhikong.GeneralMethod;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
@@ -38,10 +38,10 @@ import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
 import java.io.*;
-import java.net.Socket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -64,7 +64,7 @@ public class ClientMain extends GeneralMethod {
     protected boolean SpecialMode = false;
     private ThreadGroup ClientThreadGroup;
     protected Thread recvMessageThread;
-    private Socket client;
+    private NetworkManager.NetworkData clientNetworkData;
     private AES aes;
     private Logger logger;
     protected String QuitReason = "";
@@ -81,9 +81,9 @@ public class ClientMain extends GeneralMethod {
         return ClientThreadGroup;
     }
 
-    protected Socket getSocket()
+    protected NetworkManager.NetworkData getClientNetworkData()
     {
-        return client;
+        return clientNetworkData;
     }
 
     protected AES getAes() {
@@ -94,7 +94,7 @@ public class ClientMain extends GeneralMethod {
         return Instance;
     }
 
-    private void RequestRSA(@NotNull String key, @NotNull Socket client) throws IOException {
+    private void RequestRSA(@NotNull String key) throws IOException {
 
         RSA_KeyAutogenerate("./ClientRSAKey/ClientPublicKey.txt","./ClientRSAKey/ClientPrivateKey.txt",logger);
         keyData = new CustomVar.KeyData();
@@ -123,30 +123,22 @@ public class ClientMain extends GeneralMethod {
         body.setMessage(EncryptionKey);
         body.setFileLong(0);
         protocol.setMessageBody(body);
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream(),StandardCharsets.UTF_8));
-        writer.write(gson.toJson(protocol));
-        writer.newLine();
-        writer.flush();
+
+        NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
         //发送完毕，开始测试
         //测试RSA
-        String json;
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.UTF_8));
-        do {
-            json = reader.readLine();
-            if (client.isClosed())
-            {
-                return;
-            }
-        } while (json == null);
+        String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
         if ("Decryption Error".equals(json))
         {
             logger.error("你的服务端公钥疑似不正确");
             logger.error("服务端返回：Decryption Error");
             logger.error("服务端无法解密");
             logger.error("程序即将退出");
-            System.exit(0);
+            if (SpecialMode)
+                getClientThreadGroup().interrupt();
+            else
+                System.exit(0);
         }
-        json = unicodeToString(json);
         protocol = getClient().protocolRequest(json);
         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
         {
@@ -162,9 +154,7 @@ public class ClientMain extends GeneralMethod {
         body = new NormalProtocol.MessageBody();
         body.setMessage(RSA.encrypt("你好服务端",key));
         protocol.setMessageBody(body);
-        writer.write(gson.toJson(protocol));
-        writer.newLine();
-        writer.flush();
+        NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
     }
     @Contract(pure = true)
     protected String[] RequestUserNameAndPassword()
@@ -183,7 +173,7 @@ public class ClientMain extends GeneralMethod {
             throw new RuntimeException("The RequestUserNameAndPassword Method Returned Data Is Not Support");
         String UserName = UserData[0];//UserData[0]是明文用户名
         String Password = SecureUtil.sha256(UserData[1]);//UserData[1]是明文密码
-        return tryLogin(client,aes, UserName,Password);//尝试登录
+        return tryLogin(UserName,Password);//尝试登录
     }
 
     /***
@@ -217,7 +207,7 @@ public class ClientMain extends GeneralMethod {
         } catch (NumberFormatException | InterruptedException ignored) {}
         return false;
     }
-    private boolean LegacyLoginAndUpdateEncryption(@NotNull Socket client, @NotNull AES aes) throws IOException {
+    private boolean LegacyLoginAndUpdateEncryption() throws IOException {
         if (isLegacyLoginORNormalLogin())
         {
             String[] UserData = RequestUserNameAndPassword();
@@ -225,7 +215,7 @@ public class ClientMain extends GeneralMethod {
                 throw new RuntimeException("The RequestUserNameAndPassword Method Returned Data Is Not Support");
             String UserName = UserData[0];//UserData[0]是明文用户名
             String Password = UserData[1];//UserData[1]是明文密码
-            if (tryLogin(client,aes, UserName,Password))
+            if (tryLogin(UserName,Password))
             {
                 NormalProtocol protocol = new NormalProtocol();
                 NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
@@ -237,12 +227,9 @@ public class ClientMain extends GeneralMethod {
                 protocol.setMessageBody(body);
                 String json = new Gson().toJson(protocol);
                 json = aes.encryptBase64(json);
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                writer.write(json);
-                writer.newLine();
-                writer.flush();
-                StartRecvMessageThread(client,aes);
-                SendMessage(client,aes);
+                NetworkManager.WriteDataToRemote(clientNetworkData,json);
+                StartRecvMessageThread();
+                SendMessage();
             }
             else
             {
@@ -252,34 +239,12 @@ public class ClientMain extends GeneralMethod {
         }
         return false;
     }
-    private boolean tryLogin(@NotNull Socket client, @NotNull AES aes, @NotNull String UserName, @NotNull String Password) throws IOException {
-        Gson gson = new Gson();
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream(),StandardCharsets.UTF_8));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.UTF_8));
-        LoginProtocol loginProtocol = new LoginProtocol();
-        LoginProtocol.LoginPacketHeadBean loginPacketHead = new LoginProtocol.LoginPacketHeadBean();
-        loginPacketHead.setType("passwd");
-        loginProtocol.setLoginPacketHead(loginPacketHead);
-        LoginProtocol.LoginPacketBodyBean loginPacketBody = new LoginProtocol.LoginPacketBodyBean();
-        LoginProtocol.LoginPacketBodyBean.NormalLoginBean normalLoginBean = new LoginProtocol.LoginPacketBodyBean.NormalLoginBean();
-        normalLoginBean.setUserName(UserName);
-        normalLoginBean.setPasswd(Password);
-        loginPacketBody.setNormalLogin(normalLoginBean);
-        loginProtocol.setLoginPacketBody(loginPacketBody);
-        String json = gson.toJson(loginProtocol);
+    private boolean tryLogin(@NotNull String UserName, @NotNull String Password) throws IOException {
+        String json = getPasswordSendJson(UserName, Password);
         json = aes.encryptBase64(json);
-        writer.write(json);
-        writer.newLine();
-        writer.flush();
+        NetworkManager.WriteDataToRemote(clientNetworkData,json);
 
-        do {
-            json = reader.readLine();
-            if (client.isClosed())
-            {
-                return false;
-            }
-        } while (json == null);
-        json = unicodeToString(json);
+        json = NetworkManager.RecvDataFromRemote(clientNetworkData);
         json = aes.decryptStr(json);
         NormalProtocol protocol = getClient().protocolRequest(json);
         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion()
@@ -296,6 +261,22 @@ public class ClientMain extends GeneralMethod {
         FileUtils.writeStringToFile(new File("./token.txt"),protocol.getMessageBody().getMessage(),StandardCharsets.UTF_8);
         return true;
     }
+
+    private static String getPasswordSendJson(@NotNull String UserName, @NotNull String Password) {
+        Gson gson = new Gson();
+        LoginProtocol loginProtocol = new LoginProtocol();
+        LoginProtocol.LoginPacketHeadBean loginPacketHead = new LoginProtocol.LoginPacketHeadBean();
+        loginPacketHead.setType("passwd");
+        loginProtocol.setLoginPacketHead(loginPacketHead);
+        LoginProtocol.LoginPacketBodyBean loginPacketBody = new LoginProtocol.LoginPacketBodyBean();
+        LoginProtocol.LoginPacketBodyBean.NormalLoginBean normalLoginBean = new LoginProtocol.LoginPacketBodyBean.NormalLoginBean();
+        normalLoginBean.setUserName(UserName);
+        normalLoginBean.setPasswd(Password);
+        loginPacketBody.setNormalLogin(normalLoginBean);
+        loginProtocol.setLoginPacketBody(loginPacketBody);
+        return gson.toJson(loginProtocol);
+    }
+
     protected Logger LoggerInit()
     {
         return new Logger(null);
@@ -309,39 +290,28 @@ public class ClientMain extends GeneralMethod {
         logger = LoggerInit();
         Timer timer = new Timer(true);
         logger.info("正在连接主机：" + ServerAddress + " ，端口号：" + ServerPort);
-        try (Socket client = new Socket(ServerAddress, ServerPort)) {
+        try (NetworkManager.NetworkData clientNetworkData =
+                     NetworkManager.ConnectToTCPServer(ServerAddress, ServerPort)) {
             ClientThreadGroup = Thread.currentThread().getThreadGroup();
-            this.client = client;
+            this.clientNetworkData = clientNetworkData;
             Instance = this;
             Address = ServerAddress;
-            logger.info("远程主机地址：" + client.getRemoteSocketAddress());
-            //开始握手
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream(),StandardCharsets.UTF_8));
-            BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.UTF_8));
+            logger.info("远程主机地址：" + clientNetworkData.getRemoteSocketAddress());
             //测试明文通讯
-            logger.info("服务端响应："+unicodeToString(reader.readLine()));
-            writer.write("Hello Server");
-            writer.newLine();
-            writer.flush();
-            logger.info("服务端响应："+unicodeToString(reader.readLine()));
-            writer.write("你好，服务端");
-            writer.newLine();
-            writer.flush();
+            logger.info("服务端响应："+NetworkManager.RecvDataFromRemote(clientNetworkData));
+            NetworkManager.WriteDataToRemote(clientNetworkData,"Hello Server");
+            logger.info("服务端响应："+NetworkManager.RecvDataFromRemote(clientNetworkData));
+            NetworkManager.WriteDataToRemote(clientNetworkData,"你好，服务端");
+            //初始化心跳包
             getTimerThreadPool().scheduleWithFixedDelay(() -> {
                 try {
-                    if (client.isClosed())
-                    {
-                        timer.cancel();
-                    }
-                    writer.write("Alive");
-                    writer.newLine();
-                    writer.flush();
+                    NetworkManager.WriteDataToRemote(clientNetworkData,"Alive");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    SaveStackTrace.saveStackTrace(e);
                 }
             },0,CodeDynamicConfig.HeartbeatInterval,TimeUnit.SECONDS);
             //测试通讯协议
-            NormalProtocol protocol = protocolRequest(unicodeToString(reader.readLine()));
+            NormalProtocol protocol = protocolRequest(NetworkManager.RecvDataFromRemote(clientNetworkData));
             if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
             {
                 return;
@@ -355,11 +325,8 @@ public class ClientMain extends GeneralMethod {
             protocol.setMessageHead(head);
             NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
             body.setMessage("你好服务端");
-            body.setFileLong(0);
             protocol.setMessageBody(body);
-            writer.write(gson.toJson(protocol));
-            writer.newLine();
-            writer.flush();
+            NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
             //加密处理
             if (!getServerPublicKeyFile().exists())
             {
@@ -368,22 +335,14 @@ public class ClientMain extends GeneralMethod {
             }
 
             final String ServerPublicKey = FileUtils.readFileToString(getServerPublicKeyFile(), StandardCharsets.UTF_8);
-            if (ServerPublicKey.equals(""))
+            if (ServerPublicKey.isEmpty())
             {
                 QuitReason = "服务端公钥未被配置";
                 return;
             }
-            RequestRSA(ServerPublicKey,client);
+            RequestRSA(ServerPublicKey);
             //AES制造开始
-            String json;
-            do {
-                json = reader.readLine();
-                if (client.isClosed())
-                {
-                    return;
-                }
-            } while (json == null);
-            json = unicodeToString(json);
+            String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
             protocol = getClient().protocolRequest(json);
             if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
             {
@@ -399,21 +358,12 @@ public class ClientMain extends GeneralMethod {
             body = new NormalProtocol.MessageBody();
             body.setMessage(RSA.encrypt(RandomForClient,ServerPublicKey));
             protocol.setMessageBody(body);
-            writer.write(gson.toJson(protocol));
-            writer.newLine();
-            writer.flush();
+            NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
             SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(getClient().GenerateKey(RandomForServer+RandomForClient)));
             final AES aes = cn.hutool.crypto.SecureUtil.aes(key.getEncoded());
-            this.aes =aes;
+            this.aes = aes;
             //开始AES测试
-            do {
-                json = reader.readLine();
-                if (client.isClosed())
-                {
-                    return;
-                }
-            } while (json == null);
-            json = unicodeToString(json);
+            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
             protocol = getClient().protocolRequest(json);
             if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
             {
@@ -427,20 +377,10 @@ public class ClientMain extends GeneralMethod {
             protocol.setMessageHead(head);
             body = new NormalProtocol.MessageBody();
             body.setMessage(aes.encryptBase64("你好服务端"));
-            body.setFileLong(0);
             protocol.setMessageBody(body);
-            writer.write(gson.toJson(protocol));
-            writer.newLine();
-            writer.flush();
+            NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
             //开始升级协议
-            do {
-                json = reader.readLine();
-                if (client.isClosed())
-                {
-                    return;
-                }
-            } while (json == null);
-            json = unicodeToString(json);
+            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
             protocol = getClient().protocolRequest(json);
             if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("UpdateProtocol".equals(protocol.getMessageHead().getType())))
             {
@@ -457,20 +397,10 @@ public class ClientMain extends GeneralMethod {
             protocol.setMessageHead(head);
             body = new NormalProtocol.MessageBody();
             body.setMessage(aes.encryptBase64("ok"));
-            body.setFileLong(0);
             protocol.setMessageBody(body);
-            writer.write(gson.toJson(protocol));
-            writer.newLine();
-            writer.flush();
+            NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
             //额外的配置项目
-            do {
-                json = reader.readLine();
-                if (client.isClosed())
-                {
-                    return;
-                }
-            } while (json == null);
-            json = getClient().unicodeToString(json);
+            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
             json = aes.decryptStr(json);
             protocol = getClient().protocolRequest(json);
             if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("options".equals(protocol.getMessageHead().getType())))
@@ -494,11 +424,8 @@ public class ClientMain extends GeneralMethod {
             {
                 body.setMessage("Disabled");
             }
-            body.setFileLong(0);
             protocol.setMessageBody(body);
-            writer.write(aes.encryptBase64(gson.toJson(protocol)));
-            writer.newLine();
-            writer.flush();
+            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(protocol)));
             //握手完成，接下来是登录逻辑
             if (new File("./token.txt").exists() && new File("./token.txt").isFile() && new File("./token.txt").canRead())
             {
@@ -513,13 +440,11 @@ public class ClientMain extends GeneralMethod {
                 loginProtocol.setLoginPacketBody(loginPacketBody);
                 json = gson.toJson(loginProtocol);
                 json = aes.encryptBase64(json);
-                writer.write(json);
-                writer.newLine();
-                writer.flush();
+                NetworkManager.WriteDataToRemote(clientNetworkData,json);
                 try {
-                    if (TokenLoginSystem(reader,writer))
+                    if (TokenLoginSystem())
                     {
-                        SendMessage(client,aes);
+                        SendMessage();
                     }
                 } catch (QuitException e) {
                     if (QuitReason == null || QuitReason.isEmpty())
@@ -531,7 +456,7 @@ public class ClientMain extends GeneralMethod {
             }
             else
             {
-                if (LegacyLoginAndUpdateEncryption(client,aes))
+                if (LegacyLoginAndUpdateEncryption())
                 {
                     return;
                 }
@@ -549,25 +474,24 @@ public class ClientMain extends GeneralMethod {
                 }
                 else
                 {
-                    StartRecvMessageThread(client,aes);
+                    StartRecvMessageThread();
                 }
             }
-            SendMessage(client,aes);
+            SendMessage();
         } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
         }
         finally {
-            if (getSocket() != null  && !getSocket().isClosed()) {
-                try {
-                    getSocket().close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            try {
+                if (getClientNetworkData() != null)
+                    NetworkManager.ShutdownTCPConnection(getClientNetworkData());
+            } catch (IOException e) {
+                SaveStackTrace.saveStackTrace(e);
             }
             ClientStatus = true;
             ClientThreadGroup.interrupt();
             Instance = null;
-            if (QuitReason.equals(""))
+            if (QuitReason.isEmpty())
             {
                 QuitReason = "客户端没有设置退出原因";
             }
@@ -608,17 +532,9 @@ public class ClientMain extends GeneralMethod {
             super(Message);
         }
     }
-    private boolean TokenLoginSystem(BufferedReader reader,BufferedWriter writer) throws IOException, QuitException {
+    private boolean TokenLoginSystem() throws IOException, QuitException {
         NormalProtocol protocol;
-        String json;
-        do {
-            json = reader.readLine();
-            if (client.isClosed())
-            {
-                return false;
-            }
-        } while (json == null);
-        json = unicodeToString(json);
+        String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
         json = aes.decryptStr(json);
         protocol = getClient().protocolRequest(json);
         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
@@ -629,12 +545,12 @@ public class ClientMain extends GeneralMethod {
         {
             logger.info("自动登录失败，原因："+protocol.getMessageBody().getMessage());
             logger.info("正在重新请求登录...");
-            TokenLoginSystem(reader,writer);
+            TokenLoginSystem();
             return false;
         }
         if ("Success".equals(protocol.getMessageBody().getMessage()))
         {
-            StartRecvMessageThread(client,aes);
+            StartRecvMessageThread();
             return true;
         }
         else if ("Fail".equals(protocol.getMessageBody().getMessage()))
@@ -654,7 +570,7 @@ public class ClientMain extends GeneralMethod {
             }
             else
             {
-                StartRecvMessageThread(client,aes);
+                StartRecvMessageThread();
                 return true;
             }
         }
@@ -672,15 +588,13 @@ public class ClientMain extends GeneralMethod {
 
     /**
      * 客户端指令处理程序
-     * @param aes AES加密器
      * @param UserInput 用户输入
-     * @param writer socket写入流
      * @return {@code true} 是一条命令 {@code false} 不是一条命令
      * @throws IOException Socket IO出错
      * @throws QuitException 用户的指令是.quit
      */
     @Contract(pure = true)
-    protected boolean CommandRequest(AES aes,String UserInput,BufferedWriter writer) throws IOException, QuitException {
+    protected boolean CommandRequest(String UserInput) throws IOException, QuitException {
         String command;
         String[] argv;
         {
@@ -719,9 +633,7 @@ public class ClientMain extends GeneralMethod {
                     head.setVersion(CodeDynamicConfig.getProtocolVersion());
                     head.setType("NextIsTransferProtocol");
                     protocol.setMessageHead(head);
-                    writer.write(aes.encryptBase64(gson.toJson(protocol)));
-                    writer.newLine();
-                    writer.flush();
+                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(protocol)));
 
                     TransferProtocol transferProtocol = new TransferProtocol();
                     TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
@@ -733,9 +645,7 @@ public class ClientMain extends GeneralMethod {
                     transferProtocolBody.setData(FileUtils.readFileToString(new File("./ClientRSAKey/ClientPublicKey.txt"),StandardCharsets.UTF_8));
                     transferProtocol.setTransferProtocolBody(transferProtocolBody);
 
-                    writer.write(aes.encryptBase64(gson.toJson(transferProtocol)));
-                    writer.newLine();
-                    writer.flush();
+                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(transferProtocol)));
                 }
                 else
                 {
@@ -761,11 +671,8 @@ public class ClientMain extends GeneralMethod {
                 protocol.setMessageHead(head);
                 NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
                 body.setMessage(UserInput);
-                body.setFileLong(0);
                 protocol.setMessageBody(body);
-                writer.write(aes.encryptBase64(gson.toJson(protocol)));
-                writer.newLine();
-                writer.flush();
+                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(protocol)));
                 throw new QuitException("UserRequestQuit");
             }
             case ".crash" -> {
@@ -790,9 +697,7 @@ public class ClientMain extends GeneralMethod {
                     protocol.setMessageBody(body);
                     String json = new Gson().toJson(protocol);//生成json
                     json = aes.encryptBase64(json);//aes加密
-                    writer.write(json);//写入到socket Buffer
-                    writer.newLine();//新行
-                    writer.flush();//发送
+                    NetworkManager.WriteDataToRemote(clientNetworkData,json);
                 }
                 else
                 {
@@ -807,9 +712,9 @@ public class ClientMain extends GeneralMethod {
         }
 
     }
-    protected void SendMessage(Socket socket, AES aes) {
+    protected void SendMessage() {
         Scanner scanner = new Scanner(System.in);
-        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
+        try {
             while (true) {
                 String UserInput = scanner.nextLine();
                 if (needConsoleInput)
@@ -826,7 +731,7 @@ public class ClientMain extends GeneralMethod {
                 }
 
                 try {
-                    if (CommandRequest(aes,UserInput,writer))
+                    if (CommandRequest(UserInput))
                     {
                         continue;
                     }
@@ -842,11 +747,8 @@ public class ClientMain extends GeneralMethod {
                 protocol.setMessageHead(head);
                 NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
                 body.setMessage(UserInput);
-                body.setFileLong(0);
                 protocol.setMessageBody(body);
-                writer.write(aes.encryptBase64(gson.toJson(protocol)));
-                writer.newLine();
-                writer.flush();
+                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(protocol)));
             }
         } catch (IOException ignored) {}
         if (Thread.currentThread().isInterrupted())
@@ -857,7 +759,7 @@ public class ClientMain extends GeneralMethod {
     }
 
     //启动RecvMessageThread
-    private void StartRecvMessageThread(Socket client, AES aes) {
+    private void StartRecvMessageThread() {
         logger.info("登录成功！");
         new Thread(ClientThreadGroup,"RecvMessageThread")
         {
@@ -866,17 +768,10 @@ public class ClientMain extends GeneralMethod {
                 List<String> ThisSessionForbiddenUserNameList = new ArrayList<>();
                 this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
                 recvMessageThread = Thread.currentThread();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8))) {
+                try {
                     String ChatMsg;
                     while (true) {
-                        do {
-                            ChatMsg = reader.readLine();
-                            if (client.isClosed())
-                            {
-                                return;
-                            }
-                        } while (ChatMsg == null);
-                        ChatMsg = unicodeToString(ChatMsg);
+                        ChatMsg = NetworkManager.RecvDataFromRemote(clientNetworkData);
                         ChatMsg = aes.decryptStr(ChatMsg);
                         NormalProtocol protocol = getClient().protocolRequest(ChatMsg);
                         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
@@ -889,14 +784,7 @@ public class ClientMain extends GeneralMethod {
                             String UserNameOfSender = protocol.getMessageBody().getMessage();
                             String json;
                             //读取TransferProtocol
-                            do {
-                                json = reader.readLine();
-                                if (client.isClosed())
-                                {
-                                    return;
-                                }
-                            } while (json == null);
-                            json = unicodeToString(json);
+                            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
                             json = aes.decryptStr(json);
                             TransferProtocol transferProtocol = new Gson().fromJson(json, TransferProtocol.class);
                             //检测这个用户是否在黑名单，如果在，禁止他的聊天
@@ -920,18 +808,8 @@ public class ClientMain extends GeneralMethod {
                                 TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
                                 transferProtocolBody.setData("Untrusted");
                                 transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                writer.newLine();
-                                writer.flush();
-                                do {
-                                    json = reader.readLine();
-                                    if (client.isClosed())
-                                    {
-                                        return;
-                                    }
-                                } while (json == null);
-                                json = unicodeToString(json);
+                                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                json = NetworkManager.RecvDataFromRemote(clientNetworkData);
                                 json = aes.decryptStr(json);
                                 protocol = getClient().protocolRequest(json);
                                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
@@ -956,20 +834,19 @@ public class ClientMain extends GeneralMethod {
                                     logger.info("找不到目标用户");
                                     continue;
                                 }
-                                writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                writer.newLine();
-                                writer.flush();
+                                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                             }
+                            Path dir = Paths.get("./end-to-end_encryption_saved");
                             if ("first".equals(transferProtocol.getTransferProtocolHead().getType())) {
                                 //说明是被接收方
                                 //检测文件夹与文件是否存在
                                 String CounterpartClientPublicKey = transferProtocol.getTransferProtocolBody().getData();
                                 if (!(new File("./end-to-end_encryption_saved").exists())) {
-                                    Files.createDirectory(Paths.get("./end-to-end_encryption_saved"));
+                                    Files.createDirectory(dir);
                                 }
                                 if (new File("./end-to-end_encryption_saved").isFile()) {
-                                    Files.delete(Paths.get("./end-to-end_encryption_saved"));
-                                    Files.createDirectory(Paths.get("./end-to-end_encryption_saved"));
+                                    Files.delete(dir);
+                                    Files.createDirectory(dir);
                                 }
                                 boolean Trust = false;
                                 if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
@@ -997,18 +874,8 @@ public class ClientMain extends GeneralMethod {
                                         TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
                                         transferProtocolBody.setData("Untrusted");
                                         transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                        writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                        writer.newLine();
-                                        writer.flush();
-                                        do {
-                                            json = reader.readLine();
-                                            if (client.isClosed())
-                                            {
-                                                return;
-                                            }
-                                        } while (json == null);
-                                        json = unicodeToString(json);
+                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                        json = NetworkManager.RecvDataFromRemote(clientNetworkData);
                                         json = aes.decryptStr(json);
                                         protocol = getClient().protocolRequest(json);
                                         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
@@ -1026,9 +893,7 @@ public class ClientMain extends GeneralMethod {
                                             logger.info("找不到目标用户");
                                             continue;
                                         }
-                                        writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                        writer.newLine();
-                                        writer.flush();
+                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                         continue;
                                     } else
                                         Trust = true;
@@ -1072,15 +937,10 @@ public class ClientMain extends GeneralMethod {
                                         transferProtocol.setTransferProtocolBody(transferProtocolBody);
                                         try {
                                             FileUtils.writeStringToFile(new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender), CounterpartClientPublicKey, StandardCharsets.UTF_8);
-                                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                            writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                            writer.newLine();
-                                            writer.flush();
-                                            writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                            writer.newLine();
-                                            writer.flush();
+                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                         } catch (IOException e) {
-                                            e.printStackTrace();
+                                            SaveStackTrace.saveStackTrace(e);
                                         }
                                     }
                                     else {
@@ -1103,21 +963,9 @@ public class ClientMain extends GeneralMethod {
                                         TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
                                         transferProtocolBody.setData("Untrusted");
                                         transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                        writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                        writer.newLine();
-                                        writer.flush();
-                                        writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                        writer.newLine();
-                                        writer.flush();
-                                        do {
-                                            json = reader.readLine();
-                                            if (client.isClosed())
-                                            {
-                                                return;
-                                            }
-                                        } while (json == null);
-                                        json = unicodeToString(json);
+                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                        json = NetworkManager.RecvDataFromRemote(clientNetworkData);
                                         json = aes.decryptStr(json);
                                         protocol = getClient().protocolRequest(json);
                                         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
@@ -1154,39 +1002,20 @@ public class ClientMain extends GeneralMethod {
                                 TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
                                 transferProtocolBody.setData(RSA.encrypt(FileUtils.readFileToString(new File("./ClientRSAKey/ClientPublicKey.txt"), StandardCharsets.UTF_8), CounterpartClientPublicKey));
                                 transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                writer.newLine();
-                                writer.flush();
-                                writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                writer.newLine();
-                                writer.flush();
+                                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                 //等待服务端回传
                                 boolean tmp;
                                 do {
                                     tmp = false;
-                                    do {
-                                        json = reader.readLine();
-                                        if (client.isClosed())
-                                        {
-                                            return;
-                                        }
-                                    } while (json == null);
-                                    json = unicodeToString(json);
+                                    json = NetworkManager.RecvDataFromRemote(clientNetworkData);
                                     json = aes.decryptStr(json);
                                     protocol = getClient().protocolRequest(json);
                                     if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion()) {
                                         return;
                                     }
                                     else if ("NextIsTransferProtocol".equals(protocol.getMessageHead().getType())) {
-                                        do {
-                                            json = reader.readLine();
-                                            if (client.isClosed())
-                                            {
-                                                return;
-                                            }
-                                        } while (json == null);
-                                        json = unicodeToString(json);
+                                        json = NetworkManager.RecvDataFromRemote(clientNetworkData);
                                         json = aes.decryptStr(json);
                                         transferProtocol = new Gson().fromJson(json, TransferProtocol.class);
                                         TransferProtocol finalTransferProtocol = transferProtocol;
@@ -1221,12 +1050,8 @@ public class ClientMain extends GeneralMethod {
                                             transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
                                             transferProtocolBody.setData("Untrusted");
                                             transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                            writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                            writer.newLine();
-                                            writer.flush();
-                                            writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                            writer.newLine();
-                                            writer.flush();
+                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                             //后续这里要新增服务端私聊，向他发送提示
                                             logger.info(protocol.getMessageBody().getMessage()+"想要进行端到端通讯，但是系统已经在处理一个端到端了");
                                             tmp = true;
@@ -1242,7 +1067,7 @@ public class ClientMain extends GeneralMethod {
                                                             FileUtils.readFileToString(new File("./ClientRSAKey/ClientPrivateKey.txt"),
                                                                     StandardCharsets.UTF_8)));
                                                 } catch (IOException e) {
-                                                    e.printStackTrace();
+                                                    SaveStackTrace.saveStackTrace(e);
                                                 }
                                             }
                                         }.start();
@@ -1297,11 +1122,11 @@ public class ClientMain extends GeneralMethod {
                                             //检查这个key是否被信任
                                             //此段代码复制自接收端
                                             if (!(new File("./end-to-end_encryption_saved").exists())) {
-                                                Files.createDirectory(Paths.get("./end-to-end_encryption_saved"));
+                                                Files.createDirectory(dir);
                                             }
                                             if (!(new File("./end-to-end_encryption_saved").isDirectory())) {
-                                                Files.delete(Paths.get("./end-to-end_encryption_saved"));
-                                                Files.createDirectory(Paths.get("./end-to-end_encryption_saved"));
+                                                Files.delete(dir);
+                                                Files.createDirectory(dir);
                                             }
                                             boolean Trust = false;
                                             if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender
@@ -1318,31 +1143,10 @@ public class ClientMain extends GeneralMethod {
                                                     head.setType("NextIsTransferProtocol");
                                                     protocol.setMessageHead(head);
 
-                                                    TransferProtocol transferProtocol = new TransferProtocol();
-                                                    TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                                    transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                                    transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                                    transferProtocolHead.setType("reply");
-                                                    transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                                    TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                                    transferProtocolBody.setData("Untrusted");
-                                                    transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                                    writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                                    writer.newLine();
-                                                    writer.flush();
-                                                    String json;
-                                                    writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                                    writer.newLine();
-                                                    writer.flush();
-                                                    do {
-                                                        json = reader.readLine();
-                                                        if (client.isClosed())
-                                                        {
-                                                            return;
-                                                        }
-                                                    } while (json == null);
-                                                    json = unicodeToString(json);
+                                                    TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "Untrusted");
+                                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                                    String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
                                                     json = aes.decryptStr(json);
                                                     protocol = getClient().protocolRequest(json);
                                                     if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
@@ -1386,26 +1190,13 @@ public class ClientMain extends GeneralMethod {
                                                     head.setType("NextIsTransferProtocol");
                                                     protocol.setMessageHead(head);
 
-                                                    TransferProtocol transferProtocol = new TransferProtocol();
-                                                    TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                                    transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                                    transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                                    transferProtocolHead.setType("reply");
-                                                    transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                                    TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                                    transferProtocolBody.setData("trust");
-                                                    transferProtocol.setTransferProtocolBody(transferProtocolBody);
+                                                    TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "trust");
                                                     try {
                                                         FileUtils.writeStringToFile(new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender), key, StandardCharsets.UTF_8);
-                                                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                                        writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                                        writer.newLine();
-                                                        writer.flush();
-                                                        writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                                        writer.newLine();
-                                                        writer.flush();
+                                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                                     } catch (IOException e) {
-                                                        e.printStackTrace();
+                                                        SaveStackTrace.saveStackTrace(e);
                                                     }
                                                 }
                                                 else {
@@ -1418,31 +1209,11 @@ public class ClientMain extends GeneralMethod {
                                                     head.setType("NextIsTransferProtocol");
                                                     protocol.setMessageHead(head);
 
-                                                    TransferProtocol transferProtocol = new TransferProtocol();
-                                                    TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                                    transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                                    transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                                    transferProtocolHead.setType("reply");
-                                                    transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                                    TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                                    transferProtocolBody.setData("Untrusted");
-                                                    transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                                    writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                                    writer.newLine();
-                                                    writer.flush();
-                                                    writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                                    writer.newLine();
-                                                    writer.flush();
+                                                    TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "Untrusted");
+                                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                                     String json;
-                                                    do {
-                                                        json = reader.readLine();
-                                                        if (client.isClosed())
-                                                        {
-                                                            return;
-                                                        }
-                                                    } while (json == null);
-                                                    json = unicodeToString(json);
+                                                    json = NetworkManager.RecvDataFromRemote(clientNetworkData);
                                                     json = aes.decryptStr(json);
                                                     protocol = getClient().protocolRequest(json);
                                                     if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
@@ -1471,26 +1242,27 @@ public class ClientMain extends GeneralMethod {
                                             protocol.setMessageHead(head);
                                             protocol.setMessageBody(new NormalProtocol.MessageBody());
 
-                                            TransferProtocol transferProtocol = new TransferProtocol();
-                                            TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                            transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                            transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                            transferProtocolHead.setType("Encryption");
-                                            transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                            TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                            transferProtocolBody.setData(RSA.encrypt(endToEndEncryptionData,key));
-                                            transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
-                                            writer.write(aes.encryptBase64(new Gson().toJson(protocol)));
-                                            writer.newLine();
-                                            writer.flush();
-                                            writer.write(aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                            writer.newLine();
-                                            writer.flush();
+                                            TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "Encryption", RSA.encrypt(endToEndEncryptionData, key));
+                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                             logger.ChatMsg("信息已成功发送");
                                         } catch (IOException e) {
                                             SaveStackTrace.saveStackTrace(e);
                                         }
+                                    }
+
+                                    @NotNull
+                                    private static TransferProtocol getTransferProtocol(String UserNameOfSender, String HeadType, String BodyData) {
+                                        TransferProtocol transferProtocol = new TransferProtocol();
+                                        TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+                                        transferProtocolHead.setTargetUserName(UserNameOfSender);
+                                        transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                        transferProtocolHead.setType(HeadType);
+                                        transferProtocol.setTransferProtocolHead(transferProtocolHead);
+                                        TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+                                        transferProtocolBody.setData(BodyData);
+                                        transferProtocol.setTransferProtocolBody(transferProtocolBody);
+                                        return transferProtocol;
                                     }
                                 }.start();
 

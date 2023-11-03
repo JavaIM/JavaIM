@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.CrashReport;
 import org.yuezhikong.GeneralMethod;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.newServer.UserData.SimpleUser;
 import org.yuezhikong.newServer.UserData.user;
@@ -52,6 +53,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.yuezhikong.utils.UnicodeToString.unicodeToString;
 
 /**
  * 新服务端
@@ -83,13 +86,13 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     protected static class UserAuthThread extends Thread
     {
         private final Logger logger;
-        private final ServerSocket socket;
+        private final NetworkManager.NetworkData ServerNetworkData;
         @Contract("_,null -> fail")
         public UserAuthThread(ThreadGroup group, String name)
         {
             super(group,name);
             this.logger = getServer().logger;
-            this.socket = getServer().socket;
+            this.ServerNetworkData = getServer().ServerTCPNetworkData;
             this.setDaemon(true);
         }
         @Override
@@ -97,10 +100,10 @@ public class ServerMain extends GeneralMethod implements IServerMain {
             this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
             while (true)
             {
-                Socket clientSocket;//接受客户端Socket请求
+                NetworkManager.NetworkData clientNetworkData;
                 try {
-                    clientSocket = socket.accept();
-                    clientSocket.setSoTimeout(CodeDynamicConfig.SocketTimeout);
+                    clientNetworkData = NetworkManager.AcceptTCPConnection(ServerNetworkData);
+                    clientNetworkData.setSoTimeout(CodeDynamicConfig.SocketTimeout);
                 } catch (IOException e) {
                     SaveStackTrace.saveStackTrace(e);
                     break;
@@ -109,13 +112,13 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 if (CodeDynamicConfig.getMaxClient() != -1 && getServer().getServerAPI().GetValidClientList(false).size() >= CodeDynamicConfig.getMaxClient() -1)
                 {
                     try {
-                        clientSocket.close();
+                        NetworkManager.ShutdownTCPConnection(clientNetworkData);
                     } catch (IOException e) {
                         continue;
                     }
                     continue;
                 }
-                user CurrentUser = new SimpleUser(clientSocket,getServer().clientIDAll,false);//创建用户class
+                user CurrentUser = new SimpleUser(clientNetworkData,getServer().clientIDAll,false);//创建用户class
                 CurrentUser.setUserAuthentication(new UserAuthentication(CurrentUser, getServer().getIOThreadPool()));
                 getServer().Users.add(CurrentUser);
                 getServer().Users.set(getServer().clientIDAll,CurrentUser);//添加到List中
@@ -123,8 +126,8 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 getServer().clientIDAll++;//当前的最大ClientID加1
                 logger.info("连入了新的socket请求");
                 logger.info("基本信息如下：");
-                logger.info("远程ip地址为："+clientSocket.getRemoteSocketAddress());
-                logger.info("远程端口为："+clientSocket.getPort());
+                logger.info("远程ip地址为："+clientNetworkData.getRemoteSocketAddress());
+                logger.info("远程端口为："+clientNetworkData.getPort());
             }
         }
     }
@@ -162,19 +165,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
         }
         public void LoginSystem(@NotNull user User) throws IOException
         {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(User.getUserSocket().getInputStream()));
-            String json;
-            do {
-                json = reader.readLine();
-                if (User.getUserSocket().isClosed()) {
-                    User.UserDisconnect();
-                    return;
-                }
-                if ("Alive".equals(json)) {
-                    json = null;
-                }
-            } while (json == null);
-            json = ServerMain.getServer().unicodeToString(json);
+            String json = NetworkManager.RecvDataFromRemote(User.getUserNetworkData());
             json = User.getUserAES().decryptStr(json);
             LoginProtocol loginProtocol = new Gson().fromJson(json,LoginProtocol.class);
             if ("token".equals(loginProtocol.getLoginPacketHead().getType()))
@@ -207,21 +198,15 @@ public class ServerMain extends GeneralMethod implements IServerMain {
             CurrentUser.setRecvMessageThread(this);
             Logger logger = getServer().logger;
             api API = getServer().API;
-            try (Socket CurrentUserSocket = CurrentUser.getUserSocket()) {
+            try (NetworkManager.NetworkData CurrentUserNetworkData = CurrentUser.getUserNetworkData()) {
                 //服务器密钥加载
                 final String ServerPrivateKey = FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"),StandardCharsets.UTF_8);
                 //开始握手
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(CurrentUserSocket.getOutputStream(),StandardCharsets.UTF_8));
-                BufferedReader reader = new BufferedReader(new InputStreamReader(CurrentUserSocket.getInputStream(),StandardCharsets.UTF_8));
                 //测试明文通讯
-                writer.write("Hello Client");
-                writer.newLine();
-                writer.flush();
-                logger.info("正在连接的客户端返回："+getServer().unicodeToString(reader.readLine()));
-                writer.write("你好，客户端");
-                writer.newLine();
-                writer.flush();
-                logger.info("正在连接的客户端返回："+getServer().unicodeToString(reader.readLine()));
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,"Hello Client");
+                logger.info("正在连接的客户端返回："+NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10));
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,"你好，客户端");
+                logger.info("正在连接的客户端返回："+NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10));
                 //测试通讯协议
                 Gson gson = new Gson();
                 NormalProtocol protocol = new NormalProtocol();
@@ -233,22 +218,8 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body.setMessage("你好，客户端");
                 body.setFileLong(0);
                 protocol.setMessageBody(body);
-                writer.write(gson.toJson(protocol));
-                writer.newLine();
-                writer.flush();
-                String json;
-                do {
-                    json = reader.readLine();
-                    if (CurrentUserSocket.isClosed())
-                    {
-                        return;
-                    }
-                    if ("Alive".equals(json))
-                    {
-                        json = null;
-                    }
-                } while (json == null);
-                json = getServer().unicodeToString(json);
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
+                String json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -256,18 +227,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 }
                 logger.info("正在连接的客户端返回："+protocol.getMessageBody().getMessage());
                 //RSA Key传递
-                do {
-                    json = reader.readLine();
-                    if (CurrentUserSocket.isClosed())
-                    {
-                        return;
-                    }
-                    if ("Alive".equals(json))
-                    {
-                        json = null;
-                    }
-                } while (json == null);
-                json = getServer().unicodeToString(json);
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
                 {
@@ -277,9 +237,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                     CurrentUser.setPublicKey(RSA.decrypt(protocol.getMessageBody().getMessage(), ServerPrivateKey));
                 } catch (cn.hutool.crypto.CryptoException e)
                 {
-                    writer.write("Decryption Error");
-                    writer.newLine();
-                    writer.flush();
+                    NetworkManager.WriteDataToRemote(CurrentUserNetworkData,"Decryption Error");
                     getServer().getLogger().warning("正在连接的客户端发送的信息无法被解密！");
                     getServer().getLogger().warning("即将断开对于此用户的连接");
                     CurrentUser.UserDisconnect();
@@ -294,21 +252,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body = new NormalProtocol.MessageBody();
                 body.setMessage(RSA.encrypt("你好客户端",CurrentUser.getPublicKey()));
                 protocol.setMessageBody(body);
-                writer.write(gson.toJson(protocol));
-                writer.newLine();
-                writer.flush();
-                do {
-                    json = reader.readLine();
-                    if (CurrentUserSocket.isClosed())
-                    {
-                        return;
-                    }
-                    if ("Alive".equals(json))
-                    {
-                        json = null;
-                    }
-                } while (json == null);
-                json = getServer().unicodeToString(json);
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
+
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -325,21 +271,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 String RandomForServer = UUID.randomUUID().toString();
                 body.setMessage(RSA.encrypt(RandomForServer,CurrentUser.getPublicKey()));
                 protocol.setMessageBody(body);
-                writer.write(gson.toJson(protocol));
-                writer.newLine();
-                writer.flush();
-                do {
-                    json = reader.readLine();
-                    if (CurrentUserSocket.isClosed())
-                    {
-                        return;
-                    }
-                    if ("Alive".equals(json))
-                    {
-                        json = null;
-                    }
-                } while (json == null);
-                json = getServer().unicodeToString(json);
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
+
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
                 {
@@ -357,21 +291,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body.setMessage(CurrentUser.getUserAES().encryptBase64("你好客户端"));
                 body.setFileLong(0);
                 protocol.setMessageBody(body);
-                writer.write(gson.toJson(protocol));
-                writer.newLine();
-                writer.flush();
-                do {
-                    json = reader.readLine();
-                    if (CurrentUserSocket.isClosed())
-                    {
-                        return;
-                    }
-                    if ("Alive".equals(json))
-                    {
-                        json = null;
-                    }
-                } while (json == null);
-                json = getServer().unicodeToString(json);
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
+
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
@@ -388,21 +310,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body.setMessage(CurrentUser.getUserAES().encryptBase64("Update To All Encryption"));
                 body.setFileLong(0);
                 protocol.setMessageBody(body);
-                writer.write(gson.toJson(protocol));
-                writer.newLine();
-                writer.flush();
-                do {
-                    json = reader.readLine();
-                    if (CurrentUserSocket.isClosed())
-                    {
-                        return;
-                    }
-                    if ("Alive".equals(json))
-                    {
-                        json = null;
-                    }
-                } while (json == null);
-                json = getServer().unicodeToString(json);
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
+
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("UpdateProtocol".equals(protocol.getMessageHead().getType())))
                 {
@@ -422,22 +332,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body.setMessage("AllowTransferProtocol");
                 body.setFileLong(0);
                 protocol.setMessageBody(body);
-                writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
-                writer.newLine();
-                writer.flush();
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
 
-                do {
-                    json = reader.readLine();
-                    if (CurrentUserSocket.isClosed())
-                    {
-                        return;
-                    }
-                    if ("Alive".equals(json))
-                    {
-                        json = null;
-                    }
-                } while (json == null);
-                json = getServer().unicodeToString(json);
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 json = CurrentUser.getUserAES().decryptStr(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("options".equals(protocol.getMessageHead().getType())))
@@ -459,18 +356,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 //登录完毕，开始聊天
                 while (true) {
                     String ChatMsg;
-                    do {
-                        ChatMsg = reader.readLine();
-                        if (CurrentUserSocket.isClosed())
-                        {
-                            return;
-                        }
-                        if ("Alive".equals(ChatMsg))
-                        {
-                            ChatMsg = null;
-                        }
-                    } while (ChatMsg == null);
-                    ChatMsg = getServer().unicodeToString(ChatMsg);
+                    ChatMsg = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                     ChatMsg = CurrentUser.getUserAES().decryptStr(ChatMsg);
                     protocol = getServer().protocolRequest(ChatMsg);
                     if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
@@ -485,18 +371,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                     }
                     if ("NextIsTransferProtocol".equals(protocol.getMessageHead().getType()))
                     {
-                        do {
-                            json = reader.readLine();
-                            if (CurrentUserSocket.isClosed())
-                            {
-                                return;
-                            }
-                            if ("Alive".equals(json))
-                            {
-                                json = null;
-                            }
-                        } while (json == null);
-                        json = getServer().unicodeToString(json);
+                        json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                         json = CurrentUser.getUserAES().decryptStr(json);
                         TransferProtocol transferProtocol = gson.fromJson(json, TransferProtocol.class);
                         if (transferProtocol.getTransferProtocolHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
@@ -509,9 +384,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                             body = new NormalProtocol.MessageBody();
                             body.setMessage("TransferProtocolVersionIsNotSupport");
                             protocol.setMessageBody(body);
-                            writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
-                            writer.newLine();
-                            writer.flush();
+                            NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
                             continue;
                         }
                         else if (!CodeDynamicConfig.AllowedTransferProtocol)
@@ -524,9 +397,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                             body = new NormalProtocol.MessageBody();
                             body.setMessage("ThisServerDisallowedTransferProtocol");
                             protocol.setMessageBody(body);
-                            writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
-                            writer.newLine();
-                            writer.flush();
+                            NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
                             continue;
                         }
                         else {
@@ -535,8 +406,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                                 );
                                 if (TargetUser.isAllowedTransferProtocol())
                                 {
-                                    BufferedWriter writer1 = new BufferedWriter(new OutputStreamWriter(TargetUser
-                                            .getUserSocket().getOutputStream()));
+                                    NetworkManager.NetworkData TargetUserNetworkData = TargetUser.getUserNetworkData();
 
                                     protocol = new NormalProtocol();
                                     head = new NormalProtocol.MessageHead();
@@ -546,13 +416,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                                     body = new NormalProtocol.MessageBody();
                                     body.setMessage(CurrentUser.getUserName());
                                     protocol.setMessageBody(body);
-                                    writer1.write(TargetUser.getUserAES().encryptBase64(gson.toJson(protocol)));
-                                    writer1.newLine();
-                                    writer1.flush();
-
-                                    writer1.write(TargetUser.getUserAES().encryptBase64(json));
-                                    writer1.newLine();
-                                    writer1.flush();
+                                    NetworkManager.WriteDataToRemote(TargetUserNetworkData,TargetUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                                    
+                                    NetworkManager.WriteDataToRemote(TargetUserNetworkData,TargetUser.getUserAES().encryptBase64(json));
 
                                     protocol = new NormalProtocol();
                                     head = new NormalProtocol.MessageHead();
@@ -573,9 +439,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                                     body.setMessage("ThisUserDisallowedTransferProtocol");
                                 }
                                 protocol.setMessageBody(body);
-                                writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
-                                writer.newLine();
-                                writer.flush();
+                                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
                                 continue;
                             } catch (AccountNotFoundException e) {
                                 protocol = new NormalProtocol();
@@ -586,9 +450,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                                 body = new NormalProtocol.MessageBody();
                                 body.setMessage("ThisUserNotFound");
                                 protocol.setMessageBody(body);
-                                writer.write(CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
-                                writer.newLine();
-                                writer.flush();
+                                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
                             }
                         }
                         continue;
@@ -631,7 +493,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     private PluginManager pluginManager;
     private user ConsoleUser;
     protected static boolean started = false;
-    protected ServerSocket socket;
+    protected NetworkManager.NetworkData ServerTCPNetworkData;
     protected static ServerMain server;
     private Logger logger;
     protected UserAuthThread authThread;
@@ -744,7 +606,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 server = this;
                 logger = initLogger();
                 try {
-                    socket = new ServerSocket(bindPort);
+                    ServerTCPNetworkData = NetworkManager.CreateTCPServer(bindPort);
                 } catch (IOException e) {
                     SaveStackTrace.saveStackTrace(e);
                     throw new RuntimeException("Socket Create Failed", e);
@@ -789,12 +651,12 @@ public class ServerMain extends GeneralMethod implements IServerMain {
             {
                 try {
                     pluginManager.UnLoadAllPlugin();
-                    if (socket != null && !socket.isClosed())
+                    if (ServerTCPNetworkData != null)
                     {
-                        socket.close();
+                        NetworkManager.ShutdownTCPServer(ServerTCPNetworkData);
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    SaveStackTrace.saveStackTrace(e);
                 }
             }
         }

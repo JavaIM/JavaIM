@@ -368,7 +368,7 @@ public class SimplePluginManager implements PluginManager{
                         " by "+methodData.pluginData().getStaticData().PluginAuthor()+
                         "的事件处理程序");
             } catch (InvocationTargetException e) {
-                e.getCause().printStackTrace();
+                SaveStackTrace.saveStackTrace(e);
                 ServerMain.getServer().getLogger().error("插件 "+methodData.pluginData().getStaticData().PluginName()+
                         "v"+methodData.pluginData().getStaticData().PluginVersion()+
                         " by "+methodData.pluginData().getStaticData().PluginAuthor()+

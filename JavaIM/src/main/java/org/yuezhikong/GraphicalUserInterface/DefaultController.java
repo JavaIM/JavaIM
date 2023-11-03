@@ -83,7 +83,7 @@ public class DefaultController {
             else {
                 try {
                     //反射获取private成员变量
-                    Field socket = ClientMain.class.getDeclaredField("client");
+                    Field socket = ClientMain.class.getDeclaredField("clientNetworkData");
                     Field ClientThreadGroup = ClientMain.class.getDeclaredField("ClientThreadGroup");
                     Field recvMessageThread = ClientMain.class.getDeclaredField("recvMessageThread");
                     Field aes = ClientMain.class.getDeclaredField("aes");

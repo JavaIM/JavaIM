@@ -14,6 +14,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -196,12 +197,13 @@ public class KeyManagementUI extends DefaultController implements Initializable 
         {
             {
                 try {
+                    Path path = Paths.get("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt");
                     if (new File("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt").exists())
                     {
-                        Files.delete(Paths.get("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt"));
+                        Files.delete(path);
                     }
                     Files.copy(Paths.get("./ClientRSAKey/ServerPublicKeys/"+SelectServerPublicKey.getValue())
-                            ,Paths.get("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt"));
+                            , path);
                     InitPublicKeySpinner();
                 } catch (IOException e) {
                     SaveStackTrace.saveStackTrace(e);

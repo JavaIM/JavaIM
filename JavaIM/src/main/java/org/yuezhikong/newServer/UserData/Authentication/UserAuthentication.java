@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
@@ -27,6 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+
+import static org.yuezhikong.utils.UnicodeToString.unicodeToString;
 
 /**
  * 请注意！请在异步线程调用此class中的DoLogin方法！
@@ -174,18 +177,7 @@ public final class UserAuthentication implements IUserAuthentication{
         String json;
         try {
             if (!(User instanceof PluginUser)) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(User.getUserSocket().getInputStream()));
-                do {
-                    json = reader.readLine();
-                    if (User.getUserSocket().isClosed()) {
-                        User.UserDisconnect();
-                        return false;
-                    }
-                    if ("Alive".equals(json)) {
-                        json = null;
-                    }
-                } while (json == null);
-                json = ServerMain.getServer().unicodeToString(json);
+                json = NetworkManager.RecvDataFromRemote(User.getUserNetworkData(),10);
                 json = User.getUserAES().decryptStr(json);
             }
             else
@@ -265,7 +257,7 @@ public final class UserAuthentication implements IUserAuthentication{
             ServerMain.getServer().getServerAPI().SendMessageToUser(User,"禁止使用受保护的用户名：Server");
             return RetryLogin();
         }
-        if (UserName == null || Password == null || UserName.equals("") || Password.equals(""))
+        if (UserName == null || Password == null || UserName.isEmpty() || Password.isEmpty())
         {
             ServerMain.getServer().getServerAPI().SendMessageToUser(User,"禁止使用空字符串！");
             return RetryLogin();

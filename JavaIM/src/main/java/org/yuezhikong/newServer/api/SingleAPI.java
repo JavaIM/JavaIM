@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.IServerMain;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.Plugin.Plugin;
@@ -132,10 +133,7 @@ public class SingleAPI implements api{
         }
         Data = User.getUserAES().encryptBase64(Data);
         try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(User.getUserSocket().getOutputStream(), StandardCharsets.UTF_8));
-            writer.write(Data);
-            writer.newLine();
-            writer.flush();
+            NetworkManager.WriteDataToRemote(User.getUserNetworkData(),Data);
         } catch (Exception e)
         {
             SaveStackTrace.saveStackTrace(e);
@@ -173,7 +171,7 @@ public class SingleAPI implements api{
             if (CheckLoginStatus && !User.isUserLogined())
                 continue;
             if (!(User instanceof PluginUser)) {
-                if (User.getUserSocket() == null)
+                if (User.getUserNetworkData() == null)
                     continue;
                 if (User.getPublicKey() == null)
                     continue;

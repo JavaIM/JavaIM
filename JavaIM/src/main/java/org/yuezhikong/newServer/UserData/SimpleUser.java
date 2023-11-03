@@ -3,6 +3,7 @@ package org.yuezhikong.newServer.UserData;
 import cn.hutool.crypto.symmetric.AES;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.newServer.plugin.event.events.UserLoginEvent;
@@ -10,7 +11,6 @@ import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -19,19 +19,19 @@ public class SimpleUser implements user {
     //初始化
     /**
      * 创建一个新的用户
-     * @param socket 客户端套链字
+     * @param NetworkData 客户端网络数据
      * @param ClientID 客户端ID
      * @param isServer 是否是服务端
      */
-    public SimpleUser(Socket socket, int ClientID,boolean isServer)
+    public SimpleUser(NetworkManager.NetworkData NetworkData, int ClientID, boolean isServer)
     {
-        UserSocket = socket;
+        UserNetworkData = NetworkData;
         this.ClientID = ClientID;
         Server = isServer;
     }
 
     //用户通讯相关
-    private Socket UserSocket;
+    private NetworkManager.NetworkData UserNetworkData;
     private String PublicKey;
     private AES UserAES;
     private ServerMain.RecvMessageThread recvMessageThread;
@@ -48,8 +48,8 @@ public class SimpleUser implements user {
     }
 
     @Override
-    public Socket getUserSocket() {
-        return UserSocket;
+    public NetworkManager.NetworkData getUserNetworkData() {
+        return UserNetworkData;
     }
 
     @Override
@@ -173,16 +173,15 @@ public class SimpleUser implements user {
             ServerMain.getServer().getLogger().info("用户："+getUserName()+"已经断开连接");
         }
         authentication.DoLogout();
-        if (UserSocket != null && !UserSocket.isClosed())
+        if (UserNetworkData != null)
         {
             try {
-                UserSocket.close();
+                NetworkManager.ShutdownTCPConnection(UserNetworkData);
             } catch (IOException e) {
-                e.printStackTrace();
                 SaveStackTrace.saveStackTrace(e);
             }
         }
-        UserSocket = null;
+        UserNetworkData = null;
         PublicKey = null;
         UserAES = null;
         recvMessageThread.interrupt();

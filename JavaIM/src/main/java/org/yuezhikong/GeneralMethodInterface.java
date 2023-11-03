@@ -36,13 +36,6 @@ public interface GeneralMethodInterface {
     NormalProtocol protocolRequest(String json);
 
     /**
-     * 将信息中的unicode转换为string
-     * @param unicode 含有Unicode字符的文本
-     * @return 普通String
-     */
-    @NotNull String unicodeToString(@NotNull String unicode);
-
-    /**
      * RSA Key制造工具
      * @param PublicKeyFile 公钥文件
      * @param PrivateKeyFile 私钥文件

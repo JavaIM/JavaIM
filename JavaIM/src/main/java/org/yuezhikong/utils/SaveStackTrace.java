@@ -47,7 +47,7 @@ public class SaveStackTrace {
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            throw new RuntimeException(ex);
         }
     }
 }

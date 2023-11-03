@@ -58,7 +58,6 @@ public class PluginConfig {
 
         } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
-            e.printStackTrace();
         }
     }
 
@@ -102,7 +101,6 @@ public class PluginConfig {
 
         } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
-            e.printStackTrace();
         }
     }
 
@@ -138,7 +136,6 @@ public class PluginConfig {
             return properties;
         } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
-            e.printStackTrace();
         }
         return null;
     }

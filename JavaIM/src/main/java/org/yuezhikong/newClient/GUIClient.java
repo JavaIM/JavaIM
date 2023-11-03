@@ -1,6 +1,5 @@
 package org.yuezhikong.newClient;
 
-import cn.hutool.crypto.symmetric.AES;
 import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
@@ -8,15 +7,13 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GraphicalUserInterface.ClientUI;
 import org.yuezhikong.GraphicalUserInterface.DefaultController;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.LoginDialog;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.net.Socket;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -50,19 +47,19 @@ public class GUIClient extends ClientMain {
 
     //此时，SendMessage是start调用的最后一个函数
     @Override
-    protected void SendMessage(Socket socket, AES aes) {
+    protected void SendMessage() {
         ClientStartedSuccessful = true;
         synchronized (ClientStartedLock)
         {
             ClientStartedLock.notifyAll();
         }
-        super.SendMessage(socket, aes);
+        super.SendMessage();
     }
 
     @Override
-    protected boolean CommandRequest(AES aes, String UserInput, BufferedWriter writer) throws IOException {
+    protected boolean CommandRequest(String UserInput) throws IOException {
         try {
-            return super.CommandRequest(aes, UserInput, writer);
+            return super.CommandRequest(UserInput);
         } catch (QuitException e)
         {
             logger.info("正在关闭客户端...");
@@ -128,7 +125,7 @@ public class GUIClient extends ClientMain {
     }
     @Override
     protected boolean isLegacyLoginORNormalLogin() {
-        if (UserData[0].equals("") && UserData[1].equals(""))
+        if (UserData[0].isEmpty() && UserData[1].isEmpty())
         {
             RequestUserNameAndPassword request = new RequestUserNameAndPassword();
             request.requestUserNameAndPassword();
@@ -155,11 +152,8 @@ public class GUIClient extends ClientMain {
         NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
         body.setMessage(Message);
         body.setFileLong(0);
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(getSocket().getOutputStream()));
         protocol.setMessageBody(body);
-        writer.write(getAes().encryptBase64(gson.toJson(protocol)));
-        writer.newLine();
-        writer.flush();
+        NetworkManager.WriteDataToRemote(getClientNetworkData(),getAes().encryptBase64(gson.toJson(protocol)));
     }
 
     /**
@@ -208,8 +202,7 @@ public class GUIClient extends ClientMain {
         }
 
         try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(getSocket().getOutputStream()));
-            if (!CommandRequest(getAes(),Message,writer))
+            if (!CommandRequest(Message))
             {
                 SendMessageToServer(Message);
             }
@@ -232,7 +225,8 @@ public class GUIClient extends ClientMain {
         }
         getClientThreadGroup().interrupt();
         try {
-            getSocket().close();
+            if (getClientNetworkData() != null)
+                NetworkManager.ShutdownTCPConnection(getClientNetworkData());
         } finally {
             Instance = null;
         }
@@ -257,10 +251,7 @@ public class GUIClient extends ClientMain {
         body.setFileLong(0);
         protocol.setMessageBody(body);
         try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(getSocket().getOutputStream()));
-            writer.write(getAes().encryptBase64(gson.toJson(protocol)));
-            writer.newLine();
-            writer.flush();
+            NetworkManager.WriteDataToRemote(getClientNetworkData(),getAes().encryptBase64(gson.toJson(protocol)));
             StopClientNoSendQuitMessage();
         } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
@@ -282,8 +273,8 @@ public class GUIClient extends ClientMain {
     }
 
     @Override
-    public Socket getSocket() {
-        return super.getSocket();
+    public NetworkManager.NetworkData getClientNetworkData() {
+        return super.getClientNetworkData();
     }
 
     @Override
@@ -316,7 +307,7 @@ public class GUIClient extends ClientMain {
     private boolean LegacyLogin = false;
     @Override
     protected String[] RequestUserNameAndPassword() {
-        if (UserData[0].equals("") && UserData[1].equals(""))
+        if (UserData[0].isEmpty() && UserData[1].isEmpty())
         {
             RequestUserNameAndPassword request = new RequestUserNameAndPassword();
             request.requestUserNameAndPassword();
