@@ -14,6 +14,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.CrashReport;
+import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newClient.ClientMain;
 import org.yuezhikong.newClient.GUIClient;
 import org.yuezhikong.newServer.GUIServer;
@@ -22,14 +23,10 @@ import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 
 import java.awt.*;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -100,7 +97,7 @@ public class DefaultController {
                     instance.setAccessible(false);
                     //获取AES与Socket
                     AES Aes = (AES) aes.get(clientMain);
-                    Socket Socket = (java.net.Socket) socket.get(clientMain);
+                    NetworkManager.NetworkData Socket = (NetworkManager.NetworkData) socket.get(clientMain);
                     //恢复部分成员变量的java访问检查
                     socket.setAccessible(false);
                     aes.setAccessible(false);
@@ -116,10 +113,7 @@ public class DefaultController {
                     body.setFileLong(0);
                     protocol.setMessageBody(body);
 
-                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Socket.getOutputStream()));
-                    writer.write(Aes.encryptBase64(gson.toJson(protocol)));
-                    writer.newLine();
-                    writer.flush();
+                    NetworkManager.WriteDataToRemote(Socket,Aes.encryptBase64(gson.toJson(protocol)));
                     //执行强制关闭socket、线程操作
                     ((Thread) recvMessageThread.get(clientMain)).interrupt();
                     ((ThreadGroup) ClientThreadGroup.get(clientMain)).interrupt();
@@ -177,10 +171,10 @@ public class DefaultController {
                     ServerStarted.set(ServerMain.getServer(), false);
                     ServerStarted.setAccessible(false);
                     //获取Socket并关闭
-                    Field serverSocket = ServerMain.class.getDeclaredField("socket");
+                    Field serverSocket = ServerMain.class.getDeclaredField("ServerTCPNetworkData");
                     serverSocket.setAccessible(true);
-                    ServerSocket ServerSocket = (ServerSocket) serverSocket.get(ServerMain.getServer());
-                    if (ServerSocket != null && !ServerSocket.isClosed())
+                    NetworkManager.NetworkData ServerSocket = (NetworkManager.NetworkData) serverSocket.get(ServerMain.getServer());
+                    if (ServerSocket != null)
                     {
                         ServerSocket.close();
                     }

@@ -17,9 +17,7 @@ import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-
-import static org.yuezhikong.utils.UnicodeToString.unicodeToString;
 
 /**
  * 请注意！请在异步线程调用此class中的DoLogin方法！

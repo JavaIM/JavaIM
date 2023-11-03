@@ -135,7 +135,7 @@ public class KeyManagementUI extends DefaultController implements Initializable 
             dialog.setHeaderText("请根据提示填写文件名，如不填写或取消，将会取消操作");
             dialog.setContentText("请输入新文件名：");
             Optional<String> UserInputNewFileName = dialog.showAndWait();
-            if (UserInputNewFileName.isPresent() && !(UserInputNewFileName.get().equals("")))
+            if (UserInputNewFileName.isPresent() && !(UserInputNewFileName.get().isEmpty()))
             {
                 if (new File("./ClientRSAKey/ServerPublicKeys/"+UserInputNewFileName).exists())
                 {

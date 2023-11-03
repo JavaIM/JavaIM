@@ -22,8 +22,6 @@ import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
 
-import java.net.Socket;
-
 @SuppressWarnings("unused")
 public interface user {
     /**
