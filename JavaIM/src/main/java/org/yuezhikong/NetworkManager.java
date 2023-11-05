@@ -134,7 +134,7 @@ public final class NetworkManager {
             }
 
             data = reader.readLine();
-            if (data.equals("Alive"))
+            if (data != null && data.equals("Alive"))
             {
                 data = null;
             }

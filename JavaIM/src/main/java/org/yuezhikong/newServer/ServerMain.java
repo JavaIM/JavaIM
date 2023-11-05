@@ -269,6 +269,14 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 protocol.setMessageBody(body);
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,RSA.encrypt(gson.toJson(protocol),CurrentUser.getPublicKey()));
                 //AES制造开始
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
+                json = RSA.decrypt(json,ServerPrivateKey);
+                protocol = getServer().protocolRequest(json);
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("AESEncryption".equals(protocol.getMessageHead().getType())))
+                {
+                    return;
+                }
+
                 protocol = new NormalProtocol();
                 head = new NormalProtocol.MessageHead();
                 head.setType("AESEncryption");
@@ -279,14 +287,6 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body.setMessage(RandomForServer);
                 protocol.setMessageBody(body);
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,RSA.encrypt(gson.toJson(protocol),CurrentUser.getPublicKey()));
-
-                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
-                json = RSA.decrypt(json,ServerPrivateKey);
-                protocol = getServer().protocolRequest(json);
-                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("AESEncryption".equals(protocol.getMessageHead().getType())))
-                {
-                    return;
-                }
                 SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(getServer().GenerateKey(RandomForServer+protocol.getMessageBody().getMessage())));
                 CurrentUser.setUserAES(cn.hutool.crypto.SecureUtil.aes(key.getEncoded()));
                 //测试AES
