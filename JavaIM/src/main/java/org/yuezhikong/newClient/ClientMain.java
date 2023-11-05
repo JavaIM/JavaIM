@@ -110,23 +110,31 @@ public class ClientMain extends GeneralMethod {
         logger.info("客户端密钥制作完成！");
         logger.info("公钥是："+keyData.PublicKey);
         logger.info("私钥是："+keyData.PrivateKey);
-        String EncryptionKey = RSA.encrypt(keyData.PublicKey, key);
-        logger.info("加密后的Key是："+EncryptionKey);
         logger.info("正在发送公钥");
         Gson gson = new Gson();
         NormalProtocol protocol = new NormalProtocol();
         NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
         head.setVersion(CodeDynamicConfig.getProtocolVersion());
-        head.setType("Encryption");
+        head.setType("RSAEncryption");
         protocol.setMessageHead(head);
         NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-        body.setMessage(EncryptionKey);
+        body.setMessage(keyData.PublicKey);
         body.setFileLong(0);
         protocol.setMessageBody(body);
 
-        NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
+        NetworkManager.WriteDataToRemote(clientNetworkData,RSA.encrypt(gson.toJson(protocol),key));
         //发送完毕，开始测试
         //测试RSA
+        protocol = new NormalProtocol();
+        head = new NormalProtocol.MessageHead();
+        head.setType("Test");
+        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+        protocol.setMessageHead(head);
+        body = new NormalProtocol.MessageBody();
+        body.setMessage("你好服务端");
+        protocol.setMessageBody(body);
+        NetworkManager.WriteDataToRemote(clientNetworkData,RSA.encrypt(gson.toJson(protocol),key));
+
         String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
         if ("Decryption Error".equals(json))
         {
@@ -139,22 +147,13 @@ public class ClientMain extends GeneralMethod {
             else
                 System.exit(0);
         }
+        json = RSA.decrypt(json,keyData.privateKey);
         protocol = getClient().protocolRequest(json);
         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
         {
             return;
         }
-        logger.info("服务端响应："+RSA.decrypt(protocol.getMessageBody().getMessage(),keyData.privateKey));
-
-        protocol = new NormalProtocol();
-        head = new NormalProtocol.MessageHead();
-        head.setType("Test");
-        head.setVersion(CodeDynamicConfig.getProtocolVersion());
-        protocol.setMessageHead(head);
-        body = new NormalProtocol.MessageBody();
-        body.setMessage(RSA.encrypt("你好服务端",key));
-        protocol.setMessageBody(body);
-        NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
+        logger.info("服务端响应："+protocol.getMessageBody().getMessage());
     }
     @Contract(pure = true)
     protected String[] RequestUserNameAndPassword()
@@ -298,10 +297,13 @@ public class ClientMain extends GeneralMethod {
             Address = ServerAddress;
             logger.info("远程主机地址：" + clientNetworkData.getRemoteSocketAddress());
             //测试明文通讯
-            logger.info("服务端响应："+NetworkManager.RecvDataFromRemote(clientNetworkData));
             NetworkManager.WriteDataToRemote(clientNetworkData,"Hello Server");
+
             logger.info("服务端响应："+NetworkManager.RecvDataFromRemote(clientNetworkData));
+
             NetworkManager.WriteDataToRemote(clientNetworkData,"你好，服务端");
+
+            logger.info("服务端响应："+NetworkManager.RecvDataFromRemote(clientNetworkData));
             //初始化心跳包
             getTimerThreadPool().scheduleWithFixedDelay(() -> {
                 try {
@@ -311,14 +313,8 @@ public class ClientMain extends GeneralMethod {
                 }
             },0,CodeDynamicConfig.HeartbeatInterval,TimeUnit.SECONDS);
             //测试通讯协议
-            NormalProtocol protocol = protocolRequest(NetworkManager.RecvDataFromRemote(clientNetworkData));
-            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
-            {
-                return;
-            }
-            logger.info("服务端响应："+protocol.getMessageBody().getMessage());
             Gson gson = new Gson();
-            protocol = new NormalProtocol();
+            NormalProtocol protocol = new NormalProtocol();
             NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
             head.setVersion(CodeDynamicConfig.getProtocolVersion());
             head.setType("Test");
@@ -327,6 +323,14 @@ public class ClientMain extends GeneralMethod {
             body.setMessage("你好服务端");
             protocol.setMessageBody(body);
             NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
+
+            protocol = protocolRequest(NetworkManager.RecvDataFromRemote(clientNetworkData));
+            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
+            {
+                return;
+            }
+            logger.info("服务端响应："+protocol.getMessageBody().getMessage());
+
             //加密处理
             if (!getServerPublicKeyFile().exists())
             {
@@ -342,63 +346,47 @@ public class ClientMain extends GeneralMethod {
             }
             RequestRSA(ServerPublicKey);
             //AES制造开始
-            String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-            protocol = getClient().protocolRequest(json);
-            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
-            {
-                return;
-            }
-            String RandomForServer = RSA.decrypt(protocol.getMessageBody().getMessage(),keyData.privateKey);
             String RandomForClient = UUID.randomUUID().toString();
             protocol = new NormalProtocol();
             head = new NormalProtocol.MessageHead();
-            head.setType("Encryption");
+            head.setType("AESEncryption");
             head.setVersion(CodeDynamicConfig.getProtocolVersion());
             protocol.setMessageHead(head);
             body = new NormalProtocol.MessageBody();
-            body.setMessage(RSA.encrypt(RandomForClient,ServerPublicKey));
+            body.setMessage(RandomForClient);
             protocol.setMessageBody(body);
-            NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
+            NetworkManager.WriteDataToRemote(clientNetworkData,RSA.encrypt(gson.toJson(protocol),ServerPublicKey));
+
+            String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+            json = RSA.decrypt(json,keyData.privateKey);
+            protocol = getClient().protocolRequest(json);
+            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("AESEncryption".equals(protocol.getMessageHead().getType())))
+            {
+                return;
+            }
+            String RandomForServer = protocol.getMessageBody().getMessage();
             SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(getClient().GenerateKey(RandomForServer+RandomForClient)));
             final AES aes = cn.hutool.crypto.SecureUtil.aes(key.getEncoded());
             this.aes = aes;
             //开始AES测试
-            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-            protocol = getClient().protocolRequest(json);
-            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
-            {
-                return;
-            }
-            logger.info("服务器响应："+aes.decryptStr(protocol.getMessageBody().getMessage()));
             protocol = new NormalProtocol();
             head = new NormalProtocol.MessageHead();
             head.setVersion(CodeDynamicConfig.getProtocolVersion());
             head.setType("Test");
             protocol.setMessageHead(head);
             body = new NormalProtocol.MessageBody();
-            body.setMessage(aes.encryptBase64("你好服务端"));
+            body.setMessage("你好服务端");
             protocol.setMessageBody(body);
-            NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
-            //开始升级协议
+            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(protocol)));
+
             json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+            json = aes.decryptStr(json);
             protocol = getClient().protocolRequest(json);
-            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("UpdateProtocol".equals(protocol.getMessageHead().getType())))
+            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
             {
                 return;
             }
-            if (!("Update To All Encryption".equals(aes.decryptStr(protocol.getMessageBody().getMessage()))))
-            {
-                return;
-            }
-            protocol = new NormalProtocol();
-            head = new NormalProtocol.MessageHead();
-            head.setVersion(CodeDynamicConfig.getProtocolVersion());
-            head.setType("UpdateProtocol");
-            protocol.setMessageHead(head);
-            body = new NormalProtocol.MessageBody();
-            body.setMessage(aes.encryptBase64("ok"));
-            protocol.setMessageBody(body);
-            NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
+            logger.info("服务器响应："+protocol.getMessageBody().getMessage());
             //额外的配置项目
             json = NetworkManager.RecvDataFromRemote(clientNetworkData);
             json = aes.decryptStr(json);

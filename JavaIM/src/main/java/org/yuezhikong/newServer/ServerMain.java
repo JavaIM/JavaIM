@@ -179,11 +179,13 @@ public class ServerMain extends GeneralMethod implements IServerMain {
             else
                 User.UserDisconnect();
         }
+        private Thread RecvMessageThread;
         public void run()
         {
             try
             {
                 run0();
+                Thread.interrupted();
             } catch (Throwable throwable)
             {
                 if (CodeDynamicConfig.GetDebugMode())
@@ -196,6 +198,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
             }
         }
         private void run0() {
+            RecvMessageThread = Thread.currentThread();
             CurrentUser.setRecvMessageThread(this);
             Logger logger = getServer().logger;
             api API = getServer().API;
@@ -204,13 +207,21 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 final String ServerPrivateKey = FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"),StandardCharsets.UTF_8);
                 //开始握手
                 //测试明文通讯
+                logger.info("正在连接的客户端返回："+NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10));
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,"Hello Client");
                 logger.info("正在连接的客户端返回："+NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10));
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,"你好，客户端");
-                logger.info("正在连接的客户端返回："+NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10));
                 //测试通讯协议
+                String json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
+                NormalProtocol protocol = getServer().protocolRequest(json);
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
+                {
+                    return;
+                }
+                logger.info("正在连接的客户端返回："+protocol.getMessageBody().getMessage());
+
                 Gson gson = new Gson();
-                NormalProtocol protocol = new NormalProtocol();
+                protocol = new NormalProtocol();
                 NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
                 head.setVersion(CodeDynamicConfig.getProtocolVersion());
                 head.setType("Test");
@@ -220,22 +231,16 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body.setFileLong(0);
                 protocol.setMessageBody(body);
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
-                String json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
-                protocol = getServer().protocolRequest(json);
-                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
-                {
-                    return;
-                }
-                logger.info("正在连接的客户端返回："+protocol.getMessageBody().getMessage());
                 //RSA Key传递
                 json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
+                json = RSA.decrypt(json,ServerPrivateKey);
                 protocol = getServer().protocolRequest(json);
-                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("RSAEncryption".equals(protocol.getMessageHead().getType())))
                 {
                     return;
                 }
                 try {
-                    CurrentUser.setPublicKey(RSA.decrypt(protocol.getMessageBody().getMessage(), ServerPrivateKey));
+                    CurrentUser.setPublicKey(protocol.getMessageBody().getMessage());
                 } catch (cn.hutool.crypto.CryptoException e)
                 {
                     NetworkManager.WriteDataToRemote(CurrentUserNetworkData,"Decryption Error");
@@ -245,42 +250,44 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                     return;
                 }
                 //测试RSA
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
+                json = RSA.decrypt(json,ServerPrivateKey);
+                protocol = getServer().protocolRequest(json);
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
+                {
+                    return;
+                }
+                logger.info("正在连接的客户端返回："+protocol.getMessageBody().getMessage());
+
                 protocol = new NormalProtocol();
                 head = new NormalProtocol.MessageHead();
                 head.setType("Test");
                 head.setVersion(CodeDynamicConfig.getProtocolVersion());
                 protocol.setMessageHead(head);
                 body = new NormalProtocol.MessageBody();
-                body.setMessage(RSA.encrypt("你好客户端",CurrentUser.getPublicKey()));
+                body.setMessage("你好客户端");
                 protocol.setMessageBody(body);
-                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
-
-                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
-                protocol = getServer().protocolRequest(json);
-                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
-                {
-                    return;
-                }
-                logger.info("正在连接的客户端返回："+RSA.decrypt(protocol.getMessageBody().getMessage(),ServerPrivateKey));
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,RSA.encrypt(gson.toJson(protocol),CurrentUser.getPublicKey()));
                 //AES制造开始
                 protocol = new NormalProtocol();
                 head = new NormalProtocol.MessageHead();
-                head.setType("Encryption");
+                head.setType("AESEncryption");
                 head.setVersion(CodeDynamicConfig.getProtocolVersion());
                 protocol.setMessageHead(head);
                 body = new NormalProtocol.MessageBody();
                 String RandomForServer = UUID.randomUUID().toString();
-                body.setMessage(RSA.encrypt(RandomForServer,CurrentUser.getPublicKey()));
+                body.setMessage(RandomForServer);
                 protocol.setMessageBody(body);
-                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,RSA.encrypt(gson.toJson(protocol),CurrentUser.getPublicKey()));
 
                 json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
+                json = RSA.decrypt(json,ServerPrivateKey);
                 protocol = getServer().protocolRequest(json);
-                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Encryption".equals(protocol.getMessageHead().getType())))
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("AESEncryption".equals(protocol.getMessageHead().getType())))
                 {
                     return;
                 }
-                SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(getServer().GenerateKey(RandomForServer+RSA.decrypt(protocol.getMessageBody().getMessage(),ServerPrivateKey))));
+                SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(getServer().GenerateKey(RandomForServer+protocol.getMessageBody().getMessage())));
                 CurrentUser.setUserAES(cn.hutool.crypto.SecureUtil.aes(key.getEncoded()));
                 //测试AES
                 protocol = new NormalProtocol();
@@ -289,40 +296,19 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 head.setType("Test");
                 protocol.setMessageHead(head);
                 body = new NormalProtocol.MessageBody();
-                body.setMessage(CurrentUser.getUserAES().encryptBase64("你好客户端"));
+                body.setMessage("你好客户端");
                 body.setFileLong(0);
                 protocol.setMessageBody(body);
-                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
 
                 json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
+                json = CurrentUser.getUserAES().decryptStr(json);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
                 {
                     return;
                 }
-                logger.info("正在连接的客户端返回："+CurrentUser.getUserAES().decryptStr(protocol.getMessageBody().getMessage()));
-                //升级通讯协议
-                protocol = new NormalProtocol();
-                head = new NormalProtocol.MessageHead();
-                head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                head.setType("UpdateProtocol");
-                protocol.setMessageHead(head);
-                body = new NormalProtocol.MessageBody();
-                body.setMessage(CurrentUser.getUserAES().encryptBase64("Update To All Encryption"));
-                body.setFileLong(0);
-                protocol.setMessageBody(body);
-                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
-
-                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
-                protocol = getServer().protocolRequest(json);
-                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("UpdateProtocol".equals(protocol.getMessageHead().getType())))
-                {
-                    return;
-                }
-                if (!("ok".equals(CurrentUser.getUserAES().decryptStr(protocol.getMessageBody().getMessage()))))
-                {
-                    return;
-                }
+                logger.info("正在连接的客户端返回："+protocol.getMessageBody().getMessage());
                 //询问是否允许TransferProtocol
                 protocol = new NormalProtocol();
                 head = new NormalProtocol.MessageHead();
@@ -489,6 +475,9 @@ public class ServerMain extends GeneralMethod implements IServerMain {
             }
         }
 
+        public void interrupt() {
+            RecvMessageThread.interrupt();
+        }
     }
 
     private PluginManager pluginManager;
