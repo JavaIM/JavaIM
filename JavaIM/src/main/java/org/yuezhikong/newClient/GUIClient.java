@@ -30,10 +30,6 @@ public class GUIClient extends ClientMain {
         return logger;
     }
 
-    public void setServerPublicKeyFile(File serverPublicKeyFile) {
-        ServerPublicKeyFile = serverPublicKeyFile;
-    }
-
     @Override
     protected File getServerPublicKeyFile() {
         return ServerPublicKeyFile;
@@ -95,7 +91,7 @@ public class GUIClient extends ClientMain {
             }
             else
             {
-                writeRequiredInformation(UserInput.UserName(),UserInput.Password(),UserInput.isLegacyLogin());
+                writeRequiredInformation(UserInput.UserName(),UserInput.Password(),UserInput.isLegacyLogin(), ServerPublicKeyFile);
             }
         }
 
@@ -318,9 +314,10 @@ public class GUIClient extends ClientMain {
         return UserData;
     }
 
-    public void writeRequiredInformation(String userName, String password, boolean isLegacyLogin) {
+    public void writeRequiredInformation(String userName, String password, boolean isLegacyLogin,File ServerPublicKey) {
         UserData = new String[] { userName , password };
         LegacyLogin = isLegacyLogin;
+        ServerPublicKeyFile = ServerPublicKey;
     }
 
     private boolean AllowShutdownTimerThreadPool = true;

@@ -130,7 +130,7 @@ public final class NetworkManager {
             {
                 if (NumberOfRetryFork == 0)
                     return null;
-                NumberOfRetryFork+=1;
+                NumberOfRetryFork-=1;
             }
 
             data = reader.readLine();

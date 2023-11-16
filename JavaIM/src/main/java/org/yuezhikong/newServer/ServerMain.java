@@ -233,14 +233,13 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,gson.toJson(protocol));
                 //RSA Key传递
                 json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
-                json = RSA.decrypt(json,ServerPrivateKey);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("RSAEncryption".equals(protocol.getMessageHead().getType())))
                 {
                     return;
                 }
                 try {
-                    CurrentUser.setPublicKey(protocol.getMessageBody().getMessage());
+                    CurrentUser.setPublicKey(RSA.decrypt(protocol.getMessageBody().getMessage(), ServerPrivateKey));
                 } catch (cn.hutool.crypto.CryptoException e)
                 {
                     NetworkManager.WriteDataToRemote(CurrentUserNetworkData,"Decryption Error");
@@ -290,6 +289,14 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(getServer().GenerateKey(RandomForServer+protocol.getMessageBody().getMessage())));
                 CurrentUser.setUserAES(cn.hutool.crypto.SecureUtil.aes(key.getEncoded()));
                 //测试AES
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
+                json = CurrentUser.getUserAES().decryptStr(json);
+                protocol = getServer().protocolRequest(json);
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
+                {
+                    return;
+                }
+
                 protocol = new NormalProtocol();
                 head = new NormalProtocol.MessageHead();
                 head.setVersion(CodeDynamicConfig.getProtocolVersion());
@@ -300,27 +307,8 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body.setFileLong(0);
                 protocol.setMessageBody(body);
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
-
-                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
-                json = CurrentUser.getUserAES().decryptStr(json);
-                protocol = getServer().protocolRequest(json);
-                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
-                {
-                    return;
-                }
                 logger.info("正在连接的客户端返回："+protocol.getMessageBody().getMessage());
                 //询问是否允许TransferProtocol
-                protocol = new NormalProtocol();
-                head = new NormalProtocol.MessageHead();
-                head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                head.setType("options");
-                protocol.setMessageHead(head);
-                body = new NormalProtocol.MessageBody();
-                body.setMessage("AllowTransferProtocol");
-                body.setFileLong(0);
-                protocol.setMessageBody(body);
-                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
-
                 json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 json = CurrentUser.getUserAES().decryptStr(json);
                 protocol = getServer().protocolRequest(json);
@@ -328,7 +316,18 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 {
                     return;
                 }
-                CurrentUser.setAllowedTransferProtocol("Enable".equals(protocol.getMessageBody().getMessage()));
+                CurrentUser.setAllowedTransferProtocol("AllowedTransferProtocol:Enable".equals(protocol.getMessageBody().getMessage()));
+
+                protocol = new NormalProtocol();
+                head = new NormalProtocol.MessageHead();
+                head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                head.setType("options");
+                protocol.setMessageHead(head);
+                body = new NormalProtocol.MessageBody();
+                body.setMessage("Accept");
+                body.setFileLong(0);
+                protocol.setMessageBody(body);
+                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
                 //握手全部完毕，后续是登录系统
                 try {
                     LoginSystem(CurrentUser);

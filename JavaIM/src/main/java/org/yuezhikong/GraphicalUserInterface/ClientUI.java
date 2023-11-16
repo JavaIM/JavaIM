@@ -81,7 +81,7 @@ public class ClientUI extends DefaultController implements Initializable {
         if (new File("./token.txt").exists())
         {
             Instance = new GUIClient(this);
-            Instance.writeRequiredInformation("","", false);
+            Instance.writeRequiredInformation("","", false,ServerPublicKey);
             Instance.start(ServerAddress, Integer.parseInt(ServerPort));
             return;
         }
@@ -93,12 +93,7 @@ public class ClientUI extends DefaultController implements Initializable {
             String Password = UserLoginData.get().Password();
             //后续代码等待正式开启ui系统
             Instance = new GUIClient(this);
-            Instance.writeRequiredInformation(UserName,Password, UserLoginData.get().isLegacyLogin());
-            //为null时使用默认路径
-            if (ServerPublicKey != null)
-            {
-                Instance.setServerPublicKeyFile(ServerPublicKey);
-            }
+            Instance.writeRequiredInformation(UserName,Password, UserLoginData.get().isLegacyLogin(),ServerPublicKey);
             if (TimerThreadPool == null)
                 TimerThreadPool = Executors.newScheduledThreadPool(1, new ThreadFactory() {
                     private final AtomicInteger threadNumber = new AtomicInteger(1);

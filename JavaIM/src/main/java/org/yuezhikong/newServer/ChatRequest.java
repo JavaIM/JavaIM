@@ -441,6 +441,8 @@ public class ChatRequest {
                                 stringBuilder.deleteCharAt(stringBuilder.length() - 1);
                             }
 
+                            stringBuilder.delete(0,CommandInformation.argv()[0].length() + 1);
+
                             String ChatMessage = stringBuilder.toString();
                             ChatRequestInput input = new ChatRequestInput(chatMessageInfo.getUser(), ChatMessage);
                             ChatFormat(input);
@@ -448,6 +450,7 @@ public class ChatRequest {
                             if (CommandInformation.argv()[0].equals("Server"))
                             {
                                 ServerMain.getServer().getLogger().ChatMsg("[私聊] " + input.getChatMessage());
+                                API.SendMessageToUser(chatMessageInfo.getUser(), "你对" + CommandInformation.argv()[0] + "发送了私聊：" + ChatMessage);
                                 break;
                             }
                             try {

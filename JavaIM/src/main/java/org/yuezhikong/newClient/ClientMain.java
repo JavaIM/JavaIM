@@ -110,19 +110,22 @@ public class ClientMain extends GeneralMethod {
         logger.info("客户端密钥制作完成！");
         logger.info("公钥是："+keyData.PublicKey);
         logger.info("私钥是："+keyData.PrivateKey);
+        String EncryptionKey = RSA.encrypt(keyData.PublicKey, key);
+        logger.info("加密后的Key是："+EncryptionKey);
         logger.info("正在发送公钥");
         Gson gson = new Gson();
+
         NormalProtocol protocol = new NormalProtocol();
         NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
         head.setVersion(CodeDynamicConfig.getProtocolVersion());
         head.setType("RSAEncryption");
         protocol.setMessageHead(head);
         NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-        body.setMessage(keyData.PublicKey);
+        body.setMessage(EncryptionKey);
         body.setFileLong(0);
         protocol.setMessageBody(body);
 
-        NetworkManager.WriteDataToRemote(clientNetworkData,RSA.encrypt(gson.toJson(protocol),key));
+        NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
         //发送完毕，开始测试
         //测试RSA
         protocol = new NormalProtocol();
@@ -142,8 +145,10 @@ public class ClientMain extends GeneralMethod {
             logger.error("服务端返回：Decryption Error");
             logger.error("服务端无法解密");
             logger.error("程序即将退出");
-            if (SpecialMode)
+            if (SpecialMode) {
                 getClientThreadGroup().interrupt();
+                return;
+            }
             else
                 System.exit(0);
         }
@@ -344,8 +349,10 @@ public class ClientMain extends GeneralMethod {
                 QuitReason = "服务端公钥未被配置";
                 return;
             }
+            logger.info("正在配置RSA加密...");
             RequestRSA(ServerPublicKey);
             //AES制造开始
+            logger.info("正在配置AES加密...");
             String RandomForClient = UUID.randomUUID().toString();
             protocol = new NormalProtocol();
             head = new NormalProtocol.MessageHead();
@@ -388,17 +395,7 @@ public class ClientMain extends GeneralMethod {
             }
             logger.info("服务器响应："+protocol.getMessageBody().getMessage());
             //额外的配置项目
-            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-            json = aes.decryptStr(json);
-            protocol = getClient().protocolRequest(json);
-            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("options".equals(protocol.getMessageHead().getType())))
-            {
-                return;
-            }
-            if (!("AllowTransferProtocol".equals(protocol.getMessageBody().getMessage())))
-            {
-                return;
-            }
+            logger.info("正在配置TransferProtocol...");
             protocol = new NormalProtocol();
             head = new NormalProtocol.MessageHead();
             head.setVersion(CodeDynamicConfig.getProtocolVersion());
@@ -406,14 +403,25 @@ public class ClientMain extends GeneralMethod {
             protocol.setMessageHead(head);
             body = new NormalProtocol.MessageBody();
             if (CodeDynamicConfig.AllowedTransferProtocol) {
-                body.setMessage("Enable");
+                body.setMessage("AllowedTransferProtocol:Enable");
             }
             else
             {
-                body.setMessage("Disabled");
+                body.setMessage("AllowedTransferProtocol:Disabled");
             }
             protocol.setMessageBody(body);
             NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(protocol)));
+
+            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+            json = aes.decryptStr(json);
+            protocol = getClient().protocolRequest(json);
+            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion()
+                    || !("options".equals(protocol.getMessageHead().getType()))
+                    || !("Accept".equals(protocol.getMessageBody().getMessage())))
+            {
+                return;
+            }
+            logger.info("服务器响应："+protocol.getMessageBody().getMessage());
             //握手完成，接下来是登录逻辑
             if (new File("./token.txt").exists() && new File("./token.txt").isFile() && new File("./token.txt").canRead())
             {
