@@ -10,16 +10,26 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
+import org.apache.commons.io.FileUtils;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.PortInputDialog;
 import org.yuezhikong.newServer.GUIServer;
-import org.yuezhikong.newServer.ServerMain;
+import org.yuezhikong.newServer.IServerMain;
+import org.yuezhikong.newServer.NettyNetwork;
+import org.yuezhikong.newServer.ServerTools;
+import org.yuezhikong.utils.Logger;
 
 import java.awt.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class ServerUI extends DefaultController implements Initializable {
+
+    public RadioButton NettyServerStatus;
+    public RadioButton BlockingIOServerStatus;
 
     static class GraphicalUserManagement extends ContextMenu
     {
@@ -58,7 +68,7 @@ public class ServerUI extends DefaultController implements Initializable {
 
     private String UISelectUserName;
 
-    private GUIServer ServerInstance;
+    private IServerMain ServerInstance;
 
     @Override
     public void WriteChatMessage(String msg) {
@@ -84,10 +94,18 @@ public class ServerUI extends DefaultController implements Initializable {
         SystemLog.textProperty().addListener(
                 (observableValue, oldValue, newValue) -> SystemLog.setScrollTop(Double.MAX_VALUE)
         );
+
+        ToggleGroup toggleGroup = new ToggleGroup();
+        NettyServerStatus.setToggleGroup(toggleGroup);
+        BlockingIOServerStatus.setToggleGroup(toggleGroup);
+
         GraphicalUserManagement.getInstance().getKickUser().setOnAction(actionEvent -> {
             if (ServerInstance != null)
             {
-                ServerInstance.ServerCommandSend("kick "+UISelectUserName);
+                if (ServerInstance instanceof GUIServer)
+                    ((GUIServer) ServerInstance).ServerCommandSend("kick "+UISelectUserName);
+                else if (ServerInstance instanceof NettyNetwork)
+                    ((NettyNetwork) ServerInstance).ServerCommandSend("kick "+UISelectUserName);
             }
         });
         GraphicalUserManagement.getInstance().getTellUser().setOnAction(actionEvent -> {
@@ -110,7 +128,10 @@ public class ServerUI extends DefaultController implements Initializable {
                 }
                 else
                 {
-                    ServerInstance.ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
+                    if (ServerInstance instanceof GUIServer)
+                        ((GUIServer) ServerInstance).ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
+                    else if (ServerInstance instanceof NettyNetwork)
+                        ((NettyNetwork) ServerInstance).ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
                 }
             }
         });
@@ -131,19 +152,25 @@ public class ServerUI extends DefaultController implements Initializable {
     public void SendCommand(ActionEvent actionEvent) {
         if (ServerInstance == null)
             return;
-        ServerInstance.ServerCommandSend(CommandInput.getText());
+        if (ServerInstance instanceof GUIServer)
+            ((GUIServer) ServerInstance).ServerCommandSend(CommandInput.getText());
+        else if (ServerInstance instanceof NettyNetwork)
+            ((NettyNetwork) ServerInstance).ServerCommandSend(CommandInput.getText());
         CommandInput.clear();
     }
 
     public void SendMessage(ActionEvent actionEvent) {
         if (ServerInstance == null)
             return;
-        ServerInstance.ServerChatMessageSend(MessageInput.getText());
+        if (ServerInstance instanceof GUIServer)
+            ((GUIServer) ServerInstance).ServerChatMessageSend(MessageInput.getText());
+        else if (ServerInstance instanceof NettyNetwork)
+            ((NettyNetwork) ServerInstance).ServerChatMessageSend(MessageInput.getText());
         MessageInput.clear();
     }
 
     public void StartorCloseServer(ActionEvent actionEvent) {
-        if (ServerMain.getServer() == null)
+        if (ServerTools.getServerInstance() == null)
         {
             int ServerPort;
             PortInputDialog portInputDialog = new PortInputDialog();
@@ -164,13 +191,50 @@ public class ServerUI extends DefaultController implements Initializable {
                 alert.showAndWait();
                 return;
             }
-            ServerInstance = new GUIServer(this);
-            ServerInstance.start(ServerPort);
+
+            BlockingIOServerStatus.setDisable(true);
+            NettyServerStatus.setDisable(true);
+            if (BlockingIOServerStatus.isSelected()) {
+                ServerInstance = new GUIServer(this);
+                ((GUIServer) ServerInstance).start(ServerPort);
+            } else
+            {
+                Logger ServerLogger = new Logger(this);
+                if (NettyNetwork.getNettyNetwork().ServerStartStatus())
+                    throw new IllegalStateException("The Netty Server is Start Successful in this time!");
+                NettyNetwork.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", ServerLogger);
+                NettyNetwork.getNettyNetwork().setLogger(ServerLogger);
+                NettyNetwork.getNettyNetwork().AddLoginRecall((user) -> UpdateUser(true,user.getUserName()));
+                NettyNetwork.getNettyNetwork().AddDisconnectRecall((user) -> {
+                    if (user.isUserLogined())
+                    {
+                        UpdateUser(false,user.getUserName());
+                    }
+                });
+                ServerInstance = NettyNetwork.getNettyNetwork();
+                new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Server Group"),"Server Thread")
+                {
+                    @Override
+                    public void run() {
+                        try {
+                            NettyNetwork.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }.start();
+            }
         }
         else
         {
+            IServerMain instance = ServerInstance;
             ServerInstance = null;
-            StopServer();
+            if (instance instanceof GUIServer)
+                StopServer();
+            else if (instance instanceof NettyNetwork)
+                ((NettyNetwork) instance).StopNettyChatRoom();
+            BlockingIOServerStatus.setDisable(false);
+            NettyServerStatus.setDisable(false);
         }
     }
 

@@ -6,6 +6,7 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -50,5 +51,7 @@
       <Label layoutX="459.0" layoutY="243.0" text="发送命令" />
       <Button layoutX="239.0" layoutY="297.0" mnemonicParsing="false" onAction="#SendMessage" text="发送" />
       <Button layoutX="454.0" layoutY="297.0" mnemonicParsing="false" onAction="#SendCommand" text="发送" />
+      <RadioButton fx:id="NettyServerStatus" layoutX="353.0" layoutY="335.0" mnemonicParsing="false" text="Netty服务器" />
+      <RadioButton fx:id="BlockingIOServerStatus" layoutX="205.0" layoutY="335.0" mnemonicParsing="false" selected="true" text="Blocking IO服务器" />
    </AnchorPane>
 </VBox>

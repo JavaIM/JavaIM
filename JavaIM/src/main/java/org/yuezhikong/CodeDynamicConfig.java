@@ -22,13 +22,13 @@ import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
-    private static final int ProtocolVersion = 6;
+    private static final int ProtocolVersion = 7;
     //本程序版本：
     private static final String Version = "InDev";
     //调试模式
-    private static final boolean Debug_Mode = true;
+    private static final boolean Debug_Mode = false;
     //本版本为实验性版本
-    private static final boolean ThisVersionIsExpVersion = true;
+    private static final boolean ThisVersionIsExpVersion = false;
     //如果为测试性版本，则信息为：
     private static final String ExpVersionText = "此版本包含GUI测试";
     //是否为Windows操作系统

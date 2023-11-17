@@ -5,19 +5,17 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
+import org.yuezhikong.newServer.api.api;
+import org.yuezhikong.newServer.plugin.PluginManager;
 import org.yuezhikong.newServer.plugin.event.events.PreLoginEvent;
-import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.DataBase.Database;
-import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -38,20 +36,26 @@ public final class UserAuthentication implements IUserAuthentication{
     private final user User;
 
     //回调区
-    private final List<Runnable> LoginRecalls = new ArrayList<>();
+    private final List<UserRecall> LoginRecalls = new ArrayList<>();
     private final Object LoginRecallLock = new Object();
 
     private final ExecutorService IOThreadPool;
 
+    private PluginManager pluginManager;
+    private api serverAPI;
     /**
      * 实例化用户Auth实现
      * @param User 用户
      * @param IOThreadPool io线程池
+     * @param manager 插件管理器
+     * @param API 服务器API
      */
-    public UserAuthentication(@NotNull user User, @NotNull ExecutorService IOThreadPool)
+    public UserAuthentication(@NotNull user User, @NotNull ExecutorService IOThreadPool, PluginManager manager, api API)
     {
         this.User = User;
         this.IOThreadPool = IOThreadPool;
+        pluginManager = manager;
+        serverAPI = API;
     }
 
     private abstract class IOPoolAndWaitResult
@@ -96,8 +100,8 @@ public final class UserAuthentication implements IUserAuthentication{
                 return false;
             }
             synchronized (LoginRecalls) {
-                for (Runnable recall : LoginRecalls) {
-                    recall.run();
+                for (UserRecall recall : LoginRecalls) {
+                    recall.run(User);
                 }
                 LoginRecalls.clear();
             }
@@ -118,14 +122,15 @@ public final class UserAuthentication implements IUserAuthentication{
             {
                 UserName = rs.getString("UserName");
                 try {
-                    ServerMain.getServer().getServerAPI().GetUserByUserName(UserName);
+
+                    serverAPI.GetUserByUserName(UserName);
                     //说明目前是已经有同一名字的用户登录了
                     //因此，禁止登录
                     return false;
                 } catch (AccountNotFoundException ignored) {}
                 //插件处理
                 PreLoginEvent event = new PreLoginEvent(UserName,true);
-                ServerMain.getServer().getPluginManager().callEvent(event);
+                pluginManager.callEvent(event);
                 if (event.isCancel())
                 {
                     //插件要求禁止登录，所以直接关闭连接
@@ -142,7 +147,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 body.setMessage("Success");
                 protocol.setMessageBody(body);
                 String json = new Gson().toJson(protocol);
-                ServerMain.getServer().getServerAPI().SendJsonToClient(User,json);
+                serverAPI.SendJsonToClient(User,json);
                 return true;
             }
             else
@@ -157,8 +162,8 @@ public final class UserAuthentication implements IUserAuthentication{
                 body.setMessage("Fail");
                 protocol.setMessageBody(body);
                 String json = new Gson().toJson(protocol);
-                ServerMain.getServer().getServerAPI().SendJsonToClient(User,json);
-                return RetryLogin();
+                serverAPI.SendJsonToClient(User,json);
+                return false;
             }
         } catch (Database.DatabaseException | SQLException e) {
             SaveStackTrace.saveStackTrace(e);
@@ -168,41 +173,12 @@ public final class UserAuthentication implements IUserAuthentication{
         }
     }
 
-    private boolean RetryLogin()
-    {
-        String json;
-        try {
-            if (!(User instanceof PluginUser)) {
-                json = NetworkManager.RecvDataFromRemote(User.getUserNetworkData(),10);
-                json = User.getUserAES().decryptStr(json);
-            }
-            else
-                json = ((PluginUser) User).waitData();//如果为插件用户，则等待插件返回
-            LoginProtocol loginProtocol = new Gson().fromJson(json,LoginProtocol.class);
-            if ("token".equals(loginProtocol.getLoginPacketHead().getType()))
-            {
-                return DoTokenLoginNoNewThread(loginProtocol.getLoginPacketBody().getReLogin().getToken());
-            }
-            else if ("passwd".equals(loginProtocol.getLoginPacketHead().getType()))
-            {
-                return DoPasswordLoginNoNewThread(loginProtocol.getLoginPacketBody().getNormalLogin().getUserName(),
-                        loginProtocol.getLoginPacketBody().getNormalLogin().getPasswd());
-            }
-            else
-            {
-                return false;
-            }
-        } catch (IOException e)
-        {
-            return false;
-        }
-    }
     private boolean PostUserNameAndPasswordLogin(Connection DatabaseConnection,int PermissionLevel) throws SQLException {
         User.SetUserPermission(PermissionLevel,true);
         if (User.getUserPermission().equals(Permission.BAN))
         {
-            ServerMain.getServer().getServerAPI().SendMessageToUser(User,"登录失败，此用户已被永久封禁");
-            return RetryLogin();
+            serverAPI.SendMessageToUser(User,"登录失败，此用户已被永久封禁");
+            return false;
         }
         String token;
         PreparedStatement ps;
@@ -222,7 +198,7 @@ public final class UserAuthentication implements IUserAuthentication{
 
         //插件处理
         PreLoginEvent event = new PreLoginEvent(UserName,false);
-        ServerMain.getServer().getPluginManager().callEvent(event);
+        pluginManager.callEvent(event);
         if (event.isCancel())
         {
             //插件要求禁止登录，所以直接关闭连接
@@ -240,7 +216,7 @@ public final class UserAuthentication implements IUserAuthentication{
         MessageBody.setMessage(token);
         protocolData.setMessageBody(MessageBody);
         String json = new Gson().toJson(protocolData);
-        ServerMain.getServer().getServerAPI().SendJsonToClient(User,json);
+        serverAPI.SendJsonToClient(User,json);
         //设置登录成功
         UserLogged = true;
         User.UserLogin(UserName);
@@ -250,16 +226,16 @@ public final class UserAuthentication implements IUserAuthentication{
     {
         if ("Server".equals(UserName))
         {
-            ServerMain.getServer().getServerAPI().SendMessageToUser(User,"禁止使用受保护的用户名：Server");
-            return RetryLogin();
+            serverAPI.SendMessageToUser(User,"禁止使用受保护的用户名：Server");
+            return false;
         }
         if (UserName == null || Password == null || UserName.isEmpty() || Password.isEmpty())
         {
-            ServerMain.getServer().getServerAPI().SendMessageToUser(User,"禁止使用空字符串！");
-            return RetryLogin();
+            serverAPI.SendMessageToUser(User,"禁止使用空字符串！");
+            return false;
         }
         try {
-            ServerMain.getServer().getServerAPI().GetUserByUserName(UserName);
+            serverAPI.GetUserByUserName(UserName);
             //说明目前是已经有同一名字的用户登录了
             //因此，禁止登录
             return false;
@@ -284,8 +260,8 @@ public final class UserAuthentication implements IUserAuthentication{
                 }
                 else
                 {
-                    ServerMain.getServer().getServerAPI().SendMessageToUser(User,"登录失败，用户名或密码错误");
-                    return RetryLogin();
+                    serverAPI.SendMessageToUser(User,"登录失败，用户名或密码错误");
+                    return false;
                 }
             }
             else
@@ -331,8 +307,8 @@ public final class UserAuthentication implements IUserAuthentication{
                 return false;
             }
             synchronized (LoginRecalls) {
-                for (Runnable recall : LoginRecalls) {
-                    recall.run();
+                for (UserRecall recall : LoginRecalls) {
+                    recall.run(User);
                 }
                 LoginRecalls.clear();
             }
@@ -348,7 +324,7 @@ public final class UserAuthentication implements IUserAuthentication{
     }
 
     @Override
-    public void RegisterLoginRecall(Runnable runnable) {
+    public void RegisterLoginRecall(UserRecall runnable) {
         if (!UserLogged)
         {
             synchronized (LoginRecallLock)
@@ -361,7 +337,7 @@ public final class UserAuthentication implements IUserAuthentication{
         }
         else
         {
-            runnable.run();
+            runnable.run(User);
         }
     }
 
@@ -371,10 +347,10 @@ public final class UserAuthentication implements IUserAuthentication{
     }
 
     private volatile boolean Logouted = false;
-    private final List<Runnable> DisconnectRecall = new ArrayList<>();
+    private final List<UserRecall> DisconnectRecall = new ArrayList<>();
     private final Object DisconnectRecallLock = new Object();
     @Override
-    public void RegisterLogoutRecall(Runnable runnable) {
+    public void RegisterLogoutRecall(UserRecall runnable) {
         if (!Logouted) {
             synchronized (DisconnectRecallLock) {
                 if (!Logouted)
@@ -384,7 +360,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 }
             }
         }
-        runnable.run();
+        runnable.run(User);
     }
 
     @Override
@@ -395,8 +371,8 @@ public final class UserAuthentication implements IUserAuthentication{
         synchronized (DisconnectRecallLock)
         {
             if (!Logouted) {
-                for (Runnable runnable : DisconnectRecall) {
-                    runnable.run();
+                for (UserRecall runnable : DisconnectRecall) {
+                    runnable.run(User);
                 }
                 DisconnectRecall.clear();
             }

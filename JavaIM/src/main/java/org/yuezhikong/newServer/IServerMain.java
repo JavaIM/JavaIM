@@ -66,8 +66,4 @@ public interface IServerMain {
      * @return Logger
      */
     Logger getLogger();
-    /**
-     * 在主线程执行代码
-     */
-    void runOnMainThread(Runnable code);
 }

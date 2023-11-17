@@ -167,14 +167,14 @@ public interface user {
      * @param code 函数
      * @apiNote 如果已经登录了，则使用当前线程直接调用回调函数
      */
-    void addLoginRecall(Runnable code);
+    void addLoginRecall(IUserAuthentication.UserRecall code);
 
     /**
      * 添加用户离线回调函数
      * @param code 函数
      * @apiNote 如果已经登录了，则使用当前线程直接调用回调函数
      */
-    void addDisconnectRecall(Runnable code);
+    void addDisconnectRecall(IUserAuthentication.UserRecall code);
 
     /**
      * 设置用户Authentication实例

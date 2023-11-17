@@ -24,6 +24,6 @@ import org.yuezhikong.utils.Logger;
 public class ExpVersionCode {
     public void run(@NotNull Logger logger)
     {
-        Application.launch(MainUI.UIInit.class);
+
     }
 }

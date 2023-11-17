@@ -16,9 +16,13 @@
  */
 package org.yuezhikong;
 
+import javafx.application.Application;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.yuezhikong.GraphicalUserInterface.MainUI;
 import org.yuezhikong.newClient.ClientMain;
+import org.yuezhikong.newServer.NettyNetwork;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Logger;
@@ -26,7 +30,9 @@ import org.yuezhikong.utils.Notice;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 import static org.yuezhikong.CodeDynamicConfig.*;
@@ -245,6 +251,10 @@ public class Main {
         if (UserInput == 1)
         {
             logger.info("请输入绑定的端口");
+            int ServerPort = scanner.nextInt();
+            logger.info("输入1使用Classic Server");
+            logger.info("输入2使用Netty Server");
+            int Select = scanner.nextInt();
             ThreadGroup ServerGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ServerGroup");
             try {
                 new Thread(ServerGroup,"Server Thread")
@@ -252,7 +262,16 @@ public class Main {
                     @Override
                     public void run() {
                         this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
-                        new ServerMain().start(scanner.nextInt());
+                        if (Select == 1)
+                            new ServerMain().start(ServerPort);
+                        else if (Select == 2) {
+                            NettyNetwork.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", logger);
+                            try {
+                                NettyNetwork.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                     }
                     public Thread start2()
                     {
@@ -306,9 +325,9 @@ public class Main {
         }
         else if (isGUIMode())
         {
-            logger.info("GUI功能由于服务端与客户端底层重构，导致已被暂时关闭");
-            logger.info("正在为您使用控制台版本");
-            ConsoleMain();
+            logger.info("欢迎来到JavaIM！版本："+getVersion());
+            logger.info("正在加载GUI...");
+            Application.launch(MainUI.UIInit.class);
         }
         else
             ConsoleMain();

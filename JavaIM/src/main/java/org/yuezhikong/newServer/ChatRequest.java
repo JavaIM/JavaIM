@@ -116,7 +116,7 @@ public class ChatRequest {
 
         //执行插件处理程序
         UserChatEvent chatEvent = new UserChatEvent(ChatMessageInfo.getUser(), ChatMessageInfo.getChatMessage());
-        ServerMain.getServer().getPluginManager().callEvent(chatEvent);
+        instance.getPluginManager().callEvent(chatEvent);
         if (chatEvent.isCancel())
         {
             //插件表明取消此事件，就不要额外处理了
@@ -133,19 +133,19 @@ public class ChatRequest {
     public boolean CommandRequest(@NotNull ChatRequestInput chatMessageInfo) {
         if (chatMessageInfo.getChatMessage().charAt(0) == '/')
         {
-            final api API = ServerMain.getServer().getServerAPI();
+            final api API = instance.getServerAPI();
             try {
                 CustomVar.Command CommandInformation = API.CommandFormat(chatMessageInfo.getChatMessage());
 
                 //插件事件处理
                 UserCommandEvent event = new UserCommandEvent(chatMessageInfo.getUser(), CommandInformation);
-                ServerMain.getServer().getPluginManager().callEvent(event);
+                instance.getPluginManager().callEvent(event);
                 if (event.isCancel()) {
                     return true;
                 }
 
                 //插件指令处理
-                if (ServerMain.getServer().getPluginManager().RequestPluginCommand(CommandInformation,chatMessageInfo.getUser()))
+                if (instance.getPluginManager().RequestPluginCommand(CommandInformation,chatMessageInfo.getUser()))
                 {
                     return true;
                 }
@@ -168,10 +168,11 @@ public class ChatRequest {
                         for (user user : users) {
                             user.UserDisconnect();
                         }
-                        ServerMain.getServer().getRecvMessageThreadGroup().interrupt();
-                        ServerMain.getServer().getUsers().clear();
+                        if (instance instanceof ServerMain)
+                            ((ServerMain) instance).getRecvMessageThreadGroup().interrupt();
+                        instance.getUsers().clear();
                         System.gc();
-                        ServerMain.getServer().getLogger().info("已经完成内存释放，并且踢出了所有用户");
+                        instance.getLogger().info("已经完成内存释放，并且踢出了所有用户");
                     }
                     case "/help" -> {
                         API.SendMessageToUser(chatMessageInfo.getUser(), "JavaIM服务器帮助");
@@ -191,17 +192,17 @@ public class ChatRequest {
                         if (chatMessageInfo.getUser().isServer()) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "/kick-all-user-and-free-memory 踢出所有用户，并且尽可能释放内存");
                         }
-                        if (ServerMain.getServer().getPluginManager().getPluginNumber() > 0)
+                        if (instance.getPluginManager().getPluginNumber() > 0)
                             API.SendMessageToUser(chatMessageInfo.getUser(),"插件指令帮助");
-                        for (String msg : ServerMain.getServer().getPluginManager().getPluginCommandsDescription())
+                        for (String msg : instance.getPluginManager().getPluginCommandsDescription())
                         {
                             API.SendMessageToUser(chatMessageInfo.getUser(),msg);
                         }
                         if (Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))
                         {
-                            if (ServerMain.getServer().getPluginManager().getPluginNumber() > 0)
-                                API.SendMessageToUser(chatMessageInfo.getUser(),"插件详细信息 ("+ServerMain.getServer().getPluginManager().getPluginNumber()+"个插件)");
-                            for (PluginData data : ServerMain.getServer().getPluginManager().getPluginDataList())
+                            if (instance.getPluginManager().getPluginNumber() > 0)
+                                API.SendMessageToUser(chatMessageInfo.getUser(),"插件详细信息 ("+instance.getPluginManager().getPluginNumber()+"个插件)");
+                            for (PluginData data : instance.getPluginManager().getPluginDataList())
                             {
                                 API.SendMessageToUser(chatMessageInfo.getUser(),"插件："+data.getStaticData().PluginName()+
                                         "v"+data.getStaticData().PluginVersion()+
@@ -323,34 +324,26 @@ public class ChatRequest {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
-                        ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭");
-                        for (user User : ServerMain.getServer().getUsers()) {
+                        instance.getServerAPI().SendMessageToAllClient("服务器已关闭");
+                        for (user User : instance.getUsers()) {
                             User.UserDisconnect();
                         }
-                        ServerMain.getServer().authThread.interrupt();
-                        ServerMain.getServer().runOnMainThread(() -> Thread.currentThread().interrupt());
-                        try {
-                            ServerMain.getServer().getPluginManager().UnLoadAllPlugin();
-                        } catch (IOException e) {
-                            SaveStackTrace.saveStackTrace(e);
+                        if (instance instanceof ServerMain) {
+                            ((ServerMain) instance).authThread.interrupt();
+                            try {
+                                instance.getPluginManager().UnLoadAllPlugin();
+                            } catch (IOException e) {
+                                SaveStackTrace.saveStackTrace(e);
+                            }
+                            ServerMain.started = false;
+                            ServerMain.server = null;
+                            ((ServerMain) instance).getServerGroup().interrupt();
                         }
-                        ServerMain.started = false;
-                        ServerMain.server = null;
-                        ServerMain.getServer().getServerGroup().interrupt();
+                        else if (instance instanceof NettyNetwork)
+                        {
+                            ((NettyNetwork) instance).getFuture().channel().close();
+                        }
                         System.exit(0);
-                    }
-                    case "/crash" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
-                            API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
-                            break;
-                        }
-                        if (CodeDynamicConfig.GetDebugMode()) {
-                            ServerMain.getServer().runOnMainThread(() -> {
-                                throw new RuntimeException("Debug Crash");
-                            });
-                        } else {
-                            API.SendMessageToUser(chatMessageInfo.getUser(), "未知的命令！请输入/help查看帮助！");
-                        }
                     }
                     case "/change-password" -> {
                         if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
@@ -426,7 +419,7 @@ public class ChatRequest {
 
                         String arg = stringBuilder.toString();
                         API.SendMessageToAllClient(arg);
-                        ServerMain.getServer().getLogger().ChatMsg(arg);
+                        instance.getLogger().ChatMsg(arg);
                     }
                     case "/tell" -> {
                         if (CommandInformation.argv().length >= 2) {
@@ -449,7 +442,7 @@ public class ChatRequest {
 
                             if (CommandInformation.argv()[0].equals("Server"))
                             {
-                                ServerMain.getServer().getLogger().ChatMsg("[私聊] " + input.getChatMessage());
+                                instance.getLogger().ChatMsg("[私聊] " + input.getChatMessage());
                                 API.SendMessageToUser(chatMessageInfo.getUser(), "你对" + CommandInformation.argv()[0] + "发送了私聊：" + ChatMessage);
                                 break;
                             }
@@ -475,8 +468,10 @@ public class ChatRequest {
         return false;
     }
 
-    public ChatRequest()
+    private final IServerMain instance;
+    public ChatRequest(IServerMain serverInstance)
     {
+        instance = serverInstance;
         formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
     }
 }

@@ -28,7 +28,7 @@ import org.yuezhikong.CrashReport;
 import org.yuezhikong.GeneralMethod;
 import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.UserData.Authentication.UserAuthentication;
-import org.yuezhikong.newServer.UserData.SimpleUser;
+import org.yuezhikong.newServer.UserData.ClassicUser;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.api.SingleAPI;
 import org.yuezhikong.newServer.api.api;
@@ -58,9 +58,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author AlexLiuDev233
  */
 public class ServerMain extends GeneralMethod implements IServerMain {
-    static {
-        request = new ChatRequest();//初始化ChatRequest
-    }
     private final List<user> Users = new ArrayList<>();
     private int clientIDAll = 0;
     private ThreadGroup IOGroup;
@@ -116,8 +113,8 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                     }
                     continue;
                 }
-                user CurrentUser = new SimpleUser(clientNetworkData,getServer().clientIDAll,false);//创建用户class
-                CurrentUser.setUserAuthentication(new UserAuthentication(CurrentUser, getServer().getIOThreadPool()));
+                user CurrentUser = new ClassicUser(clientNetworkData,getServer().clientIDAll,false);//创建用户class
+                CurrentUser.setUserAuthentication(new UserAuthentication(CurrentUser, getServer().getIOThreadPool(), getServer().getPluginManager(), getServer().getServerAPI()));
                 getServer().Users.add(CurrentUser);
                 getServer().Users.set(getServer().clientIDAll,CurrentUser);//添加到List中
                 getServer().StartRecvMessageThread(getServer().clientIDAll);//启动RecvMessage线程
@@ -453,7 +450,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                         return;
                     }
                     ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(CurrentUser,protocol);
-                    if (request.UserChatRequests(input))
+                    if (getServer().request.UserChatRequests(input))
                     {
                         continue;
                     }
@@ -486,7 +483,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     protected static ServerMain server;
     private Logger logger;
     protected UserAuthThread authThread;
-    private static final ChatRequest request;
+    private final ChatRequest request = new ChatRequest(this);
     private api API;
 
     @Override
@@ -527,7 +524,6 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     private static final Object lock = new Object();
     private static final List<Runnable> codelist = new ArrayList<>();
 
-    @Override
     public void runOnMainThread(Runnable code) {
         if (!NowCanSendRequest)
         {
@@ -614,12 +610,12 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 API = new SingleAPI(this);
                 authThread = new UserAuthThread(ServerGroup, "UserAuthThread");
                 authThread.start();
-                pluginManager = new SimplePluginManager();
+                pluginManager = new SimplePluginManager(this);
                 pluginManager.LoadPluginOnDirectory(new File("./plugins"));
                 //服务端虚拟账户初始化
-                ConsoleUser = new SimpleUser(null, 0, true);
+                ConsoleUser = new ClassicUser(null, 0, true);
                 ConsoleUser.setAllowedTransferProtocol(false);
-                ConsoleUser.setUserAuthentication(new UserAuthentication(ConsoleUser, IOThreadPool));
+                ConsoleUser.setUserAuthentication(new UserAuthentication(ConsoleUser, IOThreadPool,pluginManager,API));
                 ConsoleUser.UserLogin("Server");
                 ConsoleUser.SetUserPermission(1, true);
                 //启动指令系统

@@ -18,12 +18,21 @@ public final class NetworkManager {
     {
         private final Socket socket;
         private final ServerSocket serverSocket;
+        private BufferedReader reader;
 
         private Socket getSocket() {
             if (socket == null)
                 throw new RuntimeException("The Network Data is Server Mode!");
             return socket;
         }
+
+        private BufferedReader getReader()
+        {
+            if (socket == null)
+                throw new RuntimeException("The Network Data is Server Mode!");
+            return reader;
+        }
+
 
         public ServerSocket getServerSocket() {
             if (serverSocket == null)
@@ -37,8 +46,8 @@ public final class NetworkManager {
             this.socket = null;
         }
 
-        private NetworkData(@NotNull Socket socket)
-        {
+        private NetworkData(@NotNull Socket socket) throws IOException {
+            reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
             this.serverSocket = null;
             this.socket = socket;
         }
@@ -117,13 +126,12 @@ public final class NetworkManager {
 
         int NumberOfRetryFork = NumberOfRetry;
 
-        InputStream SocketInputStream;
-        if (RemoteNetworkData.getSocket() != null)
-            SocketInputStream = RemoteNetworkData.getSocket().getInputStream();
+        BufferedReader reader;
+        if (RemoteNetworkData.getReader() != null)
+            reader = RemoteNetworkData.getReader();
         else
             throw new IllegalArgumentException("The Remote Network Data is Invalid!");
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(SocketInputStream,StandardCharsets.UTF_8));
         String data;
         do {
             if (NumberOfRetryFork != -1)

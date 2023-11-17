@@ -1,7 +1,13 @@
 package org.yuezhikong.newServer.UserData.Authentication;
 
+import org.yuezhikong.newServer.UserData.user;
+
 public interface IUserAuthentication {
 
+    interface UserRecall
+    {
+        void run(user User);
+    }
     /**
      * 尝试通过 Token 进行登录
      * @param Token Token令牌
@@ -29,7 +35,7 @@ public interface IUserAuthentication {
      * @param runnable 回调函数
      * @apiNote 如果用户已经登录，则代码将会被立刻执行
      */
-    void RegisterLoginRecall(Runnable runnable);
+    void RegisterLoginRecall(UserRecall runnable);
 
     /**
      * 获取用户的用户名
@@ -42,7 +48,7 @@ public interface IUserAuthentication {
      * @param runnable 回调函数
      * @apiNote 如果用户已经退出登录，则代码将会被立刻执行
      */
-    void RegisterLogoutRecall(Runnable runnable);
+    void RegisterLogoutRecall(UserRecall runnable);
 
     /**
      * 将客户端退出登录

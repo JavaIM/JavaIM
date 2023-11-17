@@ -15,7 +15,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class SimpleUser implements user {
+public class ClassicUser implements user {
     //初始化
     /**
      * 创建一个新的用户
@@ -23,7 +23,7 @@ public class SimpleUser implements user {
      * @param ClientID 客户端ID
      * @param isServer 是否是服务端
      */
-    public SimpleUser(NetworkManager.NetworkData NetworkData, int ClientID, boolean isServer)
+    public ClassicUser(NetworkManager.NetworkData NetworkData, int ClientID, boolean isServer)
     {
         UserNetworkData = NetworkData;
         this.ClientID = ClientID;
@@ -90,7 +90,7 @@ public class SimpleUser implements user {
                     String sql = "UPDATE UserData SET Permission = ? where UserName = ?";
                     PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
                     ps.setInt(1,permissionLevel);
-                    ps.setString(2,SimpleUser.this.getUserName());
+                    ps.setString(2, ClassicUser.this.getUserName());
                     ps.executeUpdate();
                 } catch (Database.DatabaseException | SQLException e)
                 {
@@ -195,12 +195,12 @@ public class SimpleUser implements user {
     }
     //重定向到UserAuthentication
     @Override
-    public void addLoginRecall(Runnable code) {
+    public void addLoginRecall(IUserAuthentication.UserRecall code) {
         authentication.RegisterLoginRecall(code);
     }
 
     @Override
-    public void addDisconnectRecall(Runnable code) {
+    public void addDisconnectRecall(IUserAuthentication.UserRecall code) {
         authentication.RegisterLogoutRecall(code);
     }
 

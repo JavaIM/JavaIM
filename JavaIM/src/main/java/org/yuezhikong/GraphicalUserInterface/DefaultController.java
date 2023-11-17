@@ -156,11 +156,6 @@ public class DefaultController {
                     authThread.setAccessible(true);
                     ((Thread) authThread.get(ServerMain.getServer())).interrupt();
                     authThread.setAccessible(false);
-                    //终止服务端主线程
-                    Method runOnServerMainThread = ServerMain.class.getDeclaredMethod("runOnMainThread", Runnable.class);
-                    runOnServerMainThread.setAccessible(true);
-                    runOnServerMainThread.invoke(ServerMain.getServer(), (Runnable) () -> Thread.currentThread().interrupt());
-                    runOnServerMainThread.setAccessible(false);
                     //卸载所有插件
                     ServerMain.getServer().getPluginManager().UnLoadAllPlugin();
                     //设置logger为过期
@@ -191,7 +186,7 @@ public class DefaultController {
                     ThreadGroup group = ((ThreadGroup) ServerGroup.get(server));
                     ServerGroup.setAccessible(false);
                     group.interrupt();
-                } catch (NoSuchFieldException | IllegalAccessException | IOException | NoSuchMethodException | InvocationTargetException e) {
+                } catch (NoSuchFieldException | IllegalAccessException | IOException e) {
                     CrashReport.failedException(e);
                 }
             }

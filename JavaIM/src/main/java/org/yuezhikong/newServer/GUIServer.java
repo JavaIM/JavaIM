@@ -98,11 +98,11 @@ public class GUIServer extends ServerMain{
     protected void StartRecvMessageThread(int ClientID) {
         super.StartRecvMessageThread(ClientID);
         user ConnectUser = getUsers().get(ClientID);
-        ConnectUser.addLoginRecall(() -> GUIController.UpdateUser(true,ConnectUser.getUserName()));
-        ConnectUser.addDisconnectRecall(() -> {
-            if (ConnectUser.isUserLogined())
+        ConnectUser.addLoginRecall((user) -> GUIController.UpdateUser(true,user.getUserName()));
+        ConnectUser.addDisconnectRecall((user) -> {
+            if (user.isUserLogined())
             {
-                GUIController.UpdateUser(false,ConnectUser.getUserName());
+                GUIController.UpdateUser(false,user.getUserName());
             }
         });
     }
