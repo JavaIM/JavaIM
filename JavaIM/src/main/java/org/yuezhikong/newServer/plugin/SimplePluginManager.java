@@ -19,7 +19,6 @@ package org.yuezhikong.newServer.plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.newServer.IServerMain;
-import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.Plugin.Plugin;
 import org.yuezhikong.newServer.plugin.Plugin.PluginData;
@@ -40,7 +39,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SimplePluginManager implements PluginManager{
     
-    private IServerMain serverInstance;
+    private final IServerMain serverInstance;
     public SimplePluginManager(IServerMain ServerInstance) { serverInstance = ServerInstance; }
     private final List<Plugin> pluginList = new CopyOnWriteArrayList<>();
     private final List<PluginData> pluginDataList = new CopyOnWriteArrayList<>();

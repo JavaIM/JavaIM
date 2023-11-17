@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.api.api;
@@ -41,8 +40,8 @@ public final class UserAuthentication implements IUserAuthentication{
 
     private final ExecutorService IOThreadPool;
 
-    private PluginManager pluginManager;
-    private api serverAPI;
+    private final PluginManager pluginManager;
+    private final api serverAPI;
     /**
      * 实例化用户Auth实现
      * @param User 用户

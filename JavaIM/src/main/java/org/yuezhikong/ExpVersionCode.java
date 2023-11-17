@@ -16,9 +16,7 @@
  */
 package org.yuezhikong;
 
-import javafx.application.Application;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.GraphicalUserInterface.MainUI;
 import org.yuezhikong.utils.Logger;
 
 public class ExpVersionCode {

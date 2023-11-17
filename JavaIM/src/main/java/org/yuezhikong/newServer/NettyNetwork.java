@@ -56,9 +56,6 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         return nettyNetwork;
     }
 
-    private EventLoopGroup bossGroup;
-    private EventLoopGroup workerGroup;
-    private ServerBootstrap bootstrap;
     private ChannelFuture future;
 
     public ChannelFuture getFuture() {
@@ -137,16 +134,16 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
 
         serverAPI = new NettyAPI(this);
 
-        bossGroup = new NioEventLoopGroup(1);
-        workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
-            bootstrap = new ServerBootstrap();
+            ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.DEBUG))
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        public void initChannel(SocketChannel channel) throws Exception {
+                        public void initChannel(SocketChannel channel) {
                             ChannelPipeline pipeline = channel.pipeline();
                             pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));
                             pipeline.addLast(new StringEncoder(StandardCharsets.UTF_8));
@@ -374,7 +371,6 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                     body.setMessage("你好客户端");
                     protocol.setMessageBody(body);
                     SendData(gson.toJson(protocol),ctx.channel());
-                    return;
                 }
                 case "Chat" -> {
                     if (status.bindUser == null ||
@@ -391,7 +387,6 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                         logger.ChatMsg(input.getChatMessage());
                         SendDataToAllClient(gson.toJson(protocol));
                     }
-                    return;
                 }
                 case "RSAEncryption" -> {
                     if (!status.encryptionMode.equals(EncryptionMode.NON_ENCRYPTION))
@@ -423,7 +418,6 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                     ClientStatus clientStatus = new ClientStatus(EncryptionMode.RSA_ENCRYPTION,RSA.decrypt(protocol.getMessageBody().getMessage(), ServerPrivateKey),bindUser);
                     ClientChannel.remove(ctx.channel());
                     ClientChannel.put(ctx.channel(),clientStatus);
-                    return;
                 }
                 case "AESEncryption" -> {
                     if (!status.encryptionMode.equals(EncryptionMode.RSA_ENCRYPTION))
@@ -453,7 +447,6 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                                     SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(clientStatus.encryptionKey)
                             ).getEncoded()
                     ));
-                    return;
                 }
                 case "options" -> {
                     if (protocol.getMessageBody().getMessage().equals("AllowedTransferProtocol:Enable"))
@@ -510,7 +503,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         }
 
         @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
             try {
                 ClientStatus status = ClientChannel.get(ctx.channel());
                 if (!(msg instanceof String Msg) || Msg.isEmpty()) {
