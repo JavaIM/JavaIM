@@ -172,7 +172,8 @@ public final class UserAuthentication implements IUserAuthentication{
         }
     }
 
-    private boolean PostUserNameAndPasswordLogin(Connection DatabaseConnection,int PermissionLevel) throws SQLException {
+    private boolean PostUserNameAndPasswordLogin(String UserName,Connection DatabaseConnection,int PermissionLevel) throws SQLException {
+        this.UserName = UserName;
         User.SetUserPermission(PermissionLevel,true);
         if (User.getUserPermission().equals(Permission.BAN))
         {
@@ -243,7 +244,7 @@ public final class UserAuthentication implements IUserAuthentication{
         {
             Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
             PreparedStatement ps = DatabaseConnection.prepareStatement("select * from UserData where UserName = ?");
-            ps.setString(0,UserName);
+            ps.setString(1,UserName);
             ResultSet rs = ps.executeQuery();
             if (rs.next())
             {
@@ -255,7 +256,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 sha256 = SecureUtil.sha256(Password + salt);
                 if (rs.getString("Passwd").equals(sha256))
                 {
-                    return PostUserNameAndPasswordLogin(DatabaseConnection,rs.getInt("Permission"));
+                    return PostUserNameAndPasswordLogin(UserName,DatabaseConnection,rs.getInt("Permission"));
                 }
                 else
                 {
@@ -282,7 +283,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 ps.setString(2, sha256);
                 ps.setString(3, salt);
                 ps.executeUpdate();
-                return PostUserNameAndPasswordLogin(DatabaseConnection,0);
+                return PostUserNameAndPasswordLogin(UserName,DatabaseConnection,0);
             }
         } catch (Database.DatabaseException | SQLException e) {
             SaveStackTrace.saveStackTrace(e);

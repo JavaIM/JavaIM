@@ -505,12 +505,8 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             try {
-                ClientStatus status = ClientChannel.get(ctx.channel());
+                ClientStatus status;
                 if (!(msg instanceof String Msg) || Msg.isEmpty()) {
-                    ctx.writeAndFlush("Invalid Input,Connection will be close\n");
-                    if (status.bindUser != null)
-                        status.bindUser.UserDisconnect();
-                    ctx.channel().close();
                     return;
                 }
 
@@ -581,7 +577,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
             if (ClientChannel.get(ctx.channel()).bindUser != null)
                 users.replaceAll(user -> {
-                    if (user.equals(ClientChannel.get(ctx.channel()).bindUser))
+                    if (ClientChannel.get(ctx.channel()).bindUser.equals(user))
                         return null;
                     else
                         return user;
