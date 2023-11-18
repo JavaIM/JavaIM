@@ -231,8 +231,12 @@ public class ServerUI extends DefaultController implements Initializable {
             ServerInstance = null;
             if (instance instanceof GUIServer)
                 StopServer();
-            else if (instance instanceof NettyNetwork)
+            else if (instance instanceof NettyNetwork) {
                 ((NettyNetwork) instance).StopNettyChatRoom();
+                ObservableList<String> ListOfUser = UserList.getItems();
+                ListOfUser.clear();
+                UserList.setItems(ListOfUser);
+            }
             BlockingIOServerStatus.setDisable(false);
             NettyServerStatus.setDisable(false);
         }

@@ -372,6 +372,17 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                     protocol.setMessageBody(body);
                     SendData(gson.toJson(protocol),ctx.channel());
                 }
+                case "ChangePassword" -> {
+                    if (status.bindUser == null ||
+                            status.bindUser.getUserAuthentication() == null ||
+                            !status.bindUser.isUserLogined()
+                    )
+                    {
+                        ctx.writeAndFlush("Invalid Mode! The ChangePassword Mode is disabled on this time.\n");
+                        return;
+                    }
+                    getServerAPI().ChangeUserPassword(status.bindUser,protocol.getMessageBody().getMessage());
+                }
                 case "Chat" -> {
                     if (status.bindUser == null ||
                             status.bindUser.getUserAuthentication() == null ||
@@ -575,13 +586,15 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            if (ClientChannel.get(ctx.channel()).bindUser != null)
+            if (ClientChannel.get(ctx.channel()).bindUser != null) {
+                ClientChannel.get(ctx.channel()).bindUser.UserDisconnect();
                 users.replaceAll(user -> {
                     if (ClientChannel.get(ctx.channel()).bindUser.equals(user))
                         return null;
                     else
                         return user;
                 });
+            }
             ClientChannel.remove(ctx.channel());
             super.channelInactive(ctx);
         }
