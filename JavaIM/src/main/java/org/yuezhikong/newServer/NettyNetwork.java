@@ -606,17 +606,4 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
             super.exceptionCaught(ctx, cause);
         }
     }
-
-    @TestOnly
-    public static void main(String[] args) {
-        System.out.println("请注意！此main函数仅用于netty服务器测试！不可用于正常使用！");
-        NettyNetwork nettyNetwork = NettyNetwork.getNettyNetwork();
-        nettyNetwork.RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", new Logger(null));
-        try {
-            nettyNetwork.StartChatRoomServerForNetty(10000, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            SaveStackTrace.saveStackTrace(e);
-            throw new RuntimeException(e);
-        }
-    }
 }

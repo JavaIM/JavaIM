@@ -52,7 +52,7 @@ public class LoginDialog extends Dialog<LoginDialog.DialogReturn> {
     private void handleLogin() {
         String username = usernameField.getText();
         String password = passwordField.getText();
-        if (username.equals("") || password.equals(""))
+        if (username.isEmpty() || password.isEmpty())
         {
             Alert alert = new Alert(Alert.AlertType.NONE);
             alert.setContentText("用户名或密码不得为空");

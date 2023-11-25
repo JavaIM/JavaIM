@@ -23,8 +23,8 @@
          <MenuItem mnemonicParsing="false" onAction="#AboutJavaIM" text="关于" />
          <MenuItem mnemonicParsing="false" onAction="#StopAllTaskAndExitProgram" text="退出" />
       </Menu>
-      <Menu mnemonicParsing="false" text="公钥管理器">
-         <MenuItem mnemonicParsing="false" onAction="#UseKeyManagement" text="使用公钥管理器" />
+      <Menu mnemonicParsing="false" text="服务器与公钥管理器">
+         <MenuItem mnemonicParsing="false" onAction="#UseServerAndKeyManagement" text="使用服务器与公钥管理器" />
       </Menu>
    </MenuBar>
    <AnchorPane prefHeight="426.0" prefWidth="600.0">

@@ -12,27 +12,27 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GraphicalUserInterface.KeyManagementUI">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.yuezhikong.GraphicalUserInterface.ServerAndKeyManagement.ServerAndKeyManagementUI">
    <MenuBar>
       <Menu mnemonicParsing="false" text="程序">
          <Menu mnemonicParsing="false" text="模式相关">
-            <MenuItem mnemonicParsing="false" onAction="#StartByServerMode" text="服务端模式"/>
-            <MenuItem mnemonicParsing="false" onAction="#StartByClientMode" text="客户端模式"/>
+            <MenuItem mnemonicParsing="false" onAction="#StartByServerMode" text="服务端模式" />
+            <MenuItem mnemonicParsing="false" onAction="#StartByClientMode" text="客户端模式" />
          </Menu>
-         <MenuItem mnemonicParsing="false" onAction="#AboutJavaIM" text="关于"/>
-         <MenuItem mnemonicParsing="false" onAction="#StopAllTaskAndExitProgram" text="退出"/>
+         <MenuItem mnemonicParsing="false" onAction="#AboutJavaIM" text="关于" />
+         <MenuItem mnemonicParsing="false" onAction="#StopAllTaskAndExitProgram" text="退出" />
       </Menu>
-      <Menu mnemonicParsing="false" text="公钥管理器">
-         <MenuItem mnemonicParsing="false" onAction="#UseKeyManagement" text="使用公钥管理器"/>
+      <Menu mnemonicParsing="false" text="服务器与公钥管理器">
+         <MenuItem mnemonicParsing="false" onAction="#UseServerAndKeyManagement" text="使用服务器与公钥管理器" />
       </Menu>
    </MenuBar>
    <AnchorPane prefHeight="395.0" prefWidth="600.0">
-      <Label layoutX="232.0" layoutY="24.0" text="公钥管理器">
+      <Label layoutX="178.0" layoutY="31.0" text="服务器与公钥管理器">
          <font>
             <Font size="27.0" />
          </font>
       </Label>
-      <Label layoutX="180.0" layoutY="68.0" text="你可以在这里对保存的公钥进行管理">
+      <Label layoutX="150.0" layoutY="66.0" text="你可以在这里对保存的服务器与公钥进行管理">
          <font>
             <Font size="15.0" />
          </font>
@@ -40,23 +40,16 @@
       <Group layoutX="50.0" layoutY="116.0" />
       <Separator layoutX="297.0" layoutY="124.0" orientation="VERTICAL" prefHeight="200.0" />
       <Separator layoutX="97.0" layoutY="123.0" prefWidth="200.0" />
-      <Label layoutX="18.0" layoutY="115.0" text="服务器公钥" textFill="#828282" />
+      <Label layoutX="31.0" layoutY="115.0" text="服务器" textFill="#828282" />
       <Separator layoutX="297.0" layoutY="123.0" prefWidth="200.0" />
       <Label layoutX="502.0" layoutY="117.0" text="端到端通讯公钥" textFill="#828282" />
-      <Spinner fx:id="SelectServerPublicKey" layoutX="50.0" layoutY="165.0" />
-      <Label layoutX="50.0" layoutY="140.0" text="请选择操作的服务器公钥" />
       <Label layoutX="335.0" layoutY="140.0" text="请选择操作的端到端通讯公钥" />
       <Spinner fx:id="SelectEndToEndPublickey" layoutX="333.0" layoutY="165.0" />
-      <Label layoutX="89.0" layoutY="208.0" text="请选择操作类型" />
+      <Label layoutX="108.0" layoutY="169.0" text="请选择操作类型" />
       <Label layoutX="378.0" layoutY="208.0" text="请选择操作类型" />
-      <Spinner fx:id="SelectOperationTypeOfServerPublicKey" layoutX="51.0" layoutY="234.0" />
+      <Spinner fx:id="SelectOperationTypeOfServer" layoutX="69.0" layoutY="204.0" />
       <Spinner fx:id="SelectOperationTypeOfEndToEndPublickey" layoutX="333.0" layoutY="234.0" />
-      <Button layoutX="96.0" layoutY="281.0" mnemonicParsing="false" onAction="#SubmitOfServerPublicKey" text="提交" />
+      <Button layoutX="128.0" layoutY="281.0" mnemonicParsing="false" onAction="#SubmitOfServerManagement" text="提交" />
       <Button layoutX="393.0" layoutY="281.0" mnemonicParsing="false" onAction="#SubmitOfEndToEndPublickey" text="提交" />
-      <Label layoutX="345.0" layoutY="324.0" text="开发中画面，不代表最终效果">
-         <font>
-            <Font size="18.0" />
-         </font>
-      </Label>
    </AnchorPane>
 </VBox>

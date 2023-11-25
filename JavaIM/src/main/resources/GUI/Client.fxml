@@ -23,8 +23,8 @@
          <MenuItem mnemonicParsing="false" onAction="#AboutJavaIM" text="关于" />
          <MenuItem mnemonicParsing="false" onAction="#StopAllTaskAndExitProgram" text="退出" />
       </Menu>
-      <Menu mnemonicParsing="false" text="公钥管理器">
-         <MenuItem mnemonicParsing="false" onAction="#UseKeyManagement" text="使用公钥管理器" />
+      <Menu mnemonicParsing="false" text="服务器与公钥管理器">
+         <MenuItem mnemonicParsing="false" onAction="#UseServerAndKeyManagement" text="使用服务器与公钥管理器" />
       </Menu>
    </MenuBar>
    <AnchorPane prefHeight="494.0" prefWidth="600.0">
@@ -49,9 +49,11 @@
       <CheckBox fx:id="TransferProtocolConfig" layoutX="360.0" layoutY="155.0" mnemonicParsing="false" onAction="#UpdateConfig" text="启用TransferProtocol" />
       <Separator layoutX="331.0" layoutY="192.0" prefHeight="3.0" prefWidth="171.0" />
       <Label layoutX="509.0" layoutY="185.0" text="服务器连接相关" textFill="#828282" />
-      <Button layoutX="378.0" layoutY="217.0" mnemonicParsing="false" onAction="#DirectConnectOrDisconnectToServer" text="直接连接或断开连接服务器" />
+      <Button fx:id="DirectConnectToServerButton" layoutX="377.0" layoutY="229.0" mnemonicParsing="false" onAction="#DirectConnectToServer" prefHeight="23.0" prefWidth="160.0" text="直接连接服务器" />
       <TextArea fx:id="SystemLog" editable="false" layoutX="175.0" layoutY="123.0" prefHeight="138.0" prefWidth="106.0" />
       <Label layoutX="204.0" layoutY="102.0" text="系统日志" />
+      <Button fx:id="ConnectToSavedServerButton" layoutX="377.0" layoutY="262.0" mnemonicParsing="false" onAction="#ConnectToSavedServer" prefHeight="23.0" prefWidth="160.0" text="连接已保存的服务器" />
+      <Button fx:id="DisconnectServerButton" disable="true" layoutX="377.0" layoutY="299.0" mnemonicParsing="false" onAction="#DisconnectServer" prefHeight="23.0" prefWidth="160.0" text="断开与服务器的连接" />
       <!--- <Button layoutX="414.0" layoutY="269.0" mnemonicParsing="false" text="连接到服务器" /> -->
    </AnchorPane>
 </VBox>

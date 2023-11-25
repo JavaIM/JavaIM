@@ -261,8 +261,8 @@ public class DefaultController {
             CrashReport.failedException(e);
         }
     }
-    public void UseKeyManagement(ActionEvent actionEvent) {
-        SwitchToPage("/GUI/KeyManagement.fxml","JavaIM --- 公钥管理器");
+    public void UseServerAndKeyManagement(ActionEvent actionEvent) {
+        SwitchToPage("/GUI/ServerAndKeyManagement.fxml","JavaIM --- 公钥管理器");
     }
 
     public void StartByServerMode(ActionEvent actionEvent) {

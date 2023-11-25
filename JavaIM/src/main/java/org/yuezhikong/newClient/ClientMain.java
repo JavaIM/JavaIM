@@ -754,41 +754,102 @@ public class ClientMain extends GeneralMethod {
         System.exit(0);
     }
 
-    //启动RecvMessageThread
-    private void StartRecvMessageThread() {
+    protected void recvMessageThreadCode()
+    {
         logger.info("登录成功！");
-        new Thread(ClientThreadGroup,"RecvMessageThread")
-        {
-            @Override
-            public void run() {
-                List<String> ThisSessionForbiddenUserNameList = new ArrayList<>();
-                this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
-                recvMessageThread = Thread.currentThread();
-                try {
-                    String ChatMsg;
-                    while (true) {
-                        ChatMsg = NetworkManager.RecvDataFromRemote(clientNetworkData);
-                        ChatMsg = aes.decryptStr(ChatMsg);
-                        NormalProtocol protocol = getClient().protocolRequest(ChatMsg);
-                        if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
-                        {
+        List<String> ThisSessionForbiddenUserNameList = new ArrayList<>();
+        recvMessageThread = Thread.currentThread();
+        try {
+            String ChatMsg;
+            while (true) {
+                ChatMsg = NetworkManager.RecvDataFromRemote(clientNetworkData);
+                ChatMsg = aes.decryptStr(ChatMsg);
+                NormalProtocol protocol = getClient().protocolRequest(ChatMsg);
+                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
+                {
+                    return;
+                }
+                else if ("NextIsTransferProtocol".equals(protocol.getMessageHead().getType()))
+                {
+                    //端到端加密
+                    String UserNameOfSender = protocol.getMessageBody().getMessage();
+                    String json;
+                    //读取TransferProtocol
+                    json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+                    json = aes.decryptStr(json);
+                    TransferProtocol transferProtocol = new Gson().fromJson(json, TransferProtocol.class);
+                    //检测这个用户是否在黑名单，如果在，禁止他的聊天
+                    if (ThisSessionForbiddenUserNameList.contains(UserNameOfSender))
+                    {
+                        logger.info("用户："+UserNameOfSender+" 试图为您发送端到端安全通信");
+                        logger.info("但是由于您之前已不信任他的公钥");
+                        logger.info("在本次程序运行过程中，他的端到端安全通讯均会被忽略");
+                        protocol = new NormalProtocol();
+                        NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        head.setType("NextIsTransferProtocol");
+                        protocol.setMessageHead(head);
+
+                        transferProtocol = new TransferProtocol();
+                        TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+                        transferProtocolHead.setTargetUserName(UserNameOfSender);
+                        transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        transferProtocolHead.setType("reply");
+                        transferProtocol.setTransferProtocolHead(transferProtocolHead);
+                        TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+                        transferProtocolBody.setData("Untrusted");
+                        transferProtocol.setTransferProtocolBody(transferProtocolBody);
+                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                        json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+                        json = aes.decryptStr(json);
+                        protocol = getClient().protocolRequest(json);
+                        if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
                             return;
-                        }
-                        else if ("NextIsTransferProtocol".equals(protocol.getMessageHead().getType()))
+                        if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage()))
                         {
-                            //端到端加密
-                            String UserNameOfSender = protocol.getMessageBody().getMessage();
-                            String json;
-                            //读取TransferProtocol
-                            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-                            json = aes.decryptStr(json);
-                            TransferProtocol transferProtocol = new Gson().fromJson(json, TransferProtocol.class);
-                            //检测这个用户是否在黑名单，如果在，禁止他的聊天
-                            if (ThisSessionForbiddenUserNameList.contains(UserNameOfSender))
-                            {
-                                logger.info("用户："+UserNameOfSender+" 试图为您发送端到端安全通信");
-                                logger.info("但是由于您之前已不信任他的公钥");
-                                logger.info("在本次程序运行过程中，他的端到端安全通讯均会被忽略");
+                            logger.info("协议版本不受到服务端的支持");
+                            continue;
+                        }
+                        else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage()))
+                        {
+                            logger.info("这个服务器上禁止 Transfer Protocol");
+                            continue;
+                        }
+                        else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage()))
+                        {
+                            logger.info("目标用户禁止 Transfer Protocol");
+                            continue;
+                        }
+                        else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage()))
+                        {
+                            logger.info("找不到目标用户");
+                            continue;
+                        }
+                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                    }
+                    Path dir = Paths.get("./end-to-end_encryption_saved");
+                    if ("first".equals(transferProtocol.getTransferProtocolHead().getType())) {
+                        //说明是被接收方
+                        //检测文件夹与文件是否存在
+                        String CounterpartClientPublicKey = transferProtocol.getTransferProtocolBody().getData();
+                        if (!(new File("./end-to-end_encryption_saved").exists())) {
+                            Files.createDirectory(dir);
+                        }
+                        if (new File("./end-to-end_encryption_saved").isFile()) {
+                            Files.delete(dir);
+                            Files.createDirectory(dir);
+                        }
+                        boolean Trust = false;
+                        if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
+                        ).exists() && new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
+                        ).isFile()) {
+                            //文件如果存在，直接检测RSA key
+                            //与保存的不一致，断开连接，一致则直接放行
+                            if (!(FileUtils.readFileToString(new File("./end-to-end_encryption_saved/client-"
+                                    + Address + "-" + UserNameOfSender), StandardCharsets.UTF_8).equals(CounterpartClientPublicKey))) {
+                                logger.warning("用户：" + UserNameOfSender + "试图发送端到端安全通讯");
+                                logger.warning("但是他的公钥已发生变更");
+                                logger.warning("为了您的通讯安全，程序已阻止与他进行聊天");
                                 protocol = new NormalProtocol();
                                 NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
                                 head.setVersion(CodeDynamicConfig.getProtocolVersion());
@@ -810,503 +871,425 @@ public class ClientMain extends GeneralMethod {
                                 protocol = getClient().protocolRequest(json);
                                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
                                     return;
-                                if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage()))
-                                {
+                                if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
                                     logger.info("协议版本不受到服务端的支持");
                                     continue;
-                                }
-                                else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage()))
-                                {
+                                } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
                                     logger.info("这个服务器上禁止 Transfer Protocol");
                                     continue;
-                                }
-                                else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage()))
-                                {
+                                } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
                                     logger.info("目标用户禁止 Transfer Protocol");
                                     continue;
-                                }
-                                else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage()))
-                                {
+                                } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
                                     logger.info("找不到目标用户");
                                     continue;
                                 }
                                 NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                continue;
+                            } else
+                                Trust = true;
+                        }
+                        if (!Trust) {
+                            //处理未保存的key的流程
+                            logger.info("用户：" + protocol.getMessageBody().getMessage() + " 试图为您发送端到端安全通讯");
+                            logger.info("但是他是第一次和您聊天");
+                            logger.info("是否要信任他的公钥");
+                            logger.info("对等机客户端公钥：" + CounterpartClientPublicKey);
+                            logger.info("输入1信任，输入其他为不信任");
+                            //等待ConsoleInputLock锁
+                            //等到下一次发生控制台输入时
+                            //会将needConsoleInput改为false,然后notify ConsoleInputLock锁
+                            //然后将ConsoleInput设置为输入
+                            needConsoleInput = true;
+                            synchronized (ConsoleInputLock) {
+                                try {
+                                    ConsoleInputLock.wait();//这里其实会导致本线程长时间堵塞
+                                } catch (InterruptedException e) {
+                                    logger.info("接收信息线程被中断");
+                                    return;
+                                }
                             }
-                            Path dir = Paths.get("./end-to-end_encryption_saved");
-                            if ("first".equals(transferProtocol.getTransferProtocolHead().getType())) {
-                                //说明是被接收方
-                                //检测文件夹与文件是否存在
-                                String CounterpartClientPublicKey = transferProtocol.getTransferProtocolBody().getData();
-                                if (!(new File("./end-to-end_encryption_saved").exists())) {
-                                    Files.createDirectory(dir);
-                                }
-                                if (new File("./end-to-end_encryption_saved").isFile()) {
-                                    Files.delete(dir);
-                                    Files.createDirectory(dir);
-                                }
-                                boolean Trust = false;
-                                if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
-                                ).exists() && new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
-                                ).isFile()) {
-                                    //文件如果存在，直接检测RSA key
-                                    //与保存的不一致，断开连接，一致则直接放行
-                                    if (!(FileUtils.readFileToString(new File("./end-to-end_encryption_saved/client-"
-                                            + Address + "-" + UserNameOfSender), StandardCharsets.UTF_8).equals(CounterpartClientPublicKey))) {
-                                        logger.warning("用户：" + UserNameOfSender + "试图发送端到端安全通讯");
-                                        logger.warning("但是他的公钥已发生变更");
-                                        logger.warning("为了您的通讯安全，程序已阻止与他进行聊天");
-                                        protocol = new NormalProtocol();
-                                        NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                        head.setType("NextIsTransferProtocol");
-                                        protocol.setMessageHead(head);
-
-                                        transferProtocol = new TransferProtocol();
-                                        TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                        transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                        transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                        transferProtocolHead.setType("reply");
-                                        transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                        TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                        transferProtocolBody.setData("Untrusted");
-                                        transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
-                                        json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-                                        json = aes.decryptStr(json);
-                                        protocol = getClient().protocolRequest(json);
-                                        if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
-                                            return;
-                                        if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("协议版本不受到服务端的支持");
-                                            continue;
-                                        } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("这个服务器上禁止 Transfer Protocol");
-                                            continue;
-                                        } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("目标用户禁止 Transfer Protocol");
-                                            continue;
-                                        } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("找不到目标用户");
-                                            continue;
-                                        }
-                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                        continue;
-                                    } else
-                                        Trust = true;
-                                }
-                                if (!Trust) {
-                                    //处理未保存的key的流程
-                                    logger.info("用户：" + protocol.getMessageBody().getMessage() + " 试图为您发送端到端安全通讯");
-                                    logger.info("但是他是第一次和您聊天");
-                                    logger.info("是否要信任他的公钥");
-                                    logger.info("对等机客户端公钥：" + CounterpartClientPublicKey);
-                                    logger.info("输入1信任，输入其他为不信任");
-                                    //等待ConsoleInputLock锁
-                                    //等到下一次发生控制台输入时
-                                    //会将needConsoleInput改为false,然后notify ConsoleInputLock锁
-                                    //然后将ConsoleInput设置为输入
-                                    needConsoleInput = true;
-                                    synchronized (ConsoleInputLock) {
-                                        try {
-                                            ConsoleInputLock.wait();//这里其实会导致本线程长时间堵塞
-                                        } catch (InterruptedException e) {
-                                            logger.info("接收信息线程被中断");
-                                            return;
-                                        }
-                                    }
-                                    if ("1".equals(ConsoleInput)) {
-                                        //如果用户信任了key，就发送信任包并保存到文件
-                                        protocol = new NormalProtocol();
-                                        NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                        head.setType("NextIsTransferProtocol");
-                                        protocol.setMessageHead(head);
-
-                                        transferProtocol = new TransferProtocol();
-                                        TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                        transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                        transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                        transferProtocolHead.setType("reply");
-                                        transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                        TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                        transferProtocolBody.setData("trust");
-                                        transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                        try {
-                                            FileUtils.writeStringToFile(new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender), CounterpartClientPublicKey, StandardCharsets.UTF_8);
-                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
-                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                        } catch (IOException e) {
-                                            SaveStackTrace.saveStackTrace(e);
-                                        }
-                                    }
-                                    else {
-                                        //不信任就断开，然后拉黑客户端
-                                        logger.info("已断开与此客户端的通信");
-                                        logger.info("并且已自动拉黑");
-                                        ThisSessionForbiddenUserNameList.add(UserNameOfSender);
-                                        protocol = new NormalProtocol();
-                                        NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                        head.setType("NextIsTransferProtocol");
-                                        protocol.setMessageHead(head);
-
-                                        transferProtocol = new TransferProtocol();
-                                        TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                        transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                        transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                        transferProtocolHead.setType("reply");
-                                        transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                        TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                        transferProtocolBody.setData("Untrusted");
-                                        transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
-                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                        json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-                                        json = aes.decryptStr(json);
-                                        protocol = getClient().protocolRequest(json);
-                                        if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
-                                            return;
-                                        if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("协议版本不受到服务端的支持");
-                                            continue;
-                                        } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("这个服务器上禁止 Transfer Protocol");
-                                            continue;
-                                        } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("目标用户禁止 Transfer Protocol");
-                                            continue;
-                                        } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("找不到目标用户");
-                                            continue;
-                                        }
-                                        continue;
-                                    }
-                                }
-                                //此时都是受信任的
+                            if ("1".equals(ConsoleInput)) {
+                                //如果用户信任了key，就发送信任包并保存到文件
                                 protocol = new NormalProtocol();
                                 NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
                                 head.setVersion(CodeDynamicConfig.getProtocolVersion());
                                 head.setType("NextIsTransferProtocol");
                                 protocol.setMessageHead(head);
-                                //发送公钥
+
                                 transferProtocol = new TransferProtocol();
                                 TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
                                 transferProtocolHead.setTargetUserName(UserNameOfSender);
                                 transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                transferProtocolHead.setType("Encryption");
+                                transferProtocolHead.setType("reply");
                                 transferProtocol.setTransferProtocolHead(transferProtocolHead);
                                 TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                transferProtocolBody.setData(RSA.encrypt(FileUtils.readFileToString(new File("./ClientRSAKey/ClientPublicKey.txt"), StandardCharsets.UTF_8), CounterpartClientPublicKey));
+                                transferProtocolBody.setData("trust");
+                                transferProtocol.setTransferProtocolBody(transferProtocolBody);
+                                try {
+                                    FileUtils.writeStringToFile(new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender), CounterpartClientPublicKey, StandardCharsets.UTF_8);
+                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                } catch (IOException e) {
+                                    SaveStackTrace.saveStackTrace(e);
+                                }
+                            }
+                            else {
+                                //不信任就断开，然后拉黑客户端
+                                logger.info("已断开与此客户端的通信");
+                                logger.info("并且已自动拉黑");
+                                ThisSessionForbiddenUserNameList.add(UserNameOfSender);
+                                protocol = new NormalProtocol();
+                                NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                                head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                head.setType("NextIsTransferProtocol");
+                                protocol.setMessageHead(head);
+
+                                transferProtocol = new TransferProtocol();
+                                TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+                                transferProtocolHead.setTargetUserName(UserNameOfSender);
+                                transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                transferProtocolHead.setType("reply");
+                                transferProtocol.setTransferProtocolHead(transferProtocolHead);
+                                TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+                                transferProtocolBody.setData("Untrusted");
                                 transferProtocol.setTransferProtocolBody(transferProtocolBody);
                                 NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
                                 NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                //等待服务端回传
-                                boolean tmp;
-                                do {
-                                    tmp = false;
-                                    json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-                                    json = aes.decryptStr(json);
-                                    protocol = getClient().protocolRequest(json);
-                                    if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion()) {
-                                        return;
-                                    }
-                                    else if ("NextIsTransferProtocol".equals(protocol.getMessageHead().getType())) {
-                                        json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-                                        json = aes.decryptStr(json);
-                                        transferProtocol = new Gson().fromJson(json, TransferProtocol.class);
-                                        TransferProtocol finalTransferProtocol = transferProtocol;
-                                        NormalProtocol finalProtocol = protocol;
-                                        if ("reply".equals(transferProtocol.getTransferProtocolHead().getType()))
-                                        {
-                                            if ("Untrusted".equals(transferProtocol.getTransferProtocolBody().getData()))
-                                            {
-                                                logger.ChatMsg("试图向您发送公钥的用户： "+protocol.getMessageBody().getMessage()+" 不信任你的RSA公钥");
-                                                logger.ChatMsg("信息接收失败");
-                                                break;
-                                            }
-                                            tmp = true;
-                                            continue;
-                                        }
-                                        if (!("Encryption".equals(transferProtocol.getTransferProtocolHead().getType())))
-                                        {
-                                            //如果是其他客户端发信，阻止他的聊天
-                                            ThisSessionForbiddenUserNameList.add(UserNameOfSender);
-                                            protocol = new NormalProtocol();
-                                            head = new NormalProtocol.MessageHead();
-                                            head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                            head.setType("NextIsTransferProtocol");
-                                            protocol.setMessageHead(head);
-
-                                            transferProtocol = new TransferProtocol();
-                                            transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                            transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                            transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                            transferProtocolHead.setType("reply");
-                                            transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                            transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                            transferProtocolBody.setData("Untrusted");
-                                            transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
-                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                            //后续这里要新增服务端私聊，向他发送提示
-                                            logger.info(protocol.getMessageBody().getMessage()+"想要进行端到端通讯，但是系统已经在处理一个端到端了");
-                                            tmp = true;
-                                            continue;
-                                        }
-                                        new Thread(ClientThreadGroup,"end-to-end encryption Thread") {
-                                            @Override
-                                            public void run() {
-                                                try {
-                                                    //logger输出聊天消息
-                                                    logger.info("[端到端安全通讯] [" + finalProtocol.getMessageBody().getMessage() + "] "
-                                                            + RSA.decrypt(finalTransferProtocol.getTransferProtocolBody().getData(),
-                                                            FileUtils.readFileToString(new File("./ClientRSAKey/ClientPrivateKey.txt"),
-                                                                    StandardCharsets.UTF_8)));
-                                                } catch (IOException e) {
-                                                    SaveStackTrace.saveStackTrace(e);
-                                                }
-                                            }
-                                        }.start();
-                                    }
-                                    else if ("Result".equals(protocol.getMessageHead().getType())) {
-                                        //extIsTrasferProtocol的处理
-                                        if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("协议版本不受到服务端的支持");
-                                        } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("这个服务器上禁止 Transfer Protocol");
-                                        } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("目标用户禁止 Transfer Protocol");
-                                        } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
-                                            logger.info("找不到目标用户");
-                                        }
-                                        break;
-                                    }
-                                    else if (!("Chat".equals(protocol.getMessageHead().getType()))) {
-                                        return;
-                                    }
-                                    else {
-                                        logger.ChatMsg(protocol.getMessageBody().getMessage());
-                                        tmp = true;
-                                    }
-                                } while (tmp);
-                                continue;
-                            }
-                            else if ("reply".equals(transferProtocol.getTransferProtocolHead().getType()))
-                            {
-                                //发送方前半段处理
-                                if ("Untrusted".equals(transferProtocol.getTransferProtocolBody().getData()))
-                                {
-                                    logger.ChatMsg("您试图与 "+protocol.getMessageBody().getMessage()+" 发送端到端安全通讯");
-                                    logger.ChatMsg("但是对方不信任您的RSA公钥");
-                                    logger.ChatMsg("无法发送信息");
+                                json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+                                json = aes.decryptStr(json);
+                                protocol = getClient().protocolRequest(json);
+                                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
+                                    return;
+                                if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
+                                    logger.info("协议版本不受到服务端的支持");
+                                    continue;
+                                } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
+                                    logger.info("这个服务器上禁止 Transfer Protocol");
+                                    continue;
+                                } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
+                                    logger.info("目标用户禁止 Transfer Protocol");
+                                    continue;
+                                } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
+                                    logger.info("找不到目标用户");
+                                    continue;
                                 }
                                 continue;
                             }
-                            else if ("Encryption".equals(transferProtocol.getTransferProtocolHead().getType()))
-                            {
-                                //发送方的后半段处理
-                                TransferProtocol finalTransferProtocol1 = transferProtocol;
-                                NormalProtocol finalProtocol1 = protocol;
-                                new Thread(ClientThreadGroup,"end-to-end encryption Thread")
+                        }
+                        //此时都是受信任的
+                        protocol = new NormalProtocol();
+                        NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        head.setType("NextIsTransferProtocol");
+                        protocol.setMessageHead(head);
+                        //发送公钥
+                        transferProtocol = new TransferProtocol();
+                        TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+                        transferProtocolHead.setTargetUserName(UserNameOfSender);
+                        transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        transferProtocolHead.setType("Encryption");
+                        transferProtocol.setTransferProtocolHead(transferProtocolHead);
+                        TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+                        transferProtocolBody.setData(RSA.encrypt(FileUtils.readFileToString(new File("./ClientRSAKey/ClientPublicKey.txt"), StandardCharsets.UTF_8), CounterpartClientPublicKey));
+                        transferProtocol.setTransferProtocolBody(transferProtocolBody);
+                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                        //等待服务端回传
+                        boolean tmp;
+                        do {
+                            tmp = false;
+                            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+                            json = aes.decryptStr(json);
+                            protocol = getClient().protocolRequest(json);
+                            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion()) {
+                                return;
+                            }
+                            else if ("NextIsTransferProtocol".equals(protocol.getMessageHead().getType())) {
+                                json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+                                json = aes.decryptStr(json);
+                                transferProtocol = new Gson().fromJson(json, TransferProtocol.class);
+                                TransferProtocol finalTransferProtocol = transferProtocol;
+                                NormalProtocol finalProtocol = protocol;
+                                if ("reply".equals(transferProtocol.getTransferProtocolHead().getType()))
                                 {
+                                    if ("Untrusted".equals(transferProtocol.getTransferProtocolBody().getData()))
+                                    {
+                                        logger.ChatMsg("试图向您发送公钥的用户： "+protocol.getMessageBody().getMessage()+" 不信任你的RSA公钥");
+                                        logger.ChatMsg("信息接收失败");
+                                        break;
+                                    }
+                                    tmp = true;
+                                    continue;
+                                }
+                                if (!("Encryption".equals(transferProtocol.getTransferProtocolHead().getType())))
+                                {
+                                    //如果是其他客户端发信，阻止他的聊天
+                                    ThisSessionForbiddenUserNameList.add(UserNameOfSender);
+                                    protocol = new NormalProtocol();
+                                    head = new NormalProtocol.MessageHead();
+                                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                    head.setType("NextIsTransferProtocol");
+                                    protocol.setMessageHead(head);
+
+                                    transferProtocol = new TransferProtocol();
+                                    transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+                                    transferProtocolHead.setTargetUserName(UserNameOfSender);
+                                    transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                    transferProtocolHead.setType("reply");
+                                    transferProtocol.setTransferProtocolHead(transferProtocolHead);
+                                    transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+                                    transferProtocolBody.setData("Untrusted");
+                                    transferProtocol.setTransferProtocolBody(transferProtocolBody);
+                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                    //后续这里要新增服务端私聊，向他发送提示
+                                    logger.info(protocol.getMessageBody().getMessage()+"想要进行端到端通讯，但是系统已经在处理一个端到端了");
+                                    tmp = true;
+                                    continue;
+                                }
+                                new Thread(ClientThreadGroup,"end-to-end encryption Thread") {
                                     @Override
                                     public void run() {
                                         try {
-                                            //获取接收方回传的公钥
-                                            String key = RSA.decrypt(finalTransferProtocol1.getTransferProtocolBody().getData(),FileUtils.readFileToString(new File("./ClientRSAKey/ClientPrivateKey.txt"),StandardCharsets.UTF_8));
-                                            String UserNameOfSender = finalProtocol1.getMessageBody().getMessage();
-                                            //检查这个key是否被信任
-                                            //此段代码复制自接收端
-                                            if (!(new File("./end-to-end_encryption_saved").exists())) {
-                                                Files.createDirectory(dir);
-                                            }
-                                            if (!(new File("./end-to-end_encryption_saved").isDirectory())) {
-                                                Files.delete(dir);
-                                                Files.createDirectory(dir);
-                                            }
-                                            boolean Trust = false;
-                                            if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender
-                                            ).exists() && new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender
-                                            ).isFile()) {
-                                                if (!(FileUtils.readFileToString(new File("./end-to-end_encryption_saved/client-"
-                                                        + Address + "-" + UserNameOfSender), StandardCharsets.UTF_8).equals(key))) {
-                                                    logger.warning("您正在与用户：" + UserNameOfSender + "发送端到端安全通讯");
-                                                    logger.warning("但是他的公钥已发生变更");
-                                                    logger.warning("为了您的通讯安全，程序已阻止与他进行聊天");
-                                                    NormalProtocol protocol = new NormalProtocol();
-                                                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                                                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                                    head.setType("NextIsTransferProtocol");
-                                                    protocol.setMessageHead(head);
-
-                                                    TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "Untrusted");
-                                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
-                                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                                    String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-                                                    json = aes.decryptStr(json);
-                                                    protocol = getClient().protocolRequest(json);
-                                                    if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
-                                                        return;
-                                                    if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
-                                                        logger.info("协议版本不受到服务端的支持");
-                                                        return;
-                                                    } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                                        logger.info("这个服务器上禁止 Transfer Protocol");
-                                                        return;
-                                                    } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                                        logger.info("目标用户禁止 Transfer Protocol");
-                                                        return;
-                                                    } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
-                                                        logger.info("找不到目标用户");
-                                                        return;
-                                                    }
-                                                    return;
-                                                } else
-                                                    Trust = true;
-                                            }
-                                            if (!Trust) {
-                                                logger.info("您正在与用户：" + UserNameOfSender + " 发送端到端安全通讯");
-                                                logger.info("但是您是第一次和他聊天");
-                                                logger.info("是否要信任他的公钥");
-                                                logger.info("对等机客户端公钥：" + key);
-                                                logger.info("输入1信任，输入其他为不信任");
-                                                needConsoleInput = true;
-                                                synchronized (ConsoleInputLock) {
-                                                    try {
-                                                        ConsoleInputLock.wait();//这里其实会导致本线程长时间堵塞
-                                                    } catch (InterruptedException e) {
-                                                        logger.info("接收信息线程被中断");
-                                                        return;
-                                                    }
-                                                }
-                                                if ("1".equals(ConsoleInput)) {
-                                                    NormalProtocol protocol = new NormalProtocol();
-                                                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                                                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                                    head.setType("NextIsTransferProtocol");
-                                                    protocol.setMessageHead(head);
-
-                                                    TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "trust");
-                                                    try {
-                                                        FileUtils.writeStringToFile(new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender), key, StandardCharsets.UTF_8);
-                                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
-                                                        NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                                    } catch (IOException e) {
-                                                        SaveStackTrace.saveStackTrace(e);
-                                                    }
-                                                }
-                                                else {
-                                                    logger.info("已断开与此客户端的通信");
-                                                    logger.info("并且已自动拉黑");
-                                                    ThisSessionForbiddenUserNameList.add(UserNameOfSender);
-                                                    NormalProtocol protocol = new NormalProtocol();
-                                                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                                                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                                    head.setType("NextIsTransferProtocol");
-                                                    protocol.setMessageHead(head);
-
-                                                    TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "Untrusted");
-                                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
-                                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                                    String json;
-                                                    json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-                                                    json = aes.decryptStr(json);
-                                                    protocol = getClient().protocolRequest(json);
-                                                    if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
-                                                        return;
-                                                    if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
-                                                        logger.info("协议版本不受到服务端的支持");
-                                                        return;
-                                                    } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                                        logger.info("这个服务器上禁止 Transfer Protocol");
-                                                        return;
-                                                    } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
-                                                        logger.info("目标用户禁止 Transfer Protocol");
-                                                        return;
-                                                    } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
-                                                        logger.info("找不到目标用户");
-                                                        return;
-                                                    }
-                                                    return;
-                                                }
-                                            }
-                                            //正常的加密与发送系统
+                                            //logger输出聊天消息
+                                            logger.info("[端到端安全通讯] [" + finalProtocol.getMessageBody().getMessage() + "] "
+                                                    + RSA.decrypt(finalTransferProtocol.getTransferProtocolBody().getData(),
+                                                    FileUtils.readFileToString(new File("./ClientRSAKey/ClientPrivateKey.txt"),
+                                                            StandardCharsets.UTF_8)));
+                                        } catch (IOException e) {
+                                            SaveStackTrace.saveStackTrace(e);
+                                        }
+                                    }
+                                }.start();
+                            }
+                            else if ("Result".equals(protocol.getMessageHead().getType())) {
+                                //extIsTrasferProtocol的处理
+                                if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
+                                    logger.info("协议版本不受到服务端的支持");
+                                } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
+                                    logger.info("这个服务器上禁止 Transfer Protocol");
+                                } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
+                                    logger.info("目标用户禁止 Transfer Protocol");
+                                } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
+                                    logger.info("找不到目标用户");
+                                }
+                                break;
+                            }
+                            else if (!("Chat".equals(protocol.getMessageHead().getType()))) {
+                                return;
+                            }
+                            else {
+                                logger.ChatMsg(protocol.getMessageBody().getMessage());
+                                tmp = true;
+                            }
+                        } while (tmp);
+                        continue;
+                    }
+                    else if ("reply".equals(transferProtocol.getTransferProtocolHead().getType()))
+                    {
+                        //发送方前半段处理
+                        if ("Untrusted".equals(transferProtocol.getTransferProtocolBody().getData()))
+                        {
+                            logger.ChatMsg("您试图与 "+protocol.getMessageBody().getMessage()+" 发送端到端安全通讯");
+                            logger.ChatMsg("但是对方不信任您的RSA公钥");
+                            logger.ChatMsg("无法发送信息");
+                        }
+                        continue;
+                    }
+                    else if ("Encryption".equals(transferProtocol.getTransferProtocolHead().getType()))
+                    {
+                        //发送方的后半段处理
+                        TransferProtocol finalTransferProtocol1 = transferProtocol;
+                        NormalProtocol finalProtocol1 = protocol;
+                        new Thread(ClientThreadGroup,"end-to-end encryption Thread")
+                        {
+                            @Override
+                            public void run() {
+                                try {
+                                    //获取接收方回传的公钥
+                                    String key = RSA.decrypt(finalTransferProtocol1.getTransferProtocolBody().getData(),FileUtils.readFileToString(new File("./ClientRSAKey/ClientPrivateKey.txt"),StandardCharsets.UTF_8));
+                                    String UserNameOfSender = finalProtocol1.getMessageBody().getMessage();
+                                    //检查这个key是否被信任
+                                    //此段代码复制自接收端
+                                    if (!(new File("./end-to-end_encryption_saved").exists())) {
+                                        Files.createDirectory(dir);
+                                    }
+                                    if (!(new File("./end-to-end_encryption_saved").isDirectory())) {
+                                        Files.delete(dir);
+                                        Files.createDirectory(dir);
+                                    }
+                                    boolean Trust = false;
+                                    if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender
+                                    ).exists() && new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender
+                                    ).isFile()) {
+                                        if (!(FileUtils.readFileToString(new File("./end-to-end_encryption_saved/client-"
+                                                + Address + "-" + UserNameOfSender), StandardCharsets.UTF_8).equals(key))) {
+                                            logger.warning("您正在与用户：" + UserNameOfSender + "发送端到端安全通讯");
+                                            logger.warning("但是他的公钥已发生变更");
+                                            logger.warning("为了您的通讯安全，程序已阻止与他进行聊天");
                                             NormalProtocol protocol = new NormalProtocol();
                                             NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
                                             head.setVersion(CodeDynamicConfig.getProtocolVersion());
                                             head.setType("NextIsTransferProtocol");
                                             protocol.setMessageHead(head);
-                                            protocol.setMessageBody(new NormalProtocol.MessageBody());
 
-                                            TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "Encryption", RSA.encrypt(endToEndEncryptionData, key));
+                                            TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "Untrusted");
                                             NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
                                             NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
-                                            logger.ChatMsg("信息已成功发送");
-                                        } catch (IOException e) {
-                                            SaveStackTrace.saveStackTrace(e);
+                                            String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+                                            json = aes.decryptStr(json);
+                                            protocol = getClient().protocolRequest(json);
+                                            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
+                                                return;
+                                            if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
+                                                logger.info("协议版本不受到服务端的支持");
+                                                return;
+                                            } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
+                                                logger.info("这个服务器上禁止 Transfer Protocol");
+                                                return;
+                                            } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
+                                                logger.info("目标用户禁止 Transfer Protocol");
+                                                return;
+                                            } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
+                                                logger.info("找不到目标用户");
+                                                return;
+                                            }
+                                            return;
+                                        } else
+                                            Trust = true;
+                                    }
+                                    if (!Trust) {
+                                        logger.info("您正在与用户：" + UserNameOfSender + " 发送端到端安全通讯");
+                                        logger.info("但是您是第一次和他聊天");
+                                        logger.info("是否要信任他的公钥");
+                                        logger.info("对等机客户端公钥：" + key);
+                                        logger.info("输入1信任，输入其他为不信任");
+                                        needConsoleInput = true;
+                                        synchronized (ConsoleInputLock) {
+                                            try {
+                                                ConsoleInputLock.wait();//这里其实会导致本线程长时间堵塞
+                                            } catch (InterruptedException e) {
+                                                logger.info("接收信息线程被中断");
+                                                return;
+                                            }
+                                        }
+                                        if ("1".equals(ConsoleInput)) {
+                                            NormalProtocol protocol = new NormalProtocol();
+                                            NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                                            head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                            head.setType("NextIsTransferProtocol");
+                                            protocol.setMessageHead(head);
+
+                                            TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "trust");
+                                            try {
+                                                FileUtils.writeStringToFile(new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender), key, StandardCharsets.UTF_8);
+                                                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                            } catch (IOException e) {
+                                                SaveStackTrace.saveStackTrace(e);
+                                            }
+                                        }
+                                        else {
+                                            logger.info("已断开与此客户端的通信");
+                                            logger.info("并且已自动拉黑");
+                                            ThisSessionForbiddenUserNameList.add(UserNameOfSender);
+                                            NormalProtocol protocol = new NormalProtocol();
+                                            NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                                            head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                            head.setType("NextIsTransferProtocol");
+                                            protocol.setMessageHead(head);
+
+                                            TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "Untrusted");
+                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                            NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                            String json;
+                                            json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+                                            json = aes.decryptStr(json);
+                                            protocol = getClient().protocolRequest(json);
+                                            if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Result".equals(protocol.getMessageBody().getMessage())))
+                                                return;
+                                            if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage())) {
+                                                logger.info("协议版本不受到服务端的支持");
+                                                return;
+                                            } else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
+                                                logger.info("这个服务器上禁止 Transfer Protocol");
+                                                return;
+                                            } else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage())) {
+                                                logger.info("目标用户禁止 Transfer Protocol");
+                                                return;
+                                            } else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage())) {
+                                                logger.info("找不到目标用户");
+                                                return;
+                                            }
+                                            return;
                                         }
                                     }
+                                    //正常的加密与发送系统
+                                    NormalProtocol protocol = new NormalProtocol();
+                                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                    head.setType("NextIsTransferProtocol");
+                                    protocol.setMessageHead(head);
+                                    protocol.setMessageBody(new NormalProtocol.MessageBody());
 
-                                    @NotNull
-                                    private static TransferProtocol getTransferProtocol(String UserNameOfSender, String HeadType, String BodyData) {
-                                        TransferProtocol transferProtocol = new TransferProtocol();
-                                        TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                        transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                        transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                        transferProtocolHead.setType(HeadType);
-                                        transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                        TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                        transferProtocolBody.setData(BodyData);
-                                        transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                        return transferProtocol;
-                                    }
-                                }.start();
+                                    TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "Encryption", RSA.encrypt(endToEndEncryptionData, key));
+                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
+                                    NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
+                                    logger.ChatMsg("信息已成功发送");
+                                } catch (IOException e) {
+                                    SaveStackTrace.saveStackTrace(e);
+                                }
+                            }
 
+                            @NotNull
+                            private static TransferProtocol getTransferProtocol(String UserNameOfSender, String HeadType, String BodyData) {
+                                TransferProtocol transferProtocol = new TransferProtocol();
+                                TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+                                transferProtocolHead.setTargetUserName(UserNameOfSender);
+                                transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                transferProtocolHead.setType(HeadType);
+                                transferProtocol.setTransferProtocolHead(transferProtocolHead);
+                                TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+                                transferProtocolBody.setData(BodyData);
+                                transferProtocol.setTransferProtocolBody(transferProtocolBody);
+                                return transferProtocol;
                             }
-                            continue;
-                        }
-                        else if ("Result".equals(protocol.getMessageHead().getType()))
-                        {
-                            if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage()))
-                            {
-                                logger.info("协议版本不受到服务端的支持");
-                            }
-                            else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage()))
-                            {
-                                logger.info("这个服务器上禁止 Transfer Protocol");
-                            }
-                            else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage()))
-                            {
-                                logger.info("目标用户禁止 Transfer Protocol");
-                            }
-                            else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage()))
-                            {
-                                logger.info("找不到目标用户");
-                            }
-                            continue;
-                        }
-                        else if (!("Chat".equals(protocol.getMessageHead().getType())))
-                        {
-                            return;
-                        }
-                        logger.ChatMsg(protocol.getMessageBody().getMessage());
+                        }.start();
+
                     }
-                } catch (IOException e) {
-                    if (e instanceof SocketException)
-                    {
-                        if (!SpecialMode) {
-                            System.exit(0);
-                        }
-                        else
-                        {
-                            getClientThreadGroup().interrupt();
-                        }
-                    }
+                    continue;
                 }
-                if (this.isInterrupted())
+                else if ("Result".equals(protocol.getMessageHead().getType()))
+                {
+                    if ("TransferProtocolVersionIsNotSupport".equals(protocol.getMessageBody().getMessage()))
+                    {
+                        logger.info("协议版本不受到服务端的支持");
+                    }
+                    else if ("ThisServerDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage()))
+                    {
+                        logger.info("这个服务器上禁止 Transfer Protocol");
+                    }
+                    else if ("ThisUserDisallowedTransferProtocol".equals(protocol.getMessageBody().getMessage()))
+                    {
+                        logger.info("目标用户禁止 Transfer Protocol");
+                    }
+                    else if ("ThisUserNotFound".equals(protocol.getMessageBody().getMessage()))
+                    {
+                        logger.info("找不到目标用户");
+                    }
+                    continue;
+                }
+                else if (!("Chat".equals(protocol.getMessageHead().getType())))
                 {
                     return;
                 }
+                logger.ChatMsg(protocol.getMessageBody().getMessage());
+            }
+        }
+        catch (IOException e) {
+            if (e instanceof SocketException)
+            {
                 if (!SpecialMode) {
                     System.exit(0);
                 }
@@ -1314,6 +1297,28 @@ public class ClientMain extends GeneralMethod {
                 {
                     getClientThreadGroup().interrupt();
                 }
+            }
+        }
+        if (Thread.currentThread().isInterrupted())
+        {
+            return;
+        }
+        if (!SpecialMode) {
+            System.exit(0);
+        }
+        else
+        {
+            getClientThreadGroup().interrupt();
+        }
+    }
+    //启动RecvMessageThread
+    protected void StartRecvMessageThread() {
+        new Thread(ClientThreadGroup,"RecvMessageThread")
+        {
+            @Override
+            public void run() {
+                this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
+                recvMessageThreadCode();
             }
         }.start();
     }

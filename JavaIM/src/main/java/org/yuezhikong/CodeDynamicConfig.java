@@ -31,8 +31,10 @@ public final class CodeDynamicConfig {
     private static final boolean ThisVersionIsExpVersion = false;
     //如果为测试性版本，则信息为：
     private static final String ExpVersionText = "此版本包含GUI测试";
-    //是否为Windows操作系统
-    public final static boolean isWindowsSystem = System.getProperty("os.name")!= null && System.getProperty("os.name").startsWith("Windows");
+
+    //仅客户端
+    //保存的服务器文件版本
+    public final static int SavedServerFileVersion = 1;
 
     //动态区，可动态通过配置文件修改
     //是否是GUI模式
