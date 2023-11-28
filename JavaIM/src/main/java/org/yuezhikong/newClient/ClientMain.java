@@ -21,7 +21,6 @@ import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
@@ -37,12 +36,10 @@ import org.yuezhikong.utils.RSA;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.crypto.SecretKey;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -69,43 +66,99 @@ public class ClientMain extends GeneralMethod {
     private Logger logger;
     protected String QuitReason = "";
 
+    /**
+     * 获取Logger
+     * @return Logger
+     */
     public Logger getLogger() {
         return logger;
     }
 
+    /**
+     * 获取客户端关闭状态
+     * @return 关闭状态
+     */
     public boolean getClientStopStatus() {
         return ClientStatus;
     }
 
+    /**
+     * 获取客户端线程组
+     * @return 线程组
+     */
     protected ThreadGroup getClientThreadGroup() {
         return ClientThreadGroup;
     }
 
+    /**
+     * 获取网络数据
+     * @return 网络数据
+     */
     protected NetworkManager.NetworkData getClientNetworkData()
     {
         return clientNetworkData;
     }
 
+    /**
+     * 获取aes加解密器
+     * @return 加解密器
+     */
     protected AES getAes() {
         return aes;
     }
 
+    /**
+     * 获取客户端实例
+     * @return 客户端实例
+     */
     public static ClientMain getClient() {
         return Instance;
     }
 
+    /**
+     * 获取公钥文件
+     * @return 公钥文件
+     */
+    protected File getPublicKeyFile()
+    {
+        return new File("./ClientRSAKey/ClientPublicKey.txt");
+    }
+
+    /**
+     * 获取私钥文件
+     * @return 私钥文件
+     */
+    protected File getPrivateKeyFile()
+    {
+        return new File("./ClientRSAKey/ClientPrivateKey.txt");
+    }
+
+    /**
+     * 获取端到端加密保存数据文件夹
+     * @return 文件夹
+     */
+    protected File getEndToEndEncryptionSavedDirectory()
+    {
+        return new File("./end-to-end_encryption_saved");
+    }
+
+    /**
+     * 执行RSA握手流程
+     * @param key 服务器公钥
+     * @throws IOException 出现IO错误
+     */
     private void RequestRSA(@NotNull String key) throws IOException {
 
-        RSA_KeyAutogenerate("./ClientRSAKey/ClientPublicKey.txt","./ClientRSAKey/ClientPrivateKey.txt",logger);
+        RSA_KeyAutogenerate(getPublicKeyFile().getAbsolutePath(),getPrivateKeyFile().getAbsolutePath(),logger);
         keyData = new CustomVar.KeyData();
-        cn.hutool.crypto.asymmetric.RSA rsa = new cn.hutool.crypto.asymmetric.RSA(FileUtils.readFileToString(
-                new File("./ClientRSAKey/ClientPrivateKey.txt"),
+        cn.hutool.crypto.asymmetric.RSA rsa = new cn.hutool.crypto.asymmetric.RSA(FileIO.readFileToString(
+                getPrivateKeyFile(),
                 StandardCharsets.UTF_8),
-                FileUtils.readFileToString(new File("./ClientRSAKey/ClientPublicKey.txt"),StandardCharsets.UTF_8));
+                FileIO.readFileToString(getPublicKeyFile(),StandardCharsets.UTF_8));
         keyData.publicKey = rsa.getPublicKey();
         keyData.privateKey = rsa.getPrivateKey();
-        keyData.PublicKey = FileUtils.readFileToString(new File("./ClientRSAKey/ClientPublicKey.txt"),StandardCharsets.UTF_8);
-        keyData.PrivateKey = FileUtils.readFileToString(new File("./ClientRSAKey/ClientPrivateKey.txt"),StandardCharsets.UTF_8);
+        keyData.PublicKey = FileIO.readFileToString(getPublicKeyFile(),StandardCharsets.UTF_8);
+        keyData.PrivateKey = FileIO.readFileToString(getPrivateKeyFile(),StandardCharsets.UTF_8);
 
         logger.info("客户端密钥制作完成！");
         logger.info("公钥是："+keyData.PublicKey);
@@ -160,6 +213,35 @@ public class ClientMain extends GeneralMethod {
         }
         logger.info("服务端响应："+protocol.getMessageBody().getMessage());
     }
+
+    /**
+     * 请求用户token
+     * @return 用户token
+     */
+    protected String RequestUserToken()
+    {
+        if (!(new File("./token.txt").exists() && new File("./token.txt").isFile() && new File("./token.txt").canRead()))
+            return "";
+        try {
+            return FileIO.readFileToString(new File("./token.txt"));
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    /**
+     * 写入用户token
+     * @param UserToken 新的用户token
+     * @throws IOException 出现IO错误
+     */
+    protected void writeUserToken(String UserToken) throws IOException {
+        FileIO.writeStringToFile(new File("./token.txt"),UserToken);
+    }
+
+    /**
+     * 向用户请求用户名密码
+     * @return 用户名密码
+     */
     @Contract(pure = true)
     protected String[] RequestUserNameAndPassword()
     {
@@ -171,6 +253,11 @@ public class ClientMain extends GeneralMethod {
         return new String[] { UserName , Password };
     }
 
+    /**
+     * 自动请求用户名密码并用户名密码进行登录
+     * @return 是否成功登录
+     * @throws IOException 出现IO错误
+     */
     private boolean UseUserNameAndPasswordLogin() throws IOException {
         String[] UserData = RequestUserNameAndPassword();
         if (UserData.length != 2)
@@ -211,6 +298,12 @@ public class ClientMain extends GeneralMethod {
         } catch (NumberFormatException | InterruptedException ignored) {}
         return false;
     }
+
+    /**
+     * 自动请求用户名密码，并以旧版方式登录，且升级到新版密码加密模式
+     * @return 是否成功登录
+     * @throws IOException 出现IO错误
+     */
     private boolean LegacyLoginAndUpdateEncryption() throws IOException {
         if (isLegacyLoginORNormalLogin())
         {
@@ -243,8 +336,27 @@ public class ClientMain extends GeneralMethod {
         }
         return false;
     }
+
+    /**
+     * 尝试通过用户名密码进行登录
+     * @param UserName 用户名
+     * @param Password 密码
+     * @return 是否成功
+     * @throws IOException 出现IO错误
+     */
     private boolean tryLogin(@NotNull String UserName, @NotNull String Password) throws IOException {
-        String json = getPasswordSendJson(UserName, Password);
+        Gson gson = new Gson();
+        LoginProtocol loginProtocol = new LoginProtocol();
+        LoginProtocol.LoginPacketHeadBean loginPacketHead = new LoginProtocol.LoginPacketHeadBean();
+        loginPacketHead.setType("passwd");
+        loginProtocol.setLoginPacketHead(loginPacketHead);
+        LoginProtocol.LoginPacketBodyBean loginPacketBody = new LoginProtocol.LoginPacketBodyBean();
+        LoginProtocol.LoginPacketBodyBean.NormalLoginBean normalLoginBean = new LoginProtocol.LoginPacketBodyBean.NormalLoginBean();
+        normalLoginBean.setUserName(UserName);
+        normalLoginBean.setPasswd(Password);
+        loginPacketBody.setNormalLogin(normalLoginBean);
+        loginProtocol.setLoginPacketBody(loginPacketBody);
+        String json = gson.toJson(loginProtocol);
         json = aes.encryptBase64(json);
         NetworkManager.WriteDataToRemote(clientNetworkData,json);
 
@@ -262,33 +374,33 @@ public class ClientMain extends GeneralMethod {
         }
         if (!("Login".equals(protocol.getMessageHead().getType())))
             return false;
-        FileUtils.writeStringToFile(new File("./token.txt"),protocol.getMessageBody().getMessage(),StandardCharsets.UTF_8);
+        writeUserToken(protocol.getMessageBody().getMessage());
         return true;
     }
 
-    private static String getPasswordSendJson(@NotNull String UserName, @NotNull String Password) {
-        Gson gson = new Gson();
-        LoginProtocol loginProtocol = new LoginProtocol();
-        LoginProtocol.LoginPacketHeadBean loginPacketHead = new LoginProtocol.LoginPacketHeadBean();
-        loginPacketHead.setType("passwd");
-        loginProtocol.setLoginPacketHead(loginPacketHead);
-        LoginProtocol.LoginPacketBodyBean loginPacketBody = new LoginProtocol.LoginPacketBodyBean();
-        LoginProtocol.LoginPacketBodyBean.NormalLoginBean normalLoginBean = new LoginProtocol.LoginPacketBodyBean.NormalLoginBean();
-        normalLoginBean.setUserName(UserName);
-        normalLoginBean.setPasswd(Password);
-        loginPacketBody.setNormalLogin(normalLoginBean);
-        loginProtocol.setLoginPacketBody(loginPacketBody);
-        return gson.toJson(loginProtocol);
-    }
-
+    /**
+     * 初始化logger
+     * @return 新初始化的logger
+     */
     protected Logger LoggerInit()
     {
         return new Logger(null);
     }
+
+    /**
+     * 获取服务器公钥文件
+     * @return 公钥文件
+     */
     protected File getServerPublicKeyFile()
     {
         return new File("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt");
     }
+
+    /**
+     * 启动客户端
+     * @param ServerAddress 服务器IP地址
+     * @param ServerPort 服务器端口
+     */
     public void start(String ServerAddress,int ServerPort)
     {
         logger = LoggerInit();
@@ -343,7 +455,7 @@ public class ClientMain extends GeneralMethod {
                 return;
             }
 
-            final String ServerPublicKey = FileUtils.readFileToString(getServerPublicKeyFile(), StandardCharsets.UTF_8);
+            final String ServerPublicKey = FileIO.readFileToString(getServerPublicKeyFile(), StandardCharsets.UTF_8);
             if (ServerPublicKey.isEmpty())
             {
                 QuitReason = "服务端公钥未被配置";
@@ -423,7 +535,7 @@ public class ClientMain extends GeneralMethod {
             }
             logger.info("服务器响应："+protocol.getMessageBody().getMessage());
             //握手完成，接下来是登录逻辑
-            if (new File("./token.txt").exists() && new File("./token.txt").isFile() && new File("./token.txt").canRead())
+            if (!RequestUserToken().isEmpty())
             {
                 LoginProtocol loginProtocol = new LoginProtocol();
                 LoginProtocol.LoginPacketHeadBean loginPacketHead = new LoginProtocol.LoginPacketHeadBean();
@@ -431,7 +543,7 @@ public class ClientMain extends GeneralMethod {
                 loginProtocol.setLoginPacketHead(loginPacketHead);
                 LoginProtocol.LoginPacketBodyBean loginPacketBody = new LoginProtocol.LoginPacketBodyBean();
                 LoginProtocol.LoginPacketBodyBean.ReLoginBean reLogin = new LoginProtocol.LoginPacketBodyBean.ReLoginBean();
-                reLogin.setToken(FileUtils.readFileToString(new File("./token.txt"),StandardCharsets.UTF_8));
+                reLogin.setToken(RequestUserToken());
                 loginPacketBody.setReLogin(reLogin);
                 loginProtocol.setLoginPacketBody(loginPacketBody);
                 json = gson.toJson(loginProtocol);
@@ -501,10 +613,20 @@ public class ClientMain extends GeneralMethod {
     }
 
     protected ScheduledExecutorService TimerThreadPool;
+
+    /**
+     * 是否允许关闭TimerThreadPool
+     * @return 是否允许关闭
+     */
     protected boolean AllowShutdownScheduledExecutorService()
     {
         return !TimerThreadPool.isShutdown();
     }
+
+    /**
+     * 获取timerThreadPool
+     * @return TimerThreadPool
+     */
     @Contract(pure = true)
     protected synchronized ScheduledExecutorService getTimerThreadPool() {
         if (TimerThreadPool == null)
@@ -521,6 +643,9 @@ public class ClientMain extends GeneralMethod {
         return TimerThreadPool;
     }
 
+    /**
+     * 代表需要退出程序的受检异常
+     */
     protected static class QuitException extends Exception
     {
         public QuitException(String Message)
@@ -528,6 +653,13 @@ public class ClientMain extends GeneralMethod {
             super(Message);
         }
     }
+
+    /**
+     * Token登录系统
+     * @return 是否成功登录
+     * @throws IOException 出现IO错误
+     * @throws QuitException 需要退出程序
+     */
     private boolean TokenLoginSystem() throws IOException, QuitException {
         NormalProtocol protocol;
         String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
@@ -541,8 +673,7 @@ public class ClientMain extends GeneralMethod {
         {
             logger.info("自动登录失败，原因："+protocol.getMessageBody().getMessage());
             logger.info("正在重新请求登录...");
-            TokenLoginSystem();
-            return false;
+            return TokenLoginSystem();
         }
         if ("Success".equals(protocol.getMessageBody().getMessage()))
         {
@@ -578,10 +709,6 @@ public class ClientMain extends GeneralMethod {
         }
     }
 
-    public String getAddress() {
-        return Address;
-    }
-
     /**
      * 客户端指令处理程序
      * @param UserInput 用户输入
@@ -610,7 +737,7 @@ public class ClientMain extends GeneralMethod {
         }
         switch (command)
         {
-            case ".help" -> {
+            case ".help" : {
                 logger.info("客户端命令系统");
                 logger.info(".help 查询帮助信息");
                 logger.info(".secure-tell 安全私聊");
@@ -619,7 +746,7 @@ public class ClientMain extends GeneralMethod {
                 logger.info(".about 查看程序帮助");
                 return true;
             }
-            case ".secure-tell" -> {
+            case ".secure-tell" : {
                 if (argv.length == 2)
                 {
                     endToEndEncryptionData = argv[1];
@@ -638,7 +765,7 @@ public class ClientMain extends GeneralMethod {
                     transferProtocolHead.setType("first");
                     transferProtocol.setTransferProtocolHead(transferProtocolHead);
                     TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                    transferProtocolBody.setData(FileUtils.readFileToString(new File("./ClientRSAKey/ClientPublicKey.txt"),StandardCharsets.UTF_8));
+                    transferProtocolBody.setData(FileIO.readFileToString(getPublicKeyFile(),StandardCharsets.UTF_8));
                     transferProtocol.setTransferProtocolBody(transferProtocolBody);
 
                     NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(transferProtocol)));
@@ -650,7 +777,7 @@ public class ClientMain extends GeneralMethod {
                 }
                 return true;
             }
-            case ".about" -> {
+            case ".about" : {
                 logger.info("JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件)");
                 logger.info("主仓库位于：https://github.com/JavaIM/JavaIM");
                 logger.info("主要开发者名单：");
@@ -658,7 +785,7 @@ public class ClientMain extends GeneralMethod {
                 logger.info("AlexLiuDev233 （阿白)");
                 return true;
             }
-            case ".quit" -> {
+            case ".quit" : {
                 Gson gson = new Gson();
                 NormalProtocol protocol = new NormalProtocol();
                 NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
@@ -671,7 +798,7 @@ public class ClientMain extends GeneralMethod {
                 NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(protocol)));
                 throw new QuitException("UserRequestQuit");
             }
-            case ".crash" -> {
+            case ".crash" : {
                 if (CodeDynamicConfig.GetDebugMode()) {
                     throw new RuntimeException("Debug Crash");
                 }
@@ -680,7 +807,7 @@ public class ClientMain extends GeneralMethod {
                     return false;
                 }
             }
-            case ".change-password" -> {
+            case ".change-password" : {
                 if (argv.length == 1)
                 {
                     NormalProtocol protocol = new NormalProtocol();//开始构造协议
@@ -702,12 +829,16 @@ public class ClientMain extends GeneralMethod {
                 }
                 return true;
             }
-            default -> {
+            default : {
                 return false;
             }
         }
 
     }
+
+    /**
+     * 控制台发信/指令系统
+     */
     protected void SendMessage() {
         Scanner scanner = new Scanner(System.in);
         try {
@@ -754,6 +885,9 @@ public class ClientMain extends GeneralMethod {
         System.exit(0);
     }
 
+    /**
+     * 接收消息线程的实际运行代码
+     */
     protected void recvMessageThreadCode()
     {
         logger.info("登录成功！");
@@ -827,25 +961,25 @@ public class ClientMain extends GeneralMethod {
                         }
                         NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                     }
-                    Path dir = Paths.get("./end-to-end_encryption_saved");
+                    File dir = getEndToEndEncryptionSavedDirectory();
                     if ("first".equals(transferProtocol.getTransferProtocolHead().getType())) {
                         //说明是被接收方
                         //检测文件夹与文件是否存在
                         String CounterpartClientPublicKey = transferProtocol.getTransferProtocolBody().getData();
-                        if (!(new File("./end-to-end_encryption_saved").exists())) {
-                            Files.createDirectory(dir);
+                        if (!(dir.exists())) {
+                            FileIO.CreateDirectory(dir);
                         }
-                        if (new File("./end-to-end_encryption_saved").isFile()) {
-                            Files.delete(dir);
-                            Files.createDirectory(dir);
+                        if (dir.isFile()) {
+                            FileIO.DeleteFile(dir);
+                            FileIO.CreateDirectory(dir);
                         }
                         boolean Trust = false;
-                        if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
-                        ).exists() && new File("./end-to-end_encryption_saved/client-" + Address + "-" + protocol.getMessageBody().getMessage()
+                        if (new File(dir.getAbsolutePath()+"/client-" + Address + "-" + protocol.getMessageBody().getMessage()
+                        ).exists() && new File(dir.getAbsolutePath()+"/client-" + Address + "-" + protocol.getMessageBody().getMessage()
                         ).isFile()) {
                             //文件如果存在，直接检测RSA key
                             //与保存的不一致，断开连接，一致则直接放行
-                            if (!(FileUtils.readFileToString(new File("./end-to-end_encryption_saved/client-"
+                            if (!(FileIO.readFileToString(new File(dir.getAbsolutePath()+"/client-"
                                     + Address + "-" + UserNameOfSender), StandardCharsets.UTF_8).equals(CounterpartClientPublicKey))) {
                                 logger.warning("用户：" + UserNameOfSender + "试图发送端到端安全通讯");
                                 logger.warning("但是他的公钥已发生变更");
@@ -927,7 +1061,7 @@ public class ClientMain extends GeneralMethod {
                                 transferProtocolBody.setData("trust");
                                 transferProtocol.setTransferProtocolBody(transferProtocolBody);
                                 try {
-                                    FileUtils.writeStringToFile(new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender), CounterpartClientPublicKey, StandardCharsets.UTF_8);
+                                    FileIO.writeStringToFile(new File(dir.getAbsolutePath()+"/client-" + Address + "-" + UserNameOfSender), CounterpartClientPublicKey, StandardCharsets.UTF_8);
                                     NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
                                     NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                 } catch (IOException e) {
@@ -991,7 +1125,7 @@ public class ClientMain extends GeneralMethod {
                         transferProtocolHead.setType("Encryption");
                         transferProtocol.setTransferProtocolHead(transferProtocolHead);
                         TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                        transferProtocolBody.setData(RSA.encrypt(FileUtils.readFileToString(new File("./ClientRSAKey/ClientPublicKey.txt"), StandardCharsets.UTF_8), CounterpartClientPublicKey));
+                        transferProtocolBody.setData(RSA.encrypt(FileIO.readFileToString(getPublicKeyFile(), StandardCharsets.UTF_8), CounterpartClientPublicKey));
                         transferProtocol.setTransferProtocolBody(transferProtocolBody);
                         NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
                         NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
@@ -1055,7 +1189,7 @@ public class ClientMain extends GeneralMethod {
                                             //logger输出聊天消息
                                             logger.info("[端到端安全通讯] [" + finalProtocol.getMessageBody().getMessage() + "] "
                                                     + RSA.decrypt(finalTransferProtocol.getTransferProtocolBody().getData(),
-                                                    FileUtils.readFileToString(new File("./ClientRSAKey/ClientPrivateKey.txt"),
+                                                    FileIO.readFileToString(getPrivateKeyFile(),
                                                             StandardCharsets.UTF_8)));
                                         } catch (IOException e) {
                                             SaveStackTrace.saveStackTrace(e);
@@ -1108,22 +1242,22 @@ public class ClientMain extends GeneralMethod {
                             public void run() {
                                 try {
                                     //获取接收方回传的公钥
-                                    String key = RSA.decrypt(finalTransferProtocol1.getTransferProtocolBody().getData(),FileUtils.readFileToString(new File("./ClientRSAKey/ClientPrivateKey.txt"),StandardCharsets.UTF_8));
+                                    String key = RSA.decrypt(finalTransferProtocol1.getTransferProtocolBody().getData(),FileIO.readFileToString(getPrivateKeyFile(),StandardCharsets.UTF_8));
                                     String UserNameOfSender = finalProtocol1.getMessageBody().getMessage();
                                     //检查这个key是否被信任
                                     //此段代码复制自接收端
-                                    if (!(new File("./end-to-end_encryption_saved").exists())) {
-                                        Files.createDirectory(dir);
+                                    if (!(dir.exists())) {
+                                        FileIO.CreateDirectory(dir);
                                     }
-                                    if (!(new File("./end-to-end_encryption_saved").isDirectory())) {
-                                        Files.delete(dir);
-                                        Files.createDirectory(dir);
+                                    if (!(dir.isDirectory())) {
+                                        FileIO.DeleteFile(dir);
+                                        FileIO.CreateDirectory(dir);
                                     }
                                     boolean Trust = false;
-                                    if (new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender
-                                    ).exists() && new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender
+                                    if (new File(dir.getAbsolutePath()+"/client-" + Address + "-" + UserNameOfSender
+                                    ).exists() && new File(dir.getAbsolutePath()+"/client-" + Address + "-" + UserNameOfSender
                                     ).isFile()) {
-                                        if (!(FileUtils.readFileToString(new File("./end-to-end_encryption_saved/client-"
+                                        if (!(FileIO.readFileToString(new File(dir.getAbsolutePath()+"/client-"
                                                 + Address + "-" + UserNameOfSender), StandardCharsets.UTF_8).equals(key))) {
                                             logger.warning("您正在与用户：" + UserNameOfSender + "发送端到端安全通讯");
                                             logger.warning("但是他的公钥已发生变更");
@@ -1183,7 +1317,7 @@ public class ClientMain extends GeneralMethod {
 
                                             TransferProtocol transferProtocol = getTransferProtocol(UserNameOfSender, "reply", "trust");
                                             try {
-                                                FileUtils.writeStringToFile(new File("./end-to-end_encryption_saved/client-" + Address + "-" + UserNameOfSender), key, StandardCharsets.UTF_8);
+                                                FileIO.writeStringToFile(new File(dir.getAbsolutePath()+"/client-" + Address + "-" + UserNameOfSender), key, StandardCharsets.UTF_8);
                                                 NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(protocol)));
                                                 NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(new Gson().toJson(transferProtocol)));
                                             } catch (IOException e) {
@@ -1311,7 +1445,10 @@ public class ClientMain extends GeneralMethod {
             getClientThreadGroup().interrupt();
         }
     }
-    //启动RecvMessageThread
+
+    /**
+     * 启动接收消息线程
+     */
     protected void StartRecvMessageThread() {
         new Thread(ClientThreadGroup,"RecvMessageThread")
         {
