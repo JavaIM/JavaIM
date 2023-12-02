@@ -28,7 +28,7 @@ public interface user {
      * 设置接收消息线程
      * @param thread 线程
      */
-    void setRecvMessageThread(ServerMain.RecvMessageThread thread);
+    user setRecvMessageThread(ServerMain.RecvMessageThread thread);
 
     /**
      * 返回用于接收消息的线程
@@ -46,7 +46,7 @@ public interface user {
      * 设置用户公钥
      * @param publicKey 用户公钥
      */
-    void setPublicKey(String publicKey);
+    user setPublicKey(String publicKey);
 
     /**
      * 获取用户公钥
@@ -58,7 +58,7 @@ public interface user {
      * 设置用户的AES加密器
      * @param userAES AES加密器
      */
-    void setUserAES(AES userAES);
+    user setUserAES(AES userAES);
 
     /**
      * 返回用户的AES加密器
@@ -84,7 +84,7 @@ public interface user {
      * @param UserName 用户名
      * @apiNote 请注意，此方法将会触发UserLoginEvent
      */
-    void UserLogin(String UserName);
+    user UserLogin(String UserName);
 
     /**
      * 获取用户登录状态
@@ -95,7 +95,7 @@ public interface user {
     /**
      * 使用户离线（踢出用户）
      */
-    void UserDisconnect();
+    user UserDisconnect();
 
     /**
      * 设置用户权限级别
@@ -103,14 +103,14 @@ public interface user {
      * @param FlashPermission 是否为刷新权限
      * @apiNote 如果是刷新权限，权限信息将不会记录到数据库中
      */
-    void SetUserPermission(int permissionLevel, boolean FlashPermission);
+    user SetUserPermission(int permissionLevel, boolean FlashPermission);
 
     /**
      * 设置用户权限级别
      * @param permission 权限
      * @apiNote 通过此方法，将不会记录到数据库中
      */
-    void SetUserPermission(Permission permission);
+    user SetUserPermission(Permission permission);
 
     /**
      * 获取用户的权限级别
@@ -129,14 +129,14 @@ public interface user {
      * @param muteTime 禁言时间
      * @apiNote 暂时未使用
      */
-    void setMuteTime(long muteTime);
+    user setMuteTime(long muteTime);
 
     /**
      * 设置是否被禁言
      * @param Muted 是否被禁言
      * @apiNote 暂时未使用
      */
-    void setMuted(boolean Muted);
+    user setMuted(boolean Muted);
 
     /**
      * 获取禁言时间
@@ -160,27 +160,27 @@ public interface user {
      * 设置允许TransferProtocol
      * @param allowedTransferProtocol {@code true} 允许 {@code false} 不允许
      */
-    void setAllowedTransferProtocol(boolean allowedTransferProtocol);
+    user setAllowedTransferProtocol(boolean allowedTransferProtocol);
 
     /**
      * 添加用户登录回调函数
      * @param code 函数
      * @apiNote 如果已经登录了，则使用当前线程直接调用回调函数
      */
-    void addLoginRecall(IUserAuthentication.UserRecall code);
+    user addLoginRecall(IUserAuthentication.UserRecall code);
 
     /**
      * 添加用户离线回调函数
      * @param code 函数
      * @apiNote 如果已经登录了，则使用当前线程直接调用回调函数
      */
-    void addDisconnectRecall(IUserAuthentication.UserRecall code);
+    user addDisconnectRecall(IUserAuthentication.UserRecall code);
 
     /**
      * 设置用户Authentication实例
      * @param Authentication 实例
      */
-    void setUserAuthentication(@Nullable IUserAuthentication Authentication);
+    user setUserAuthentication(@Nullable IUserAuthentication Authentication);
 
     /**
      * 获取用户Authentication实例

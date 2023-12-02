@@ -32,14 +32,13 @@ import java.nio.charset.StandardCharsets;
 
 public class GeneralMethod implements GeneralMethodInterface{
     @Override
-    public String GenerateKey(@NotNull String source)
+    public SecretKey GenerateKey(@NotNull String source)
     {
         try {
             byte[] KeyByte = new byte[32];
             byte[] SrcByte = Base64.encodeBase64(source.getBytes(StandardCharsets.UTF_8));
             System.arraycopy(SrcByte, 0, KeyByte, 0, 31);
-            SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), KeyByte);
-            return Base64.encodeBase64String(key.getEncoded());
+            return SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), KeyByte);
         } catch (ArrayIndexOutOfBoundsException e)
         {
             return GenerateKey(source + source);

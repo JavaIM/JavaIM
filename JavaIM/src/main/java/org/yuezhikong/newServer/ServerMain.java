@@ -16,10 +16,7 @@
  */
 package org.yuezhikong.newServer;
 
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -283,7 +280,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 body.setMessage(RandomForServer);
                 protocol.setMessageBody(body);
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,RSA.encrypt(gson.toJson(protocol),CurrentUser.getPublicKey()));
-                SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(getServer().GenerateKey(RandomForServer+protocol.getMessageBody().getMessage())));
+                SecretKey key = getServer().GenerateKey(RandomForServer+protocol.getMessageBody().getMessage());
                 CurrentUser.setUserAES(cn.hutool.crypto.SecureUtil.aes(key.getEncoded()));
                 //测试AES
                 json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);

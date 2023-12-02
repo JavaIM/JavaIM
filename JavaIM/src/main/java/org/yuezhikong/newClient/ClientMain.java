@@ -18,9 +18,7 @@ package org.yuezhikong.newClient;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
-import org.apache.commons.codec.binary.Base64;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
@@ -484,7 +482,7 @@ public class ClientMain extends GeneralMethod {
                 return;
             }
             String RandomForServer = protocol.getMessageBody().getMessage();
-            SecretKey key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(getClient().GenerateKey(RandomForServer+RandomForClient)));
+            SecretKey key = getClient().GenerateKey(RandomForServer+RandomForClient);
             final AES aes = cn.hutool.crypto.SecureUtil.aes(key.getEncoded());
             this.aes = aes;
             //开始AES测试
@@ -643,6 +641,26 @@ public class ClientMain extends GeneralMethod {
         return TimerThreadPool;
     }
 
+    /**
+     * TransferProtocol快捷设置
+     * @param UserNameOfSender 目标用户名
+     * @param HeadType 类型
+     * @param BodyData 数据
+     * @return TransferProtocol
+     */
+    @NotNull
+    private static TransferProtocol getTransferProtocol(String UserNameOfSender, String HeadType, String BodyData) {
+        TransferProtocol transferProtocol = new TransferProtocol();
+        TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
+        transferProtocolHead.setTargetUserName(UserNameOfSender);
+        transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
+        transferProtocolHead.setType(HeadType);
+        transferProtocol.setTransferProtocolHead(transferProtocolHead);
+        TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
+        transferProtocolBody.setData(BodyData);
+        transferProtocol.setTransferProtocolBody(transferProtocolBody);
+        return transferProtocol;
+    }
     /**
      * 代表需要退出程序的受检异常
      */
@@ -1376,19 +1394,6 @@ public class ClientMain extends GeneralMethod {
                                 }
                             }
 
-                            @NotNull
-                            private static TransferProtocol getTransferProtocol(String UserNameOfSender, String HeadType, String BodyData) {
-                                TransferProtocol transferProtocol = new TransferProtocol();
-                                TransferProtocol.TransferProtocolHeadBean transferProtocolHead = new TransferProtocol.TransferProtocolHeadBean();
-                                transferProtocolHead.setTargetUserName(UserNameOfSender);
-                                transferProtocolHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-                                transferProtocolHead.setType(HeadType);
-                                transferProtocol.setTransferProtocolHead(transferProtocolHead);
-                                TransferProtocol.TransferProtocolBodyBean transferProtocolBody = new TransferProtocol.TransferProtocolBodyBean();
-                                transferProtocolBody.setData(BodyData);
-                                transferProtocol.setTransferProtocolBody(transferProtocolBody);
-                                return transferProtocol;
-                            }
                         }.start();
 
                     }

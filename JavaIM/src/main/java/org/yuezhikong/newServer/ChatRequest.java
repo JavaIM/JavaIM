@@ -211,7 +211,7 @@ public class ChatRequest {
                         }
                     }
                     case "/op" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
+                        if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
@@ -233,7 +233,7 @@ public class ChatRequest {
                         }
                     }
                     case "/deop" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
+                        if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
@@ -255,7 +255,7 @@ public class ChatRequest {
                         }
                     }
                     case "/ban" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
+                        if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
@@ -277,50 +277,37 @@ public class ChatRequest {
                         }
                     }
                     case "/unban" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
+                        if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
                         if (CommandInformation.argv().length == 1) {
-                            try {
-                                new Thread() {
-                                    @Override
-                                    public void run() {
-                                        this.setName("SQL Worker");
-                                        try {
-                                            Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-                                            String sql = "select * from UserData where UserName = ?";
-                                            PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-                                            ps.setString(1, CommandInformation.argv()[0]);
-                                            ResultSet rs = ps.executeQuery();
-                                            if (rs.next()) {
-                                                sql = "UPDATE UserData SET Permission = 0 where UserName = ?";
-                                                ps = DatabaseConnection.prepareStatement(sql);
-                                                ps.setString(1, CommandInformation.argv()[0]);
-                                                ps.executeUpdate();
-                                                API.SendMessageToUser(chatMessageInfo.getUser(), "已解封" + CommandInformation.argv()[0]);
-                                            }
-                                        } catch (Database.DatabaseException | SQLException e) {
-                                            SaveStackTrace.saveStackTrace(e);
-                                        } finally {
-                                            Database.close();
-                                        }
+                            instance.getIOThreadPool().execute(() -> {
+                                try {
+                                    Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                                    String sql = "select * from UserData where UserName = ?";
+                                    PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
+                                    ps.setString(1, CommandInformation.argv()[0]);
+                                    ResultSet rs = ps.executeQuery();
+                                    if (rs.next()) {
+                                        sql = "UPDATE UserData SET Permission = 0 where UserName = ?";
+                                        ps = DatabaseConnection.prepareStatement(sql);
+                                        ps.setString(1, CommandInformation.argv()[0]);
+                                        ps.executeUpdate();
+                                        API.SendMessageToUser(chatMessageInfo.getUser(), "已解封" + CommandInformation.argv()[0]);
                                     }
-
-                                    public Thread start2() {
-                                        start();
-                                        return this;
-                                    }
-                                }.start2().join();
-                            } catch (InterruptedException e) {
-                                SaveStackTrace.saveStackTrace(e);
-                            }
+                                } catch (Database.DatabaseException | SQLException e) {
+                                    SaveStackTrace.saveStackTrace(e);
+                                } finally {
+                                    Database.close();
+                                }
+                            });
                         } else {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "语法错误，正确的语法为：/unban <用户名>");
                         }
                     }
                     case "/quit" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
+                        if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
@@ -341,12 +328,13 @@ public class ChatRequest {
                         }
                         else if (instance instanceof NettyNetwork)
                         {
-                            ((NettyNetwork) instance).getFuture().channel().close();
+                            ((NettyNetwork) instance).StopNettyChatRoom();
                         }
-                        System.exit(0);
+                        else
+                            System.exit(0);
                     }
                     case "/change-password" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
+                        if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
@@ -355,7 +343,7 @@ public class ChatRequest {
                             for (String arg : CommandInformation.argv()) {
                                 argv.append(arg).append(" ");//将每个arg均append到argv中
                             }
-                            API.SendMessageToUser(chatMessageInfo.getUser(), "请输入/change-password force " + argv);//向用户发送提示
+                            API.SendMessageToUser(chatMessageInfo.getUser(), "请输入/change-password force " + argv+ "来确认此操作");//向用户发送提示
                         } else if (CommandInformation.argv().length == 3) {
                             if ("force".equals(CommandInformation.argv()[0])) {
                                 try {
@@ -377,7 +365,7 @@ public class ChatRequest {
                         }
                     }
                     case "/kick" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
+                        if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }
@@ -398,7 +386,7 @@ public class ChatRequest {
                         }
                     }
                     case "/Send-UnModify-Message" -> {
-                        if (!(chatMessageInfo.getUser().getUserPermission().equals(Permission.ADMIN))) {
+                        if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
                             API.SendMessageToUser(chatMessageInfo.getUser(), "你没有权限这样做");
                             break;
                         }

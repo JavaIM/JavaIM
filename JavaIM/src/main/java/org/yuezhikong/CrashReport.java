@@ -76,7 +76,7 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
             writeStringToFileChannel(channel, StackTraceOfThrowable);
             writeStringToFileChannel(channel,"-- System Information --");
             writeStringToFileChannel(channel,"JavaIMVersion: "+CodeDynamicConfig.getVersion());
-            writeStringToFileChannel(channel,"Operation System: "+System.getProperty("os.name"));
+            writeStringToFileChannel(channel,"Operating System: "+System.getProperty("os.name"));
             writeStringToFileChannel(channel,"Java Version: "+System.getProperty("java.version"));
             writeStringToFileChannel(channel,"Java Virtual Machine Version: "+System.getProperty("java.vm.version"));
             writeStringToFileChannel(channel,"CPU Cores: "+Runtime.getRuntime().availableProcessors());

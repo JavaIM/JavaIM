@@ -38,8 +38,9 @@ public class ClassicUser implements user {
     private final int ClientID;
 
     @Override
-    public void setRecvMessageThread(ServerMain.RecvMessageThread thread) {
+    public ClassicUser setRecvMessageThread(ServerMain.RecvMessageThread thread) {
         recvMessageThread = thread;
+        return this;
     }
 
     @Override
@@ -53,8 +54,9 @@ public class ClassicUser implements user {
     }
 
     @Override
-    public void setPublicKey(String publicKey) {
+    public ClassicUser setPublicKey(String publicKey) {
         PublicKey = publicKey;
+        return this;
     }
 
     @Override
@@ -63,8 +65,9 @@ public class ClassicUser implements user {
     }
 
     @Override
-    public void setUserAES(AES userAES) {
+    public ClassicUser setUserAES(AES userAES) {
         UserAES = userAES;
+        return this;
     }
 
     @Override
@@ -79,7 +82,7 @@ public class ClassicUser implements user {
     //用户权限相关
     private Permission PermissionLevel;
     @Override
-    public void SetUserPermission(int permissionLevel, boolean FlashPermission) {
+    public ClassicUser SetUserPermission(int permissionLevel, boolean FlashPermission) {
         ServerMain.getServer().getLogger().info("权限发生更新，用户："+getUserName()+"获得了"+permissionLevel+"级别权限");
         if (!FlashPermission)
         {
@@ -102,6 +105,7 @@ public class ClassicUser implements user {
             });
         }
         PermissionLevel = Permission.ToPermission(permissionLevel);
+        return this;
     }
 
     @Override
@@ -110,9 +114,10 @@ public class ClassicUser implements user {
     }
 
     @Override
-    public void SetUserPermission(Permission permission)
+    public ClassicUser SetUserPermission(Permission permission)
     {
         PermissionLevel = permission;
+        return this;
     }
     //用户特殊用户标识符
     private final boolean Server;
@@ -130,19 +135,20 @@ public class ClassicUser implements user {
     }
 
     @Override
-    public void setAllowedTransferProtocol(boolean allowedTransferProtocol) {
+    public ClassicUser setAllowedTransferProtocol(boolean allowedTransferProtocol) {
         TransferProtocol = allowedTransferProtocol;
+        return this;
     }
 
     //暂缓
     @Override
-    public void setMuteTime(long muteTime) {
-
+    public ClassicUser setMuteTime(long muteTime) {
+        return this;
     }
 
     @Override
-    public void setMuted(boolean Muted) {
-
+    public ClassicUser setMuted(boolean Muted) {
+        return this;
     }
 
     @Override
@@ -158,10 +164,10 @@ public class ClassicUser implements user {
     //退出登录资源释放
     private boolean Disconnected = false;
     @Override
-    public void UserDisconnect() {
+    public ClassicUser UserDisconnect() {
         if (Disconnected)
         {
-            return;
+            return this;
         }
         Disconnected = true;
         if (!isUserLogined())
@@ -186,22 +192,26 @@ public class ClassicUser implements user {
         UserAES = null;
         recvMessageThread.interrupt();
         recvMessageThread = null;
+        return this;
     }
     //用户登录完成的event call
     @Override
-    public void UserLogin(String UserName) {
+    public ClassicUser UserLogin(String UserName) {
         UserLoginEvent userLoginEvent = new UserLoginEvent(UserName);
         ServerMain.getServer().getPluginManager().callEvent(userLoginEvent);
+        return this;
     }
     //重定向到UserAuthentication
     @Override
-    public void addLoginRecall(IUserAuthentication.UserRecall code) {
+    public ClassicUser addLoginRecall(IUserAuthentication.UserRecall code) {
         authentication.RegisterLoginRecall(code);
+        return this;
     }
 
     @Override
-    public void addDisconnectRecall(IUserAuthentication.UserRecall code) {
+    public ClassicUser addDisconnectRecall(IUserAuthentication.UserRecall code) {
         authentication.RegisterLogoutRecall(code);
+        return this;
     }
 
     @Override
@@ -227,8 +237,9 @@ public class ClassicUser implements user {
     //用户登录处理器
     private IUserAuthentication authentication;
     @Override
-    public void setUserAuthentication(@Nullable IUserAuthentication Authentication) {
+    public ClassicUser setUserAuthentication(@Nullable IUserAuthentication Authentication) {
         authentication = Authentication;
+        return this;
     }
 
     @Override

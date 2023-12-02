@@ -18,7 +18,7 @@ import java.sql.SQLException;
 public class NettyUser implements user
 {
     @Override
-    public void setRecvMessageThread(ServerMain.RecvMessageThread thread) {
+    public NettyUser setRecvMessageThread(ServerMain.RecvMessageThread thread) {
         throw new RuntimeException("Deprecated");
     }
 
@@ -35,8 +35,9 @@ public class NettyUser implements user
     private String PublicKey;
     private AES aes;
     @Override
-    public void setPublicKey(String publicKey) {
+    public NettyUser setPublicKey(String publicKey) {
         PublicKey = publicKey;
+        return this;
     }
 
     @Override
@@ -45,8 +46,9 @@ public class NettyUser implements user
     }
 
     @Override
-    public void setUserAES(AES userAES) {
+    public NettyUser setUserAES(AES userAES) {
         aes = userAES;
+        return this;
     }
 
     @Override
@@ -71,8 +73,8 @@ public class NettyUser implements user
     }
 
     @Override
-    public void UserLogin(String UserName) {
-
+    public NettyUser UserLogin(String UserName) {
+        return this;
     }
 
     @Override
@@ -87,17 +89,18 @@ public class NettyUser implements user
 
     private boolean Disconnected = false;
     @Override
-    public synchronized void UserDisconnect() {
+    public synchronized NettyUser UserDisconnect() {
         if (Disconnected)
-            return;
+            return this;
         Disconnected = true;
         if (!isServer())
             getChannel().close();
         authentication.DoLogout();
+        return this;
     }
     private Permission permission;
     @Override
-    public void SetUserPermission(int permissionLevel, boolean FlashPermission) {
+    public NettyUser SetUserPermission(int permissionLevel, boolean FlashPermission) {
         if (!FlashPermission)
         {
             network.getIOThreadPool().execute(() -> {
@@ -119,11 +122,13 @@ public class NettyUser implements user
             });
         }
         permission = Permission.ToPermission(permissionLevel);
+        return this;
     }
 
     @Override
-    public void SetUserPermission(Permission permission) {
+    public NettyUser SetUserPermission(Permission permission) {
         this.permission = permission;
+        return this;
     }
 
     @Override
@@ -152,12 +157,12 @@ public class NettyUser implements user
     }
 
     @Override
-    public void setMuteTime(long muteTime) {
+    public NettyUser setMuteTime(long muteTime) {
         throw new RuntimeException("Deprecated");
     }
 
     @Override
-    public void setMuted(boolean Muted) {
+    public NettyUser setMuted(boolean Muted) {
         throw new RuntimeException("Deprecated");
     }
 
@@ -178,23 +183,27 @@ public class NettyUser implements user
     }
 
     @Override
-    public void setAllowedTransferProtocol(boolean allowedTransferProtocol) {
+    public NettyUser setAllowedTransferProtocol(boolean allowedTransferProtocol) {
         TransferProtocol = allowedTransferProtocol;
+        return this;
     }
 
     @Override
-    public void addLoginRecall(IUserAuthentication.UserRecall code) {
+    public NettyUser addLoginRecall(IUserAuthentication.UserRecall code) {
         authentication.RegisterLoginRecall(code);
+        return this;
     }
 
     @Override
-    public void addDisconnectRecall(IUserAuthentication.UserRecall code) {
+    public NettyUser addDisconnectRecall(IUserAuthentication.UserRecall code) {
         authentication.RegisterLogoutRecall(code);
+        return this;
     }
 
     @Override
-    public void setUserAuthentication(@Nullable IUserAuthentication Authentication) {
+    public NettyUser setUserAuthentication(@Nullable IUserAuthentication Authentication) {
         authentication = Authentication;
+        return this;
     }
 
     @Override

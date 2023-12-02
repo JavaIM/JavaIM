@@ -20,13 +20,15 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 
+import javax.crypto.SecretKey;
+
 public interface GeneralMethodInterface {
     /**
      * 创建AES密钥
      * @param source 密钥生成源
-     * @return 密钥（经过base64）
+     * @return 密钥
      */
-    String GenerateKey(@NotNull String source);
+    SecretKey GenerateKey(@NotNull String source);
 
     /**
      * 简易的json转换为NormalProtocol的工具

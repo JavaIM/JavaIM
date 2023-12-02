@@ -15,22 +15,24 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.TestOnly;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GeneralMethod;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.newServer.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.newServer.UserData.NettyUser;
+import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.api.NettyAPI;
 import org.yuezhikong.newServer.api.api;
 import org.yuezhikong.newServer.plugin.PluginManager;
 import org.yuezhikong.newServer.plugin.SimplePluginManager;
-import org.yuezhikong.utils.*;
+import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.RSA;
+import org.yuezhikong.utils.SaveStackTrace;
+import org.yuezhikong.utils.UnicodeToString;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.io.File;
@@ -234,7 +236,8 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         this.logger = logger;
     }
 
-    private final user ConsoleUser = new NettyUser(true,this);
+    private final user ConsoleUser = new NettyUser(true,this)
+            .SetUserPermission(Permission.ADMIN);
 
     private final ExecutorService IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
         private final AtomicInteger threadNumber = new AtomicInteger(1);
@@ -449,7 +452,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                     protocol.setMessageBody(body);
                     SendData(gson.toJson(protocol),ctx.channel());
 
-                    ClientStatus clientStatus = new ClientStatus(EncryptionMode.AES_ENCRYPTION,GenerateKey(RandomForServer+RandomForClient),status.bindUser);
+                    ClientStatus clientStatus = new ClientStatus(EncryptionMode.AES_ENCRYPTION,Base64.encodeBase64String(GenerateKey(RandomForServer+RandomForClient).getEncoded()),status.bindUser);
                     ClientChannel.remove(ctx.channel());
                     ClientChannel.put(ctx.channel(),clientStatus);
 

@@ -24,9 +24,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
-/**
- * 请注意！请在异步线程调用此class中的DoLogin方法！
- */
 public final class UserAuthentication implements IUserAuthentication{
 
     //用户数据区
@@ -125,6 +122,16 @@ public final class UserAuthentication implements IUserAuthentication{
                     serverAPI.GetUserByUserName(UserName);
                     //说明目前是已经有同一名字的用户登录了
                     //因此，禁止登录
+                    NormalProtocol protocol = new NormalProtocol();
+                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                    head.setType("Login");
+                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                    protocol.setMessageHead(head);
+                    NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+                    body.setMessage("Fail");
+                    protocol.setMessageBody(body);
+                    String json = new Gson().toJson(protocol);
+                    serverAPI.SendJsonToClient(User,json);
                     return false;
                 } catch (AccountNotFoundException ignored) {}
                 //插件处理
@@ -133,6 +140,16 @@ public final class UserAuthentication implements IUserAuthentication{
                 if (event.isCancel())
                 {
                     //插件要求禁止登录，所以直接关闭连接
+                    NormalProtocol protocol = new NormalProtocol();
+                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                    head.setType("Login");
+                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                    protocol.setMessageHead(head);
+                    NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+                    body.setMessage("Fail");
+                    protocol.setMessageBody(body);
+                    String json = new Gson().toJson(protocol);
+                    serverAPI.SendJsonToClient(User,json);
                     return false;
                 }
                 UserLogged = true;
@@ -166,6 +183,16 @@ public final class UserAuthentication implements IUserAuthentication{
             }
         } catch (Database.DatabaseException | SQLException e) {
             SaveStackTrace.saveStackTrace(e);
+            NormalProtocol protocol = new NormalProtocol();
+            NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+            head.setType("Login");
+            head.setVersion(CodeDynamicConfig.getProtocolVersion());
+            protocol.setMessageHead(head);
+            NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+            body.setMessage("Fail");
+            protocol.setMessageBody(body);
+            String json = new Gson().toJson(protocol);
+            serverAPI.SendJsonToClient(User,json);
             return false;
         } finally {
             Database.close();
