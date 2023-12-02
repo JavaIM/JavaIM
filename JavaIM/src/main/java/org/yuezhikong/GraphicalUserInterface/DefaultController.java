@@ -16,7 +16,6 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.CrashReport;
 import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newClient.ClientMain;
-import org.yuezhikong.newClient.GUIClient;
 import org.yuezhikong.newServer.GUIServer;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.user;

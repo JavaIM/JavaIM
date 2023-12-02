@@ -5,22 +5,19 @@ import com.google.gson.JsonSyntaxException;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import org.apache.commons.io.FileUtils;
-import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.GraphicalUserInterface.Dialogs.LoginDialog;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.PortInputDialog;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.SpinnerDialog;
 import org.yuezhikong.GraphicalUserInterface.ServerAndKeyManagement.SavedServerFileLayout;
 import org.yuezhikong.GraphicalUserInterface.ServerAndKeyManagement.ServerAndKeyManagementUI;
 import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newClient.ClientMain;
-import org.yuezhikong.newClient.GUIClient;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.awt.*;
@@ -32,10 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClientUI extends DefaultController implements Initializable {
     public CheckBox TransferProtocolConfig;
@@ -89,42 +83,9 @@ public class ClientUI extends DefaultController implements Initializable {
      */
     private void StartClient(String ServerAddress,int ServerPort,File ServerPublicKey)
     {
-        if (new File("./token.txt").exists())
-        {
-            Instance = new GUIClient(this);
-            Instance.writeRequiredInformation("","", false,ServerPublicKey);
-            Instance.start(ServerAddress, ServerPort);
-            return;
-        }
-        LoginDialog dialog = new LoginDialog(stage);
-        Optional<LoginDialog.DialogReturn> UserLoginData = dialog.showAndWait();
-        if (UserLoginData.isPresent() && UserLoginData.get().UserName() != null
-                && UserLoginData.get().Password() != null) {
-            String UserName = UserLoginData.get().UserName();
-            String Password = UserLoginData.get().Password();
-            //后续代码等待正式开启ui系统
-            Instance = new GUIClient(this);
-            Instance.writeRequiredInformation(UserName,Password, UserLoginData.get().isLegacyLogin(),ServerPublicKey);
-            if (TimerThreadPool == null)
-                TimerThreadPool = Executors.newScheduledThreadPool(1, new ThreadFactory() {
-                    private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-                    @Override
-                    public Thread newThread(@NotNull Runnable r) {
-                        return new Thread(r, "Timer Thread #" + threadNumber.getAndIncrement());
-                    }
-                });
-            Instance.setTimerThreadPool(TimerThreadPool,false);
-            Instance.start(ServerAddress, ServerPort);
-        }
-        else {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.initOwner(stage);
-            alert.setTitle("请求已被取消");
-            alert.setHeaderText("已取消连接服务器");
-            alert.setContentText("因为您已经取消了登录");
-            alert.showAndWait();
-        }
+        Instance = new GUIClient(this,ServerPublicKey);
+        Instance.writeRequiredInformation("","", false);
+        Instance.start(ServerAddress, ServerPort);
     }
     public void DirectConnectToServer(ActionEvent actionEvent) {
         //IP
@@ -224,6 +185,8 @@ public class ClientUI extends DefaultController implements Initializable {
             try {
                 layout = gson.fromJson(FileUtils.readFileToString(SavedServerFile, StandardCharsets.UTF_8)
                         , SavedServerFileLayout.class);
+                ServerAndKeyManagementUI.tryUpdateSavedServerLayout(layout);
+                FileUtils.writeStringToFile(SavedServerFile,gson.toJson(layout), StandardCharsets.UTF_8);
             } catch (JsonSyntaxException e) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.initOwner(stage);
@@ -265,6 +228,7 @@ public class ClientUI extends DefaultController implements Initializable {
                         FileUtils.writeStringToFile(tempServerPublicKeyFile,bean.getServerPublicKey(),StandardCharsets.UTF_8);
                         tempServerPublicKeyFile.deleteOnExit();
                         StartClient(bean.getServerAddress(),bean.getServerPort(),tempServerPublicKeyFile);
+                        Instance.setServerInformation(bean);
                     } catch (IOException e)
                     {
                         SaveStackTrace.saveStackTrace(e);
@@ -329,6 +293,72 @@ public class ClientUI extends DefaultController implements Initializable {
                 SaveStackTrace.saveStackTrace(e);
             }
             Instance = null;
+        }
+    }
+
+    public String RequestUserToken() {
+        return (Instance.getServerInformation() != null)
+                ? Instance.getServerInformation().getServerToken()
+                : "";
+    }
+
+    public void writeUserToken(String userToken) {
+        if (Instance.getServerInformation() != null)
+        {
+            File SavedServerFile = ServerAndKeyManagementUI.getSavedServerFile();
+            if (!SavedServerFile.exists() || !SavedServerFile.isFile()
+                    || !SavedServerFile.canRead() || SavedServerFile.length() == 0)
+            {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.NONE);
+                    alert.setHeaderText("token写入失败!");
+                    alert.setContentText("此问题是由于文件系统异常，请勿在客户端启动后手动操作SavedServers.json!");
+                    alert.getButtonTypes().add(ButtonType.OK);
+                    alert.initOwner(stage);
+                    alert.show();
+                });
+                return;
+            }
+            SavedServerFileLayout layout;
+            try {
+                layout = new Gson().fromJson(
+                        FileUtils.readFileToString(SavedServerFile,StandardCharsets.UTF_8),
+                        SavedServerFileLayout.class
+                        );
+                if (layout.getServerInformation() == null ||
+                        layout.getVersion() != CodeDynamicConfig.SavedServerFileVersion)
+                {
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.NONE);
+                        alert.setHeaderText("token写入失败!");
+                        alert.setContentText("此问题是由于文件系统异常，请勿在客户端启动后手动操作SavedServers.json!");
+                        alert.getButtonTypes().add(ButtonType.OK);
+                        alert.initOwner(stage);
+                        alert.show();
+                    });
+                    return;
+                }
+                for (var bean : layout.getServerInformation())
+                {
+                    if (bean.getServerAddress().equals(Instance.getServerInformation().getServerAddress()) &&
+                            Instance.getServerInformation().getServerPort() == bean.getServerPort())
+                    {
+                        bean.setServerToken(userToken);
+                        FileUtils.writeStringToFile(SavedServerFile,new Gson().toJson(layout),
+                                StandardCharsets.UTF_8);
+                    }
+                }
+            }
+            catch (IOException | JsonSyntaxException e) {
+                Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.NONE);
+                    alert.setHeaderText("token写入失败!");
+                    alert.setContentText("此问题是由于文件系统异常，请勿在客户端启动后手动操作SavedServers.json!");
+                    alert.getButtonTypes().add(ButtonType.OK);
+                    alert.initOwner(stage);
+                    alert.show();
+                });
+            }
         }
     }
 }

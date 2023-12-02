@@ -31,6 +31,16 @@ public class ServerAndKeyManagementUI extends DefaultController implements Initi
     public Spinner<String> SelectOperationTypeOfServer;
     public Spinner<String> SelectOperationTypeOfEndToEndPublickey;
 
+    public static void tryUpdateSavedServerLayout(SavedServerFileLayout layout) {
+        if (layout.getVersion() == 1) {//自动更新判断，后期大于3个版本后，使用switch
+            layout.setVersion(2);
+            for (SavedServerFileLayout.ServerInformationBean bean : layout.getServerInformation())
+            {
+                bean.setServerToken("");
+            }
+        }
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         //初始化SelectOperationTypeOfEndToEndPublickey
@@ -104,10 +114,14 @@ public class ServerAndKeyManagementUI extends DefaultController implements Initi
         }
         return CanSelectHashMap;
     }
+    public static File getSavedServerFile()
+    {
+        return new File("./SavedServers.json");
+    }
     public void SubmitOfServerManagement(ActionEvent actionEvent) {
         SavedServerFileLayout layout = null;
         Gson gson = new Gson();
-        File SavedServerFile = new File("./SavedServers.json");
+        File SavedServerFile = getSavedServerFile();
         try {
             if ((!SavedServerFile.exists() && !SavedServerFile.createNewFile()) ||
                     (SavedServerFile.isDirectory()
@@ -127,7 +141,7 @@ public class ServerAndKeyManagementUI extends DefaultController implements Initi
             }
             if (SavedServerFile.length() == 0) {
                 layout = new SavedServerFileLayout();
-                layout.setVersion(1);
+                layout.setVersion(CodeDynamicConfig.SavedServerFileVersion);
                 layout.setServerInformation(new ArrayList<>());
                 FileUtils.writeStringToFile(SavedServerFile,gson.toJson(layout), StandardCharsets.UTF_8);
             }
@@ -143,7 +157,9 @@ public class ServerAndKeyManagementUI extends DefaultController implements Initi
                     alert.showAndWait();
                     return;
                 }
-                if (layout.getVersion() != CodeDynamicConfig.SavedServerFileVersion)
+                if (layout.getVersion() != CodeDynamicConfig.SavedServerFileVersion &&
+                    layout.getVersion() != 1//版本1已经兼容自动升级，因此可以继续
+                )
                 {
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.initOwner(stage);
@@ -156,6 +172,8 @@ public class ServerAndKeyManagementUI extends DefaultController implements Initi
                     alert.showAndWait();
                     return;
                 }
+                tryUpdateSavedServerLayout(layout);
+                FileUtils.writeStringToFile(SavedServerFile,gson.toJson(layout), StandardCharsets.UTF_8);
             }
             switch (SelectOperationTypeOfServer.getValue())
             {
@@ -210,6 +228,7 @@ public class ServerAndKeyManagementUI extends DefaultController implements Initi
 
                     SavedServerFileLayout.ServerInformationBean information = new SavedServerFileLayout.ServerInformationBean();
                     information.setServerRemark("");
+                    information.setServerToken("");
                     information.setServerAddress(ServerAddressOfUserInput.get());
                     information.setServerPort(Integer.parseInt(ServerPortOfUserInput.get()));
                     information.setServerPublicKey(FileUtils.readFileToString(ServerPublicKeyFile,StandardCharsets.UTF_8));

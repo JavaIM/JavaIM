@@ -34,7 +34,7 @@ public final class CodeDynamicConfig {
 
     //仅客户端
     //保存的服务器文件版本
-    public final static int SavedServerFileVersion = 1;
+    public final static int SavedServerFileVersion = 2;
 
     //动态区，可动态通过配置文件修改
     //是否是GUI模式

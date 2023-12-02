@@ -37,6 +37,7 @@ import org.yuezhikong.utils.UnicodeToString;
 import javax.security.auth.login.AccountNotFoundException;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -584,6 +585,9 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             ClientChannel.put(ctx.channel(),new ClientStatus(EncryptionMode.NON_ENCRYPTION,"",null));
+            InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
+            logger.info("客户端:"+
+                    remoteAddress.getAddress().getHostAddress()+":"+remoteAddress.getPort()+"已经连接到服务器");
             super.channelActive(ctx);
         }
 
@@ -599,14 +603,18 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                 });
             }
             ClientChannel.remove(ctx.channel());
+            InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
+            logger.info("客户端:"+
+                    remoteAddress.getAddress().getHostAddress()+":"+remoteAddress.getPort()+"已经断开连接");
             super.channelInactive(ctx);
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            ctx.writeAndFlush("Server have internal server error, Connection will be close\n");
-            ctx.channel().close();
             super.exceptionCaught(ctx, cause);
+            ctx.writeAndFlush("Server have internal server error, Connection will be close\n");
+            if (ctx.channel().isActive())
+                ctx.close();
         }
     }
 }

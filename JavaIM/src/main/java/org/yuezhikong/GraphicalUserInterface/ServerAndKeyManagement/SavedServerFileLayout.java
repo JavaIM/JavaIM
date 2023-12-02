@@ -5,8 +5,8 @@ import java.util.List;
 public class SavedServerFileLayout {
 
     /**
-     * Version : 1
-     * ServerInformation : [{"ServerRemark":"","ServerAddress":"","ServerPort":1,"ServerPublicKey":""}]
+     * Version : 2
+     * ServerInformation : [{"ServerRemark":"","ServerAddress":"","ServerPort":0,"ServerPublicKey":"","ServerToken":""}]
      */
 
     private int Version;
@@ -32,14 +32,16 @@ public class SavedServerFileLayout {
         /**
          * ServerRemark :
          * ServerAddress :
-         * ServerPort : 1
+         * ServerPort : 0
          * ServerPublicKey :
+         * ServerToken :
          */
 
         private String ServerRemark;
         private String ServerAddress;
         private int ServerPort;
         private String ServerPublicKey;
+        private String ServerToken;
 
         public String getServerRemark() {
             return ServerRemark;
@@ -71,6 +73,14 @@ public class SavedServerFileLayout {
 
         public void setServerPublicKey(String ServerPublicKey) {
             this.ServerPublicKey = ServerPublicKey;
+        }
+
+        public String getServerToken() {
+            return ServerToken;
+        }
+
+        public void setServerToken(String ServerToken) {
+            this.ServerToken = ServerToken;
         }
     }
 }

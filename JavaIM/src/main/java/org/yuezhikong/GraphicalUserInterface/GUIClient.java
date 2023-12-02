@@ -1,13 +1,13 @@
-package org.yuezhikong.newClient;
+package org.yuezhikong.GraphicalUserInterface;
 
 import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.GraphicalUserInterface.ClientUI;
-import org.yuezhikong.GraphicalUserInterface.DefaultController;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.LoginDialog;
+import org.yuezhikong.GraphicalUserInterface.ServerAndKeyManagement.SavedServerFileLayout;
 import org.yuezhikong.NetworkManager;
+import org.yuezhikong.newClient.ClientMain;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class GUIClient extends ClientMain {
 
-    private File ServerPublicKeyFile = new File("./ClientRSAKey/ServerPublicKeys/CurrentServerPublicKey.txt");
+    private final File ServerPublicKeyFile;
     private volatile boolean ClientStartedSuccessful = false;
     private final Object ClientStartedLock = new Object();
     private final ClientUI GUIController;
@@ -35,10 +35,11 @@ public class GUIClient extends ClientMain {
         return ServerPublicKeyFile;
     }
 
-    public GUIClient(ClientUI controller)
+    public GUIClient(ClientUI controller,File ServerPublicKey)
     {
         SpecialMode = true;
         GUIController = controller;
+        ServerPublicKeyFile = ServerPublicKey;
     }
 
     //此时，SendMessage是start调用的最后一个函数
@@ -91,7 +92,7 @@ public class GUIClient extends ClientMain {
             }
             else
             {
-                writeRequiredInformation(UserInput.UserName(),UserInput.Password(),UserInput.isLegacyLogin(), ServerPublicKeyFile);
+                writeRequiredInformation(UserInput.UserName(),UserInput.Password(),UserInput.isLegacyLogin());
             }
         }
 
@@ -314,10 +315,9 @@ public class GUIClient extends ClientMain {
         return UserData;
     }
 
-    public void writeRequiredInformation(String userName, String password, boolean isLegacyLogin,File ServerPublicKey) {
+    public void writeRequiredInformation(String userName, String password, boolean isLegacyLogin) {
         UserData = new String[] { userName , password };
         LegacyLogin = isLegacyLogin;
-        ServerPublicKeyFile = ServerPublicKey;
     }
 
     private boolean AllowShutdownTimerThreadPool = true;
@@ -334,4 +334,23 @@ public class GUIClient extends ClientMain {
         return AllowShutdownTimerThreadPool;
     }
 
+    private SavedServerFileLayout.ServerInformationBean serverInformation;
+    public void setServerInformation(SavedServerFileLayout.ServerInformationBean information)
+    {
+        serverInformation = information;
+    }
+
+    public SavedServerFileLayout.ServerInformationBean getServerInformation() {
+        return serverInformation;
+    }
+
+    @Override
+    protected String RequestUserToken() {
+        return GUIController.RequestUserToken();
+    }
+
+    @Override
+    protected void writeUserToken(String UserToken) {
+        GUIController.writeUserToken(UserToken);
+    }
 }
