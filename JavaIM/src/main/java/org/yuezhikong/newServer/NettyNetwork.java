@@ -1,3 +1,19 @@
+/*
+ * Simplified Chinese (简体中文)
+ *
+ * 版权所有 (C) 2023 QiLechan <qilechan@outlook.com> 和本程序的贡献者
+ *
+ * 本程序是自由软件：你可以再分发之和/或依照由自由软件基金会发布的 GNU 通用公共许可证修改之，无论是版本 3 许可证，还是 3 任何以后版都可以。
+ * 发布该程序是希望它能有用，但是并无保障;甚至连可销售和符合某个特定的目的都不保证。请参看 GNU 通用公共许可证，了解详情。
+ * 你应该随程序获得一份 GNU 通用公共许可证的副本。如果没有，请看 <https://www.gnu.org/licenses/>。
+ * English (英语)
+ *
+ * Copyright (C) 2023 QiLechan <qilechan@outlook.com> and contributors to this program
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or 3 any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.yuezhikong.newServer;
 
 import cn.hutool.crypto.CryptoException;
@@ -10,10 +26,14 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.ReferenceCountUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
@@ -38,6 +58,7 @@ import javax.security.auth.login.AccountNotFoundException;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,7 +92,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
      * @param encryptionKey 客户端密钥
      * @param bindUser 如果握手已经完成，那么此连接所绑定的用户是什么
      */
-    private record ClientStatus(ServerHandler.EncryptionMode encryptionMode, String encryptionKey, user bindUser) {}
+    private record ClientStatus(ServerInHandler.EncryptionMode encryptionMode, String encryptionKey, user bindUser) {}
     private final ConcurrentHashMap<Channel,ClientStatus> ClientChannel = new ConcurrentHashMap<>();
     /**
      * 向用户发送信息(包括加密)
@@ -82,21 +103,21 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
     public void SendData(String msg, Channel channel)
     {
         ClientStatus status = ClientChannel.get(channel);
-        if (status.encryptionMode.equals(ServerHandler.EncryptionMode.NON_ENCRYPTION))
+        if (status.encryptionMode.equals(ServerInHandler.EncryptionMode.NON_ENCRYPTION))
         {
-            channel.writeAndFlush(msg+"\n");
+            channel.writeAndFlush(msg);
         }
-        else if (status.encryptionMode.equals(ServerHandler.EncryptionMode.RSA_ENCRYPTION))
+        else if (status.encryptionMode.equals(ServerInHandler.EncryptionMode.RSA_ENCRYPTION))
         {
-            channel.writeAndFlush(RSA.encrypt(msg,status.encryptionKey)+"\n");
+            channel.writeAndFlush(RSA.encrypt(msg,status.encryptionKey));
         }
-        else if (status.encryptionMode.equals(ServerHandler.EncryptionMode.AES_ENCRYPTION))
+        else if (status.encryptionMode.equals(ServerInHandler.EncryptionMode.AES_ENCRYPTION))
         {
             channel.writeAndFlush(cn.hutool.crypto.SecureUtil.aes(
                     SecureUtil.generateKey(
                             SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(status.encryptionKey)
                     ).getEncoded()
-            ).encryptBase64(msg)+"\n");
+            ).encryptBase64(msg));
         }
         else {
             throw new RuntimeException("The Encryption Mode is not Support!");
@@ -150,7 +171,10 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                             ChannelPipeline pipeline = channel.pipeline();
                             pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));
                             pipeline.addLast(new StringEncoder(StandardCharsets.UTF_8));
-                            pipeline.addLast(new ServerHandler());
+                            pipeline.addLast(new LineBasedFrameDecoder(100000000));
+                            pipeline.addLast(new ServerInDecoder());
+                            pipeline.addLast(new ServerOutEncoder());
+                            pipeline.addLast(new ServerInHandler());
                         }
                     });
 
@@ -297,7 +321,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         return logger;
     }
 
-    private class ServerHandler extends ChannelInboundHandlerAdapter {
+    private class ServerInHandler extends ChannelInboundHandlerAdapter {
         /**
          * 客户端加密模式
          */
@@ -352,12 +376,12 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                 }
             } catch (JsonSyntaxException e)
             {
-                ctx.writeAndFlush("This Json have Syntax Error\n");
+                ctx.writeAndFlush("This Json have Syntax Error");
                 return;
             }
             if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
             {
-                ctx.writeAndFlush("Invalid Protocol Version,Connection will be close\n");
+                ctx.writeAndFlush("Invalid Protocol Version,Connection will be close");
                 if (status.bindUser != null)
                     status.bindUser.UserDisconnect();
                 ctx.channel().close();
@@ -382,7 +406,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                             !status.bindUser.isUserLogined()
                     )
                     {
-                        ctx.writeAndFlush("Invalid Mode! The ChangePassword Mode is disabled on this time.\n");
+                        ctx.writeAndFlush("Invalid Mode! The ChangePassword Mode is disabled on this time.");
                         return;
                     }
                     getServerAPI().ChangeUserPassword(status.bindUser,protocol.getMessageBody().getMessage());
@@ -393,7 +417,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                             !status.bindUser.isUserLogined()
                     )
                     {
-                        ctx.writeAndFlush("Invalid Mode! The Chat Mode is disabled on this time.\n");
+                        ctx.writeAndFlush("Invalid Mode! The Chat Mode is disabled on this time.");
                         return;
                     }
                     ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(status.bindUser,protocol.getMessageBody().getMessage());
@@ -406,7 +430,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                 case "RSAEncryption" -> {
                     if (!status.encryptionMode.equals(EncryptionMode.NON_ENCRYPTION))
                     {
-                        ctx.writeAndFlush("The RSAEncryption Set Mode is disabled on this time.\n");
+                        ctx.writeAndFlush("The RSAEncryption Set Mode is disabled on this time.");
                         return;
                     }
 
@@ -437,7 +461,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                 case "AESEncryption" -> {
                     if (!status.encryptionMode.equals(EncryptionMode.RSA_ENCRYPTION))
                     {
-                        ctx.writeAndFlush("The AESEncryption Set Mode is disabled on this time.\n");
+                        ctx.writeAndFlush("The AESEncryption Set Mode is disabled on this time.");
                         return;
                     }
                     String RandomForServer = UUID.randomUUID().toString();
@@ -493,9 +517,9 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                         SendData(gson.toJson(protocol),ctx.channel());
                     }
                     else
-                        ctx.writeAndFlush("This setting is not support on this Server!\n");
+                        ctx.writeAndFlush("This setting is not support on this Server!");
                 }
-                default -> ctx.writeAndFlush("This mode is not Support on this Server!\n");
+                default -> ctx.writeAndFlush("This mode is not Support on this Server!");
             }
         }
 
@@ -525,60 +549,61 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                     return;
                 }
 
-                String[] messages = Msg.replaceAll("\r","")
-                        .split("\n");//有时，多个数据包会被合并，通过这种方式来分离数据包。为兼容linux，分隔符为\n，如果有\r就删除
-
-                for (final String MSG : messages) {
-                    String Message = UnicodeToString.unicodeToString(MSG);
-                    status = ClientChannel.get(ctx.channel());
-                    //一些明文的直接回复
-                    switch (Message) {
-                        case "Hello Server" -> {
-                            ctx.writeAndFlush("Hello, Client\n");
-                            continue;
-                        }
-
-                        case "你好，服务端" -> {
-                            ctx.writeAndFlush("你好，客户端\n");
-                            continue;
-                        }
-
-                        case "Alive" -> {
-                            ctx.writeAndFlush("Alive\n");
-                            continue;
-                        }
+                String Message = UnicodeToString.unicodeToString(Msg);
+                status = ClientChannel.get(ctx.channel());
+                //一些明文的直接回复
+                switch (Message) {
+                    case "Hello Server" -> {
+                        ctx.writeAndFlush("Hello, Client");
+                        return;
                     }
 
-                    if (status.encryptionMode.equals(EncryptionMode.NON_ENCRYPTION)) {
-                        try {
-                            UserRequestDispose(ctx, Message, status);
-                        } catch (CryptoException e) {
-                            ctx.writeAndFlush("Decryption Error\n");
-                        }
-                    } else if (status.encryptionMode.equals(EncryptionMode.RSA_ENCRYPTION)) {
-                        try {
-                            UserRequestDispose(ctx, RSA.decrypt(Message, ServerPrivateKey), status);
-                        } catch (CryptoException e) {
-                            ctx.writeAndFlush("Decryption Error\n");
-                        }
-                    } else if (status.encryptionMode.equals(EncryptionMode.AES_ENCRYPTION)) {
-                        UserRequestDispose(
-                                ctx,
-                                cn.hutool.crypto.SecureUtil.aes(
-                                        SecureUtil.generateKey(
-                                                SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(status.encryptionKey)
-                                        ).getEncoded()
-                                ).decryptStr(Message),
-                                status
-                        );
-                    } else {
-                        throw new RuntimeException("The Encryption Mode is not Support!\n");
+                    case "你好，服务端" -> {
+                        ctx.writeAndFlush("你好，客户端");
+                        return;
                     }
+
+                    case "Alive" -> {
+                        ctx.writeAndFlush("Alive");
+                        return;
+                    }
+                }
+
+                if (status.encryptionMode.equals(EncryptionMode.NON_ENCRYPTION)) {
+                    try {
+                        UserRequestDispose(ctx, Message, status);
+                    } catch (CryptoException e) {
+                        ctx.writeAndFlush("Decryption Error");
+                    }
+                }
+                else if (status.encryptionMode.equals(EncryptionMode.RSA_ENCRYPTION)) {
+                    try {
+                        UserRequestDispose(ctx, RSA.decrypt(Message, ServerPrivateKey), status);
+                    } catch (CryptoException e) {
+                        ctx.writeAndFlush("Decryption Error");
+                    }
+                }
+                else if (status.encryptionMode.equals(EncryptionMode.AES_ENCRYPTION)) {
+                    UserRequestDispose(
+                            ctx,
+                            cn.hutool.crypto.SecureUtil.aes(
+                                    SecureUtil.generateKey(
+                                            SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(status.encryptionKey)
+                                    ).getEncoded()
+                            ).decryptStr(Message),
+                            status
+                    );
+                }
+                else {
+                    throw new RuntimeException("The Encryption Mode is not Support!");
                 }
             } catch (Throwable throwable)
             {
-                ctx.writeAndFlush("Invalid Input! Connection will be close\n");
+                ctx.writeAndFlush("Invalid Input! Connection will be close");
                 ctx.close();
+            }
+            finally {
+                ReferenceCountUtil.release(msg);
             }
         }
 
@@ -612,9 +637,31 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            ctx.writeAndFlush("Server have internal server error, Connection will be close\n");
+            ctx.writeAndFlush("Server have internal server error, Connection will be close");
             if (ctx.channel().isActive())
                 ctx.close();
+        }
+    }
+
+    private static class ServerOutEncoder extends MessageToMessageEncoder<CharSequence>
+    {
+        @Override
+        protected void encode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) throws Exception {
+            if (msg.isEmpty())
+                return;
+
+            if (msg.charAt(msg.length() - 1) == '\n')
+                out.add(CharBuffer.wrap(msg));
+            else
+                out.add(CharBuffer.wrap(msg+"\n"));
+        }
+    }
+
+    private static class ServerInDecoder extends MessageToMessageDecoder<CharSequence>
+    {
+        @Override
+        protected void decode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) throws Exception {
+            out.add(msg.toString().replaceAll("\r","").replaceAll("\n",""));
         }
     }
 }
