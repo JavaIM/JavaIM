@@ -40,8 +40,9 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GeneralMethod;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.newServer.UserData.Authentication.UserAuthentication;
-import org.yuezhikong.newServer.UserData.NettyUser;
+import org.yuezhikong.newServer.UserData.tcpUser.NettyUser;
 import org.yuezhikong.newServer.UserData.Permission;
+import org.yuezhikong.newServer.UserData.tcpUser.tcpUser;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.api.NettyAPI;
 import org.yuezhikong.newServer.api.api;
@@ -92,7 +93,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
      * @param encryptionKey 客户端密钥
      * @param bindUser 如果握手已经完成，那么此连接所绑定的用户是什么
      */
-    private record ClientStatus(ServerInHandler.EncryptionMode encryptionMode, String encryptionKey, user bindUser) {}
+    private record ClientStatus(ServerInHandler.EncryptionMode encryptionMode, String encryptionKey, tcpUser bindUser) {}
     private final ConcurrentHashMap<Channel,ClientStatus> ClientChannel = new ConcurrentHashMap<>();
     /**
      * 向用户发送信息(包括加密)
@@ -124,7 +125,6 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         }
     }
 
-    private Thread userRequestDisposeThread;
 
     public ExecutorService getUserRequestThreadPool() {
         return UserRequestThreadPool;
@@ -144,7 +144,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
     public void StartChatRoomServerForNetty(int bindPort,String ServerPrivateKey)
     {
         this.ServerPrivateKey = ServerPrivateKey;
-        UserRequestThreadPool = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        UserRequestThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
             public Thread newThread(@NotNull Runnable r) {
@@ -180,19 +180,14 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
 
             future = bootstrap.bind(bindPort).sync();
 
-            userRequestDisposeThread = new Thread(Thread.currentThread().getThreadGroup(),"User Console Request Dispose Thread")
-            {
-                @Override
-                public void run() {
-                    while (true)
-                    {
-                        Scanner scanner = new Scanner(System.in);
-                        String Command = scanner.nextLine();
-                        ServerCommandSend(Command);
-                    }
+            UserRequestThreadPool.execute(() -> {
+                while (true)
+                {
+                    Scanner scanner = new Scanner(System.in);
+                    String Command = scanner.nextLine();
+                    ServerCommandSend(Command);
                 }
-            };
-            userRequestDisposeThread.start();
+            });
             logger.info("服务器启动完成");
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
@@ -211,7 +206,6 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         try {
             pluginManager.UnLoadAllPlugin();
         } catch (IOException ignored) {}
-        userRequestDisposeThread.interrupt();
         UserRequestThreadPool.shutdownNow();
         nettyNetwork = new NettyNetwork();
     }
@@ -434,12 +428,18 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                         return;
                     }
 
-                    user bindUser;
+                    tcpUser bindUser;
                     if (status.bindUser == null)
                     {
-                        bindUser = new NettyUser(ctx.channel(),NettyNetwork.this);
+                        bindUser = new NettyUser(ctx.channel(),NettyNetwork.this,users.size() + 1);
                         users.add(bindUser);
                         bindUser.setUserAuthentication(new UserAuthentication(bindUser,IOThreadPool,pluginManager,serverAPI));
+                        bindUser.addLoginRecall(User -> {
+                            logger.info("用户："+User.getUserName()+"登录成功！");
+                            for (user user : getServerAPI().GetValidClientList(true)) {
+                                getServerAPI().SendMessageToUser(user,"用户：" + User.getUserName() + "加入了聊天!");
+                            }
+                        });
                         bindUser.setPublicKey(protocol.getMessageBody().getMessage());
                         for (IUserAuthentication.UserRecall recall : LoginRecall)
                         {
@@ -646,7 +646,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
     private static class ServerOutEncoder extends MessageToMessageEncoder<CharSequence>
     {
         @Override
-        protected void encode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) throws Exception {
+        protected void encode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) {
             if (msg.isEmpty())
                 return;
 
@@ -660,7 +660,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
     private static class ServerInDecoder extends MessageToMessageDecoder<CharSequence>
     {
         @Override
-        protected void decode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) throws Exception {
+        protected void decode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) {
             out.add(msg.toString().replaceAll("\r","").replaceAll("\n",""));
         }
     }

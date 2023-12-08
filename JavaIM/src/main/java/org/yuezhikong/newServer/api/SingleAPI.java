@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.IServerMain;
+import org.yuezhikong.newServer.UserData.tcpUser.IClassicUser;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.CustomVar;
@@ -118,7 +119,7 @@ public class SingleAPI implements api{
     }
 
     @Override
-    public void SendJsonToClient(@NotNull user User,@NotNull String InputData)
+    public void SendJsonToClient(@NotNull user User, @NotNull String InputData)
     {
         String Data = InputData;
         if (User instanceof PluginUser)
@@ -127,12 +128,16 @@ public class SingleAPI implements api{
             ((PluginUser) User).WriteData(Data);
             return;
         }
-        Data = User.getUserAES().encryptBase64(Data);
-        try {
-            NetworkManager.WriteDataToRemote(User.getUserNetworkData(),Data);
-        } catch (Exception e)
-        {
-            SaveStackTrace.saveStackTrace(e);
+        if (User instanceof IClassicUser classicUser) {
+            Data = classicUser.getUserAES().encryptBase64(Data);
+            try {
+                NetworkManager.WriteDataToRemote(classicUser.getUserNetworkData(), Data);
+            } catch (Exception e) {
+                SaveStackTrace.saveStackTrace(e);
+            }
+        }
+        else {
+            throw new RuntimeException("Not Support!");
         }
     }
 
@@ -166,12 +171,12 @@ public class SingleAPI implements api{
                 continue;
             if (CheckLoginStatus && !User.isUserLogined())
                 continue;
-            if (!(User instanceof PluginUser)) {
-                if (User.getUserNetworkData() == null)
+            if (User instanceof IClassicUser classicUser) {
+                if (classicUser.getUserNetworkData() == null)
                     continue;
-                if (User.getPublicKey() == null)
+                if (classicUser.getPublicKey() == null)
                     continue;
-                if (User.getUserAES() == null)
+                if (classicUser.getUserAES() == null)
                     continue;
             }
             if (User.isServer())

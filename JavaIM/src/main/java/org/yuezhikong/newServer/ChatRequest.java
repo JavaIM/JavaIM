@@ -53,7 +53,7 @@ public class ChatRequest {
             this.protocol = protocol;
             setChatMessage(protocol.getMessageBody().getMessage());
         }
-        public ChatRequestInput(@NotNull user User,@NotNull String ChatMessage)
+        public ChatRequestInput(@NotNull user User, @NotNull String ChatMessage)
         {
             this.User = User;
             setChatMessage(ChatMessage);

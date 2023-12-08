@@ -1,4 +1,4 @@
-package org.yuezhikong.newServer.UserData;
+package org.yuezhikong.newServer.UserData.tcpUser;
 
 import cn.hutool.crypto.symmetric.AES;
 import org.jetbrains.annotations.Nullable;
@@ -6,6 +6,7 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
+import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.newServer.plugin.event.events.UserLoginEvent;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -15,19 +16,24 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class ClassicUser implements user {
+public class ClassicUser implements IClassicUser {
     //初始化
     /**
      * 创建一个新的用户
      * @param NetworkData 客户端网络数据
-     * @param ClientID 客户端ID
      * @param isServer 是否是服务端
      */
-    public ClassicUser(NetworkManager.NetworkData NetworkData, int ClientID, boolean isServer)
+    public ClassicUser(NetworkManager.NetworkData NetworkData, boolean isServer)
     {
         UserNetworkData = NetworkData;
-        this.ClientID = ClientID;
         Server = isServer;
+    }
+
+    public ClassicUser initClientID(int ClientID)
+    {
+        if (ClientID != -1)
+            this.ClientID = ClientID;
+        return this;
     }
 
     //用户通讯相关
@@ -35,7 +41,7 @@ public class ClassicUser implements user {
     private String PublicKey;
     private AES UserAES;
     private ServerMain.RecvMessageThread recvMessageThread;
-    private final int ClientID;
+    private int ClientID;
 
     @Override
     public ClassicUser setRecvMessageThread(ServerMain.RecvMessageThread thread) {
@@ -140,31 +146,11 @@ public class ClassicUser implements user {
         return this;
     }
 
-    //暂缓
-    @Override
-    public ClassicUser setMuteTime(long muteTime) {
-        return this;
-    }
-
-    @Override
-    public ClassicUser setMuted(boolean Muted) {
-        return this;
-    }
-
-    @Override
-    public long getMuteTime() {
-        return 0;
-    }
-
-    @Override
-    public boolean getMuted() {
-        return false;
-    }
 
     //退出登录资源释放
     private boolean Disconnected = false;
     @Override
-    public ClassicUser UserDisconnect() {
+    public synchronized ClassicUser UserDisconnect() {
         if (Disconnected)
         {
             return this;
@@ -178,7 +164,8 @@ public class ClassicUser implements user {
         {
             ServerMain.getServer().getLogger().info("用户："+getUserName()+"已经断开连接");
         }
-        authentication.DoLogout();
+        if (authentication != null)
+            authentication.DoLogout();
         if (UserNetworkData != null)
         {
             try {

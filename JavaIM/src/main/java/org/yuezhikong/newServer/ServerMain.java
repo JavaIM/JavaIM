@@ -25,12 +25,14 @@ import org.yuezhikong.CrashReport;
 import org.yuezhikong.GeneralMethod;
 import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.UserData.Authentication.UserAuthentication;
-import org.yuezhikong.newServer.UserData.ClassicUser;
+import org.yuezhikong.newServer.UserData.tcpUser.ClassicUser;
+import org.yuezhikong.newServer.UserData.tcpUser.IClassicUser;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.api.SingleAPI;
 import org.yuezhikong.newServer.api.api;
 import org.yuezhikong.newServer.plugin.PluginManager;
 import org.yuezhikong.newServer.plugin.SimplePluginManager;
+import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -56,7 +58,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ServerMain extends GeneralMethod implements IServerMain {
     private final List<user> Users = new ArrayList<>();
-    private int clientIDAll = 0;
     private ThreadGroup IOGroup;
     private ExecutorService IOThreadPool;
     private ExecutorService RecvMessageThreadPool;
@@ -110,12 +111,12 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                     }
                     continue;
                 }
-                user CurrentUser = new ClassicUser(clientNetworkData,getServer().clientIDAll,false);//创建用户class
+                ClassicUser CurrentUser = new ClassicUser(clientNetworkData,false);//创建用户class
                 CurrentUser.setUserAuthentication(new UserAuthentication(CurrentUser, getServer().getIOThreadPool(), getServer().getPluginManager(), getServer().getServerAPI()));
                 getServer().Users.add(CurrentUser);
-                getServer().Users.set(getServer().clientIDAll,CurrentUser);//添加到List中
-                getServer().StartRecvMessageThread(getServer().clientIDAll);//启动RecvMessage线程
-                getServer().clientIDAll++;//当前的最大ClientID加1
+                int index = getServer().Users.indexOf(CurrentUser);
+                CurrentUser.initClientID(index);
+                getServer().StartRecvMessageThread(index);//启动RecvMessage线程
                 logger.info("连入了新的socket请求");
                 logger.info("基本信息如下：");
                 logger.info("远程ip地址为："+clientNetworkData.getRemoteSocketAddress());
@@ -147,13 +148,17 @@ public class ServerMain extends GeneralMethod implements IServerMain {
 
     public static class RecvMessageThread
     {
-        private final user CurrentUser;
+        private final IClassicUser CurrentUser;
         public RecvMessageThread(int ClientID)
         {
-            CurrentUser = getServer().Users.get(ClientID);
+            user User = getServer().Users.get(ClientID);
+            if (!(User instanceof IClassicUser))
+                throw new IllegalArgumentException("The User param is not parent of IClassicUser!");
+            CurrentUser = (IClassicUser) getServer().Users.get(ClientID);
         }
-        public void LoginSystem(@NotNull user User) throws IOException
+        public void LoginSystem() throws IOException
         {
+            IClassicUser User = CurrentUser;
             String json = NetworkManager.RecvDataFromRemote(User.getUserNetworkData());
             json = User.getUserAES().decryptStr(json);
             LoginProtocol loginProtocol = new Gson().fromJson(json,LoginProtocol.class);
@@ -324,7 +329,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
                 //握手全部完毕，后续是登录系统
                 try {
-                    LoginSystem(CurrentUser);
+                    LoginSystem();
                 } catch (RuntimeException e)
                 {
                     SaveStackTrace.saveStackTrace(e);
@@ -382,8 +387,46 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                         }
                         else {
                             try {
-                                user TargetUser = getServer().getServerAPI().GetUserByUserName(transferProtocol.getTransferProtocolHead().getTargetUserName()
+                                user User = getServer().getServerAPI().GetUserByUserName(transferProtocol.getTransferProtocolHead().getTargetUserName()
                                 );
+                                if (!(User instanceof IClassicUser TargetUser))
+                                {
+                                    if (User instanceof PluginUser pluginUser && pluginUser.isAllowedTransferProtocol())
+                                    {
+                                        protocol = new NormalProtocol();
+                                        head = new NormalProtocol.MessageHead();
+                                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                        head.setType("NextIsTransferProtocol");
+                                        protocol.setMessageHead(head);
+                                        body = new NormalProtocol.MessageBody();
+                                        body.setMessage(CurrentUser.getUserName());
+                                        protocol.setMessageBody(body);
+                                        pluginUser.WriteData(gson.toJson(protocol));
+
+                                        pluginUser.WriteData(json);
+
+                                        protocol = new NormalProtocol();
+                                        head = new NormalProtocol.MessageHead();
+                                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                        head.setType("Result");
+                                        protocol.setMessageHead(head);
+                                        body = new NormalProtocol.MessageBody();
+                                        body.setMessage("Success");
+                                        NetworkManager.WriteDataToRemote(CurrentUserNetworkData, CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                                    }
+                                    else {
+                                        protocol = new NormalProtocol();
+                                        head = new NormalProtocol.MessageHead();
+                                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                                        head.setType("Result");
+                                        protocol.setMessageHead(head);
+                                        body = new NormalProtocol.MessageBody();
+                                        body.setMessage("This User is not successful to send");
+                                        protocol.setMessageBody(body);
+                                        NetworkManager.WriteDataToRemote(CurrentUserNetworkData, CurrentUser.getUserAES().encryptBase64(gson.toJson(protocol)));
+                                    }
+                                    continue;
+                                }
                                 if (TargetUser.isAllowedTransferProtocol())
                                 {
                                     NetworkManager.NetworkData TargetUserNetworkData = TargetUser.getUserNetworkData();
@@ -610,7 +653,7 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 pluginManager = new SimplePluginManager(this);
                 pluginManager.LoadPluginOnDirectory(new File("./plugins"));
                 //服务端虚拟账户初始化
-                ConsoleUser = new ClassicUser(null, 0, true);
+                ConsoleUser = new ClassicUser(null,  true).initClientID(0);
                 ConsoleUser.setAllowedTransferProtocol(false);
                 ConsoleUser.setUserAuthentication(new UserAuthentication(ConsoleUser, IOThreadPool,pluginManager,API));
                 ConsoleUser.UserLogin("Server");

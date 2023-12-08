@@ -10,9 +10,7 @@ public interface PluginUser extends user {
      */
     void WriteData(String data);
 
-    /**
-     * 等待输入
-     * @return 输入
-     */
-    String waitData();
+    // 部分方法的默认处理程序
+    @Override
+    default boolean isServer() { return false; }
 }

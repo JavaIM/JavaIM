@@ -2,7 +2,8 @@ package org.yuezhikong.newServer.api;
 
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.newServer.NettyNetwork;
-import org.yuezhikong.newServer.UserData.NettyUser;
+import org.yuezhikong.newServer.UserData.tcpUser.IClassicUser;
+import org.yuezhikong.newServer.UserData.tcpUser.NettyUser;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -22,12 +23,16 @@ public class NettyAPI extends SingleAPI{
                 continue;
             if (CheckLoginStatus && !User.isUserLogined())
                 continue;
-            if (User instanceof NettyUser && ((NettyUser) User).getChannel() == null)
+            if (User instanceof NettyUser nettyUser && nettyUser.getChannel() == null)
                 continue;
-            if (User.getPublicKey() == null)
-                continue;
-            if (User.getUserAES() == null)
-                continue;
+            else if (User instanceof IClassicUser classicUser) {
+                if (classicUser.getUserNetworkData() == null)
+                    continue;
+                if (classicUser.getPublicKey() == null)
+                    continue;
+                if (classicUser.getUserAES() == null)
+                    continue;
+            }
             if (User.isServer())
                 continue;
             ValidClientList.add(User);
@@ -36,7 +41,7 @@ public class NettyAPI extends SingleAPI{
     }
 
     @Override
-    public void SendJsonToClient(@NotNull user User,@NotNull String InputData)
+    public void SendJsonToClient(@NotNull user User, @NotNull String InputData)
     {
         if (User instanceof PluginUser)
         {

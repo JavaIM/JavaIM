@@ -1,13 +1,13 @@
-package org.yuezhikong.newServer.UserData;
+package org.yuezhikong.newServer.UserData.tcpUser;
 
 import cn.hutool.crypto.symmetric.AES;
 import io.netty.channel.Channel;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.NettyNetwork;
-import org.yuezhikong.newServer.ServerMain;
+import org.yuezhikong.newServer.ServerTools;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
+import org.yuezhikong.newServer.UserData.Permission;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -15,23 +15,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class NettyUser implements user
+public class NettyUser implements INettyUser
 {
-    @Override
-    public NettyUser setRecvMessageThread(ServerMain.RecvMessageThread thread) {
-        throw new RuntimeException("Deprecated");
-    }
-
-    @Override
-    public ServerMain.RecvMessageThread getRecvMessageThread() {
-        throw new RuntimeException("Deprecated");
-    }
-
-    @Override
-    public NetworkManager.NetworkData getUserNetworkData() {
-        throw new RuntimeException("Deprecated");
-    }
-
     private String PublicKey;
     private AES aes;
     @Override
@@ -58,7 +43,7 @@ public class NettyUser implements user
 
     @Override
     public int getClientID() {
-        throw new RuntimeException("Deprecated");
+        return id;
     }
 
     private IUserAuthentication authentication;
@@ -95,7 +80,18 @@ public class NettyUser implements user
         Disconnected = true;
         if (!isServer())
             getChannel().close();
-        authentication.DoLogout();
+        if (authentication != null)
+            authentication.DoLogout();
+        if (!isUserLogined())
+        {
+            ServerTools.getServerInstance().getLogger().info("客户端:"+getChannel().remoteAddress()+"已经断开连接");
+        }
+        else
+        {
+            String message = "用户："+getUserName()+"("+getChannel().remoteAddress()+")已经断开连接";
+            ServerTools.getServerInstance().getLogger().info(message);
+            ServerTools.getServerInstance().getServerAPI().SendMessageToAllClient(message);
+        }
         return this;
     }
     private Permission permission;
@@ -145,35 +141,14 @@ public class NettyUser implements user
     private final Channel ConnectChannel;
     private final NettyNetwork network;
 
-    @SuppressWarnings("unused")
-    public NettyUser(Channel channel, NettyNetwork network) { ConnectChannel = channel; this.network = network; }
+    private final int id;
+    public NettyUser(Channel channel, NettyNetwork network,int ClientID) { ConnectChannel = channel; this.network = network; id = ClientID; }
 
-    @SuppressWarnings("unused")
-    public NettyUser(boolean ServerSpicialUserStatus, NettyNetwork network) { server = ServerSpicialUserStatus; ConnectChannel = null; this.network = network; }
+    public NettyUser(boolean ServerSpicialUserStatus, NettyNetwork network) { server = ServerSpicialUserStatus; ConnectChannel = null; this.network = network; id = 0; }
 
-    @SuppressWarnings("unused")
+    @Override
     public Channel getChannel() {
         return ConnectChannel;
-    }
-
-    @Override
-    public NettyUser setMuteTime(long muteTime) {
-        throw new RuntimeException("Deprecated");
-    }
-
-    @Override
-    public NettyUser setMuted(boolean Muted) {
-        throw new RuntimeException("Deprecated");
-    }
-
-    @Override
-    public long getMuteTime() {
-        throw new RuntimeException("Deprecated");
-    }
-
-    @Override
-    public boolean getMuted() {
-        throw new RuntimeException("Deprecated");
     }
 
     private boolean TransferProtocol;
