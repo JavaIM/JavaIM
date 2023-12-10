@@ -21,7 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import cn.hutool.core.lang.UUID;
 import java.util.concurrent.ExecutorService;
 
 public final class UserAuthentication implements IUserAuthentication{
@@ -212,7 +212,7 @@ public final class UserAuthentication implements IUserAuthentication{
         ResultSet rs;
         do {
             //获取一个安全的，不重复的token
-            token = UUID.randomUUID().toString();
+            token = UUID.randomUUID(true).toString();
             ps = DatabaseConnection.prepareStatement("select * from UserData where token = ?");
             ps.setString(1, token);
             rs = ps.executeQuery();
@@ -297,7 +297,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 String salt;
                 do {
                     //寻找一个安全的盐
-                    salt = UUID.randomUUID().toString();
+                    salt = UUID.randomUUID(true).toString();
                     ps = DatabaseConnection.prepareStatement("select * from UserData where salt = ?");
                     ps.setString(1, salt);
                     rs = ps.executeQuery();

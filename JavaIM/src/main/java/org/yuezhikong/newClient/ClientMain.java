@@ -18,6 +18,7 @@ package org.yuezhikong.newClient;
 
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.AES;
+import cn.hutool.core.lang.UUID;
 import com.google.gson.Gson;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -39,10 +40,8 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @SuppressWarnings("unused")
@@ -161,8 +160,6 @@ public class ClientMain extends GeneralMethod {
         logger.info("客户端密钥制作完成！");
         logger.info("公钥是："+keyData.PublicKey);
         logger.info("私钥是："+keyData.PrivateKey);
-        String EncryptionKey = RSA.encrypt(keyData.PublicKey, key);
-        logger.info("加密后的Key是："+EncryptionKey);
         logger.info("正在发送公钥");
         Gson gson = new Gson();
 
@@ -172,44 +169,11 @@ public class ClientMain extends GeneralMethod {
         head.setType("RSAEncryption");
         protocol.setMessageHead(head);
         NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-        body.setMessage(EncryptionKey);
+        body.setMessage(keyData.PublicKey);
         body.setFileLong(0);
         protocol.setMessageBody(body);
 
         NetworkManager.WriteDataToRemote(clientNetworkData,gson.toJson(protocol));
-        //发送完毕，开始测试
-        //测试RSA
-        protocol = new NormalProtocol();
-        head = new NormalProtocol.MessageHead();
-        head.setType("Test");
-        head.setVersion(CodeDynamicConfig.getProtocolVersion());
-        protocol.setMessageHead(head);
-        body = new NormalProtocol.MessageBody();
-        body.setMessage("你好服务端");
-        protocol.setMessageBody(body);
-        NetworkManager.WriteDataToRemote(clientNetworkData,RSA.encrypt(gson.toJson(protocol),key));
-
-        String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
-        if ("Decryption Error".equals(json))
-        {
-            logger.error("你的服务端公钥疑似不正确");
-            logger.error("服务端返回：Decryption Error");
-            logger.error("服务端无法解密");
-            logger.error("程序即将退出");
-            if (SpecialMode) {
-                getClientThreadGroup().interrupt();
-                return;
-            }
-            else
-                System.exit(0);
-        }
-        json = RSA.decrypt(json,keyData.privateKey);
-        protocol = getClient().protocolRequest(json);
-        if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
-        {
-            return;
-        }
-        logger.info("服务端响应："+protocol.getMessageBody().getMessage());
     }
 
     /**
@@ -463,7 +427,7 @@ public class ClientMain extends GeneralMethod {
             RequestRSA(ServerPublicKey);
             //AES制造开始
             logger.info("正在配置AES加密...");
-            String RandomForClient = UUID.randomUUID().toString();
+            String RandomForClient = UUID.randomUUID(true).toString();
             protocol = new NormalProtocol();
             head = new NormalProtocol.MessageHead();
             head.setType("AESEncryption");
@@ -475,6 +439,19 @@ public class ClientMain extends GeneralMethod {
             NetworkManager.WriteDataToRemote(clientNetworkData,RSA.encrypt(gson.toJson(protocol),ServerPublicKey));
 
             String json = NetworkManager.RecvDataFromRemote(clientNetworkData);
+            if ("Decryption Error".equals(json))
+            {
+                logger.error("你的服务端公钥疑似不正确");
+                logger.error("服务端返回：Decryption Error");
+                logger.error("服务端无法解密");
+                logger.error("程序即将退出");
+                if (SpecialMode) {
+                    getClientThreadGroup().interrupt();
+                    return;
+                }
+                else
+                    System.exit(0);
+            }
             json = RSA.decrypt(json,keyData.privateKey);
             protocol = getClient().protocolRequest(json);
             if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("AESEncryption".equals(protocol.getMessageHead().getType())))
@@ -482,7 +459,7 @@ public class ClientMain extends GeneralMethod {
                 return;
             }
             String RandomForServer = protocol.getMessageBody().getMessage();
-            SecretKey key = getClient().GenerateKey(RandomForServer+RandomForClient);
+            SecretKey key = getClient().GenerateKey(RandomForServer,RandomForClient);
             final AES aes = cn.hutool.crypto.SecureUtil.aes(key.getEncoded());
             this.aes = aes;
             //开始AES测试
@@ -684,16 +661,13 @@ public class ClientMain extends GeneralMethod {
         json = aes.decryptStr(json);
         protocol = getClient().protocolRequest(json);
         if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion())
-        {
             return false;
-        }
-        if ("Chat".equals(protocol.getMessageHead().getType()))//此时的chat消息就是服务端的登录失败原因
+        else if ("Chat".equals(protocol.getMessageHead().getType()))//此时的chat消息就是来自于服务端的提示信息
         {
-            logger.info("自动登录失败，原因："+protocol.getMessageBody().getMessage());
-            logger.info("正在重新请求登录...");
+            logger.info(protocol.getMessageBody().getMessage());
             return TokenLoginSystem();
         }
-        if ("Success".equals(protocol.getMessageBody().getMessage()))
+        else if ("Success".equals(protocol.getMessageBody().getMessage()))
         {
             StartRecvMessageThread();
             return true;
@@ -854,48 +828,105 @@ public class ClientMain extends GeneralMethod {
 
     }
 
+    protected ExecutorService userRequestDisposeThreadPool;
     /**
      * 控制台发信/指令系统
      */
     protected void SendMessage() {
         Scanner scanner = new Scanner(System.in);
-        try {
-            while (true) {
-                String UserInput = scanner.nextLine();
-                if (needConsoleInput)
-                {
-                    synchronized (ConsoleInputLock)
-                    {
+        class userRequest {
+            private final AtomicBoolean Complete = new AtomicBoolean(false);
+            private final AtomicBoolean Break = new AtomicBoolean(false);
+            public void Request(String userInput)
+            {
+                userRequestDisposeThreadPool.execute(() -> {
+                    try {
                         if (needConsoleInput) {
-                            needConsoleInput = false;
-                            ConsoleInput = UserInput;
-                            ConsoleInputLock.notifyAll();
+                            synchronized (ConsoleInputLock) {
+                                if (needConsoleInput) {
+                                    needConsoleInput = false;
+                                    ConsoleInput = userInput;
+                                    ConsoleInputLock.notifyAll();
+                                }
+                            }
+                            return;
+                        }
+
+                        try {
+                            if (CommandRequest(userInput)) {
+                                return;
+                            }
+                        } catch (QuitException e) {
+                            QuitReason = "用户界面要求关闭";
+                            Break.set(true);
+                            return;
+                        }
+                        Gson gson = new Gson();
+                        NormalProtocol protocol = new NormalProtocol();
+                        NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+                        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+                        head.setType("Chat");
+                        protocol.setMessageHead(head);
+                        NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+                        body.setMessage(userInput);
+                        protocol.setMessageBody(body);
+                        NetworkManager.WriteDataToRemote(clientNetworkData, aes.encryptBase64(gson.toJson(protocol)));
+                    } catch (IOException e)
+                    {
+                        Break.set(true);
+                    }
+                    finally {
+                        Complete.set(true);
+                        Complete.notifyAll();
+                    }
+                });
+                if (!Complete.get())
+                {
+                    synchronized (Complete)
+                    {
+                        if (!Complete.get())
+                        {
+                            try {
+                                Complete.wait();
+                            } catch (InterruptedException e) {
+                                SaveStackTrace.saveStackTrace(e);
+                            }
                         }
                     }
-                    continue;
                 }
-
-                try {
-                    if (CommandRequest(UserInput))
-                    {
-                        continue;
-                    }
-                } catch (QuitException e) {
-                    QuitReason = "用户界面要求关闭";
-                    break;
-                }
-                Gson gson = new Gson();
-                NormalProtocol protocol = new NormalProtocol();
-                NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                head.setType("Chat");
-                protocol.setMessageHead(head);
-                NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-                body.setMessage(UserInput);
-                protocol.setMessageBody(body);
-                NetworkManager.WriteDataToRemote(clientNetworkData,aes.encryptBase64(gson.toJson(protocol)));
             }
-        } catch (IOException ignored) {}
+
+            public boolean getBreak() {
+                return Break.get();
+            }
+
+            public void reset()
+            {
+                if (!Complete.get())
+                {
+                    synchronized (Complete)
+                    {
+                        if (!Complete.get())
+                        {
+                            try {
+                                Complete.wait();
+                            } catch (InterruptedException e) {
+                                SaveStackTrace.saveStackTrace(e);
+                            }
+                        }
+                    }
+                }
+                Complete.set(false);
+                Break.set(false);
+            }
+        }
+        userRequest request = new userRequest();
+        do {
+            request.reset();//重置userRequest
+
+            String UserInput = scanner.nextLine();
+            request.Request(UserInput);
+        } while (!request.getBreak());
         if (Thread.currentThread().isInterrupted())
         {
             return;

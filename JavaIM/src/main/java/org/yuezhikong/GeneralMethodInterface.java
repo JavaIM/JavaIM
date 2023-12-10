@@ -25,10 +25,11 @@ import javax.crypto.SecretKey;
 public interface GeneralMethodInterface {
     /**
      * 创建AES密钥
-     * @param source 密钥生成源
+     * @param source1 Password
+     * @param source2 salt
      * @return 密钥
      */
-    SecretKey GenerateKey(@NotNull String source);
+    SecretKey GenerateKey(@NotNull String source1,@NotNull String source2);
 
     /**
      * 简易的json转换为NormalProtocol的工具

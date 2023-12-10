@@ -16,6 +16,7 @@
  */
 package org.yuezhikong.newServer;
 
+import cn.hutool.core.thread.NamedThreadFactory;
 import cn.hutool.crypto.CryptoException;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
@@ -158,8 +159,31 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
 
         serverAPI = new NettyAPI(this);
 
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1, new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(IOThreadGroup,
+                        r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
+            }
+        });
+        EventLoopGroup workerGroup = new NioEventLoopGroup(new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(IOThreadGroup,
+                        r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
+            }
+        });
+
+        DefaultEventLoopGroup RecvMessageGroup = new DefaultEventLoopGroup((new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
+                        r,"Recv Message Thread #"+threadNumber.getAndIncrement());
+            }
+        }));
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossGroup, workerGroup)
@@ -169,12 +193,13 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                         @Override
                         public void initChannel(SocketChannel channel) {
                             ChannelPipeline pipeline = channel.pipeline();
-                            pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));
+                            pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));//IO
                             pipeline.addLast(new StringEncoder(StandardCharsets.UTF_8));
                             pipeline.addLast(new LineBasedFrameDecoder(100000000));
                             pipeline.addLast(new ServerInDecoder());
                             pipeline.addLast(new ServerOutEncoder());
-                            pipeline.addLast(new ServerInHandler());
+
+                            pipeline.addLast(RecvMessageGroup,new ServerInHandler());//JavaIM逻辑
                         }
                     });
 
@@ -258,12 +283,13 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
     private final user ConsoleUser = new NettyUser(true,this)
             .SetUserPermission(Permission.ADMIN);
 
+    private final ThreadGroup IOThreadGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(), "IO ThreadGroup");
     private final ExecutorService IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
         private final AtomicInteger threadNumber = new AtomicInteger(1);
 
         @Override
         public Thread newThread(@NotNull Runnable r) {
-            return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "UserRequestDispose ThreadGroup"),
+            return new Thread(IOThreadGroup,
                     r, "IO Thread #" + threadNumber.getAndIncrement());
         }
     });
@@ -454,7 +480,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                         bindUser = status.bindUser;
                         bindUser.setPublicKey(protocol.getMessageBody().getMessage());
                     }
-                    ClientStatus clientStatus = new ClientStatus(EncryptionMode.RSA_ENCRYPTION,RSA.decrypt(protocol.getMessageBody().getMessage(), ServerPrivateKey),bindUser);
+                    ClientStatus clientStatus = new ClientStatus(EncryptionMode.RSA_ENCRYPTION,protocol.getMessageBody().getMessage(),bindUser);
                     ClientChannel.remove(ctx.channel());
                     ClientChannel.put(ctx.channel(),clientStatus);
                 }
@@ -477,7 +503,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                     protocol.setMessageBody(body);
                     SendData(gson.toJson(protocol),ctx.channel());
 
-                    ClientStatus clientStatus = new ClientStatus(EncryptionMode.AES_ENCRYPTION,Base64.encodeBase64String(GenerateKey(RandomForServer+RandomForClient).getEncoded()),status.bindUser);
+                    ClientStatus clientStatus = new ClientStatus(EncryptionMode.AES_ENCRYPTION,Base64.encodeBase64String(GenerateKey(RandomForServer,RandomForClient).getEncoded()),status.bindUser);
                     ClientChannel.remove(ctx.channel());
                     ClientChannel.put(ctx.channel(),clientStatus);
 

@@ -17,10 +17,11 @@
 package org.yuezhikong;
 
 import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.PBKDF2;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
-import org.apache.commons.codec.binary.Base64;
 import org.jetbrains.annotations.NotNull;
+import org.yuezhikong.newServer.ServerTools;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.RSA;
@@ -32,17 +33,13 @@ import java.nio.charset.StandardCharsets;
 
 public class GeneralMethod implements GeneralMethodInterface{
     @Override
-    public SecretKey GenerateKey(@NotNull String source)
+    public SecretKey GenerateKey(@NotNull String source1,@NotNull String source2)
     {
-        try {
-            byte[] KeyByte = new byte[32];
-            byte[] SrcByte = Base64.encodeBase64(source.getBytes(StandardCharsets.UTF_8));
-            System.arraycopy(SrcByte, 0, KeyByte, 0, 31);
-            return SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), KeyByte);
-        } catch (ArrayIndexOutOfBoundsException e)
-        {
-            return GenerateKey(source + source);
-        }
+        return SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue(), //生成SecretKey，算法为AES
+                new PBKDF2("PBKDF2WithHmacSHA256",256,1000).//算法为PBKDF2WithHmacSHA256，最终密钥长度为512，重复1000次
+                        encrypt(source1.toCharArray(),source2.getBytes(StandardCharsets.UTF_8)//根据输入的Password和salt进行生成
+                        )
+        );
     }
     @Override
     public NormalProtocol protocolRequest(String json)
@@ -53,6 +50,7 @@ public class GeneralMethod implements GeneralMethodInterface{
             return gson.fromJson(json,NormalProtocol.class);
         } catch (Throwable e)
         {
+            System.out.println("Json处理失败，原始输入为:"+json);
             throw new RuntimeException("Json Request Failed",e);
         }
     }

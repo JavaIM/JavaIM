@@ -16,6 +16,7 @@
  */
 package org.yuezhikong.newServer;
 
+import cn.hutool.core.lang.UUID;
 import com.google.gson.Gson;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
@@ -50,6 +51,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -237,8 +239,11 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 {
                     return;
                 }
+                CurrentUser.setPublicKey(protocol.getMessageBody().getMessage());
+                //AES制造开始
+                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
                 try {
-                    CurrentUser.setPublicKey(RSA.decrypt(protocol.getMessageBody().getMessage(), ServerPrivateKey));
+                    json = RSA.decrypt(json, ServerPrivateKey);
                 } catch (cn.hutool.crypto.CryptoException e)
                 {
                     NetworkManager.WriteDataToRemote(CurrentUserNetworkData,"Decryption Error");
@@ -247,28 +252,6 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                     CurrentUser.UserDisconnect();
                     return;
                 }
-                //测试RSA
-                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
-                json = RSA.decrypt(json,ServerPrivateKey);
-                protocol = getServer().protocolRequest(json);
-                if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("Test".equals(protocol.getMessageHead().getType())))
-                {
-                    return;
-                }
-                logger.info("正在连接的客户端返回："+protocol.getMessageBody().getMessage());
-
-                protocol = new NormalProtocol();
-                head = new NormalProtocol.MessageHead();
-                head.setType("Test");
-                head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                protocol.setMessageHead(head);
-                body = new NormalProtocol.MessageBody();
-                body.setMessage("你好客户端");
-                protocol.setMessageBody(body);
-                NetworkManager.WriteDataToRemote(CurrentUserNetworkData,RSA.encrypt(gson.toJson(protocol),CurrentUser.getPublicKey()));
-                //AES制造开始
-                json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
-                json = RSA.decrypt(json,ServerPrivateKey);
                 protocol = getServer().protocolRequest(json);
                 if (protocol.getMessageHead().getVersion() != CodeDynamicConfig.getProtocolVersion() || !("AESEncryption".equals(protocol.getMessageHead().getType())))
                 {
@@ -281,11 +264,11 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                 head.setVersion(CodeDynamicConfig.getProtocolVersion());
                 protocol.setMessageHead(head);
                 body = new NormalProtocol.MessageBody();
-                String RandomForServer = UUID.randomUUID().toString();
+                String RandomForServer = UUID.randomUUID(true).toString();
                 body.setMessage(RandomForServer);
                 protocol.setMessageBody(body);
                 NetworkManager.WriteDataToRemote(CurrentUserNetworkData,RSA.encrypt(gson.toJson(protocol),CurrentUser.getPublicKey()));
-                SecretKey key = getServer().GenerateKey(RandomForServer+protocol.getMessageBody().getMessage());
+                SecretKey key = getServer().GenerateKey(RandomForServer,protocol.getMessageBody().getMessage());
                 CurrentUser.setUserAES(cn.hutool.crypto.SecureUtil.aes(key.getEncoded()));
                 //测试AES
                 json = NetworkManager.RecvDataFromRemote(CurrentUserNetworkData,10);
@@ -602,7 +585,21 @@ public class ServerMain extends GeneralMethod implements IServerMain {
     {
         if (!started)
         {
+            started = true;
+            server = this;
+            logger = initLogger();
             try {
+                //弃用警告
+                logger.warning("JavaIM Blocking IO Server 因其性能原因即将被弃用");
+                logger.warning("此功能将在未来的几个版本内完成移除");
+                logger.warning("建议您改用Netty服务端以获得更好的体验!");
+                logger.warning("5秒后继续启动JavaIM Blocking IO Server...");
+                try {
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+                } catch (InterruptedException e) {
+                    logger.info("由于线程被中断，取消继续执行!");
+                    return;
+                }
                 //初始化ThreadGroup
                 ServerGroup = Thread.currentThread().getThreadGroup();
                 recvMessageThreadGroup = new ThreadGroup(ServerGroup, "recvMessageThreadGroup");
@@ -636,9 +633,6 @@ public class ServerMain extends GeneralMethod implements IServerMain {
                         ServerCleanup();
                     }
                 }.start();
-                started = true;
-                server = this;
-                logger = initLogger();
                 try {
                     ServerTCPNetworkData = NetworkManager.CreateTCPServer(bindPort);
                 } catch (IOException e) {

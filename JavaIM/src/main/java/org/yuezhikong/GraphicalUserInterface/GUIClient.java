@@ -16,6 +16,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class GUIClient extends ClientMain {
 
@@ -51,7 +53,9 @@ public class GUIClient extends ClientMain {
             ClientStartedLock.notifyAll();
         }
         super.SendMessage();
+        StopClient();
     }
+
 
     @Override
     protected boolean CommandRequest(String UserInput) throws IOException {
@@ -136,21 +140,46 @@ public class GUIClient extends ClientMain {
      * @param Message 聊天信息
      */
     public void SendMessageToServer(String Message) throws IOException {
-        if (getClientStopStatus())
+        AtomicBoolean Complete = new AtomicBoolean(false);
+        AtomicReference<IOException> exception = new AtomicReference<>(null);
+        userRequestDisposeThreadPool.execute(() -> {
+            Gson gson = new Gson();
+            NormalProtocol protocol = new NormalProtocol();
+            NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+            head.setVersion(CodeDynamicConfig.getProtocolVersion());
+            head.setType("Chat");
+            protocol.setMessageHead(head);
+            NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+            body.setMessage(Message);
+            body.setFileLong(0);
+            protocol.setMessageBody(body);
+            try {
+                NetworkManager.WriteDataToRemote(getClientNetworkData(),getAes().encryptBase64(gson.toJson(protocol)));
+            } catch (IOException e) {
+                exception.set(e);
+            }
+            Complete.set(true);
+            synchronized (Complete)
+            {
+                Complete.notifyAll();
+            }
+        });
+        if (!Complete.get())
         {
-            return;
+            synchronized (Complete)
+            {
+                if (!Complete.get())
+                {
+                    try {
+                        Complete.wait();
+                    } catch (InterruptedException e) {
+                        SaveStackTrace.saveStackTrace(e);
+                    }
+                }
+            }
         }
-        Gson gson = new Gson();
-        NormalProtocol protocol = new NormalProtocol();
-        NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-        head.setVersion(CodeDynamicConfig.getProtocolVersion());
-        head.setType("Chat");
-        protocol.setMessageHead(head);
-        NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-        body.setMessage(Message);
-        body.setFileLong(0);
-        protocol.setMessageBody(body);
-        NetworkManager.WriteDataToRemote(getClientNetworkData(),getAes().encryptBase64(gson.toJson(protocol)));
+        if (exception.get() != null)
+            throw exception.get();
     }
 
     /**
@@ -164,23 +193,6 @@ public class GUIClient extends ClientMain {
             return;
         }
         if (!ClientStartedSuccessful) {
-            new Thread(getClientThreadGroup(),"RequestThread") {
-                @Override
-                public void run() {
-                    if (!ClientStartedSuccessful) {
-                        synchronized (ClientStartedLock) {
-                            if (!ClientStartedSuccessful) {
-                                try {
-                                    ClientStartedLock.wait();
-                                } catch (InterruptedException e) {
-                                    SaveStackTrace.saveStackTrace(e);
-                                }
-                            }
-                        }
-                        UserInputRequest(Message);
-                    }
-                }
-            }.start();
             return;
         }
 
@@ -205,7 +217,7 @@ public class GUIClient extends ClientMain {
             }
         } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
-            logger.info("客户端出现致命错误，正在关闭");
+            logger.info("客户端疑似已经关闭!");
             StopClient();
         }
     }
@@ -217,6 +229,8 @@ public class GUIClient extends ClientMain {
     private void StopClientNoSendQuitMessage() throws IOException {
         QuitReason = "用户界面要求关闭";
         ClientMain.getClient().getLogger().OutDate();
+        if (getTimerThreadPool() != null && !getTimerThreadPool().isShutdown())
+            getTimerThreadPool().shutdownNow();
         if (recvMessageThread != null) {
             recvMessageThread.interrupt();
         }
@@ -249,11 +263,15 @@ public class GUIClient extends ClientMain {
         protocol.setMessageBody(body);
         try {
             NetworkManager.WriteDataToRemote(getClientNetworkData(),getAes().encryptBase64(gson.toJson(protocol)));
-            StopClientNoSendQuitMessage();
         } catch (IOException e) {
             SaveStackTrace.saveStackTrace(e);
         }
-        finally {
+        try
+        {
+            StopClientNoSendQuitMessage();
+        } catch (IOException e) {
+            SaveStackTrace.saveStackTrace(e);
+        } finally {
             super.ClientStatus = true;
             getClientThreadGroup().interrupt();
         }

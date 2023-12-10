@@ -178,7 +178,9 @@ public final class NetworkManager {
     public static @NotNull NetworkData CreateTCPServer(int bindPort) throws IOException {
         if (bindPort > 65535 || bindPort < 1)
             throw new IllegalArgumentException("The bindPort is not between 0 and 65535");
-        return new NetworkData(new ServerSocket(bindPort));
+        ServerSocket socket = new ServerSocket(bindPort);
+        socket.setSoTimeout(CodeDynamicConfig.SocketTimeout);
+        return new NetworkData(socket);
     }
 
     /**
