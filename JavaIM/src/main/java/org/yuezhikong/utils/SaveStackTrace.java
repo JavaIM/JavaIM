@@ -18,6 +18,7 @@ package org.yuezhikong.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.NotNull;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -39,8 +40,11 @@ public class SaveStackTrace {
         e.printStackTrace(pw);
         pw.flush();
         sw.flush();
-        org.apache.logging.log4j.Logger logger_log4j = LogManager.getLogger("Debug");
-        logger_log4j.debug(sw.toString());
+        Logger RootLogger = LogManager.getLogger(SaveStackTrace.class.getName());
+        Logger DebugLogger = LogManager.getLogger("Debug");
+
+        DebugLogger.debug(sw.toString());
+        RootLogger.error(sw.toString());
         pw.close();
         try {
             sw.close();

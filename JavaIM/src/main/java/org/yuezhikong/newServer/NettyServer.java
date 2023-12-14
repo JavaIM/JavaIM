@@ -16,10 +16,8 @@
  */
 package org.yuezhikong.newServer;
 
-import cn.hutool.core.thread.NamedThreadFactory;
 import cn.hutool.crypto.CryptoException;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
+import cn.hutool.crypto.symmetric.AES;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.netty.bootstrap.ServerBootstrap;
@@ -69,16 +67,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class NettyNetwork extends GeneralMethod implements IServerMain{
+public class NettyServer extends GeneralMethod implements IServerMain{
     static {
-        nettyNetwork = new NettyNetwork();
+        nettyNetwork = new NettyServer();
     }
-    private static NettyNetwork nettyNetwork;
+    private static NettyServer nettyNetwork;
     private ExecutorService UserRequestThreadPool;
-    private NettyNetwork() {
+    private NettyServer() {
     }
 
-    public static NettyNetwork getNettyNetwork() {
+    public static NettyServer getNettyNetwork() {
         return nettyNetwork;
     }
 
@@ -94,7 +92,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
      * @param encryptionKey 客户端密钥
      * @param bindUser 如果握手已经完成，那么此连接所绑定的用户是什么
      */
-    private record ClientStatus(ServerInHandler.EncryptionMode encryptionMode, String encryptionKey, tcpUser bindUser) {}
+    private record ClientStatus(EncryptionMode encryptionMode, String encryptionKey, tcpUser bindUser) {}
     private final ConcurrentHashMap<Channel,ClientStatus> ClientChannel = new ConcurrentHashMap<>();
     /**
      * 向用户发送信息(包括加密)
@@ -105,20 +103,20 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
     public void SendData(String msg, Channel channel)
     {
         ClientStatus status = ClientChannel.get(channel);
-        if (status.encryptionMode.equals(ServerInHandler.EncryptionMode.NON_ENCRYPTION))
+        if (status.encryptionMode.equals(EncryptionMode.NON_ENCRYPTION))
         {
             channel.writeAndFlush(msg);
         }
-        else if (status.encryptionMode.equals(ServerInHandler.EncryptionMode.RSA_ENCRYPTION))
+        else if (status.encryptionMode.equals(EncryptionMode.RSA_ENCRYPTION))
         {
             channel.writeAndFlush(RSA.encrypt(msg,status.encryptionKey));
         }
-        else if (status.encryptionMode.equals(ServerInHandler.EncryptionMode.AES_ENCRYPTION))
+        else if (status.encryptionMode.equals(EncryptionMode.AES_ENCRYPTION))
         {
-            channel.writeAndFlush(cn.hutool.crypto.SecureUtil.aes(
-                    SecureUtil.generateKey(
-                            SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(status.encryptionKey)
-                    ).getEncoded()
+            channel.writeAndFlush(new AES(
+                    "ECB",
+                    "PKCS5Padding",
+                    Base64.decodeBase64(status.encryptionKey)
             ).encryptBase64(msg));
         }
         else {
@@ -176,7 +174,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
             }
         });
 
-        DefaultEventLoopGroup RecvMessageGroup = new DefaultEventLoopGroup((new ThreadFactory() {
+        DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup((new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
             public Thread newThread(@NotNull Runnable r) {
@@ -199,7 +197,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                             pipeline.addLast(new ServerInDecoder());
                             pipeline.addLast(new ServerOutEncoder());
 
-                            pipeline.addLast(RecvMessageGroup,new ServerInHandler());//JavaIM逻辑
+                            pipeline.addLast(RecvMessageThreadPool,new ServerInHandler());//JavaIM逻辑
                         }
                     });
 
@@ -218,8 +216,15 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         } catch (InterruptedException e) {
             SaveStackTrace.saveStackTrace(e);
         } finally {
+            RecvMessageThreadPool.shutdownGracefully();
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
+            try {
+                pluginManager.UnLoadAllPlugin();
+            } catch (IOException ignored) {}
+            IOThreadPool.shutdownNow();
+            UserRequestThreadPool.shutdownNow();
+
         }
     }
 
@@ -232,7 +237,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
             pluginManager.UnLoadAllPlugin();
         } catch (IOException ignored) {}
         UserRequestThreadPool.shutdownNow();
-        nettyNetwork = new NettyNetwork();
+        nettyNetwork = new NettyServer();
     }
     private final List<IUserAuthentication.UserRecall> LoginRecall = new ArrayList<>();
     private final List<IUserAuthentication.UserRecall> DisconnectRecall = new ArrayList<>();
@@ -341,27 +346,26 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         return logger;
     }
 
-    private class ServerInHandler extends ChannelInboundHandlerAdapter {
+    /**
+     * 客户端加密模式
+     */
+    private enum EncryptionMode
+    {
         /**
-         * 客户端加密模式
+         * 明文未加密
          */
-        private enum EncryptionMode
-        {
-            /**
-             * 明文未加密
-             */
-            NON_ENCRYPTION,
-            /**
-             * RSA加密中
-             */
-            RSA_ENCRYPTION,
-            /**
-             * AES加密中
-             */
-            AES_ENCRYPTION
-        }
+        NON_ENCRYPTION,
+        /**
+         * RSA加密中
+         */
+        RSA_ENCRYPTION,
+        /**
+         * AES加密中
+         */
+        AES_ENCRYPTION
+    }
 
-
+    private class ServerInHandler extends ChannelInboundHandlerAdapter {
         /**
          * 向所有用户发送信息(包括加密)
          * @param msg 信息
@@ -457,7 +461,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                     tcpUser bindUser;
                     if (status.bindUser == null)
                     {
-                        bindUser = new NettyUser(ctx.channel(),NettyNetwork.this,users.size() + 1);
+                        bindUser = new NettyUser(ctx.channel(), NettyServer.this,users.size() + 1);
                         users.add(bindUser);
                         bindUser.setUserAuthentication(new UserAuthentication(bindUser,IOThreadPool,pluginManager,serverAPI));
                         bindUser.addLoginRecall(User -> {
@@ -507,10 +511,10 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                     ClientChannel.remove(ctx.channel());
                     ClientChannel.put(ctx.channel(),clientStatus);
 
-                    clientStatus.bindUser.setUserAES(cn.hutool.crypto.SecureUtil.aes(
-                            SecureUtil.generateKey(
-                                    SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(clientStatus.encryptionKey)
-                            ).getEncoded()
+                    clientStatus.bindUser.setUserAES(new AES(
+                            "ECB",
+                            "PKCS5Padding",
+                            Base64.decodeBase64(status.encryptionKey)
                     ));
                 }
                 case "options" -> {
@@ -523,7 +527,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                         head.setType("options");
                         protocol.setMessageHead(head);
                         NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-                        body.setMessage("Accept");
+                        body.setMessage("AllowedTransferProtocol:Accept");
                         body.setFileLong(0);
                         protocol.setMessageBody(body);
                         SendData(gson.toJson(protocol),ctx.channel());
@@ -537,13 +541,26 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                         head.setType("options");
                         protocol.setMessageHead(head);
                         NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-                        body.setMessage("Accept");
+                        body.setMessage("AllowedTransferProtocol:Accept");
                         body.setFileLong(0);
                         protocol.setMessageBody(body);
                         SendData(gson.toJson(protocol),ctx.channel());
                     }
                     else
                         ctx.writeAndFlush("This setting is not support on this Server!");
+                }
+                case "Leave" -> {
+                    if (status.bindUser != null
+                            && status.bindUser.getUserAuthentication() != null
+                            && status.bindUser.isUserLogined()) {
+                        logger.info("用户:" +
+                                status.bindUser.getUserName() + "("+ctx.channel().remoteAddress()+") 正在请求离线...");
+                        ctx.channel().close();
+                    }
+                    else {
+                        logger.info("客户端:"+ctx.channel().remoteAddress()+" 正在请求离线...");
+                        ctx.channel().close();
+                    }
                 }
                 default -> ctx.writeAndFlush("This mode is not Support on this Server!");
             }
@@ -612,21 +629,22 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
                 else if (status.encryptionMode.equals(EncryptionMode.AES_ENCRYPTION)) {
                     UserRequestDispose(
                             ctx,
-                            cn.hutool.crypto.SecureUtil.aes(
-                                    SecureUtil.generateKey(
-                                            SymmetricAlgorithm.AES.getValue(), Base64.decodeBase64(status.encryptionKey)
-                                    ).getEncoded()
+                            new AES(
+                                    "ECB",
+                                    "PKCS5Padding",
+                                    Base64.decodeBase64(status.encryptionKey)
                             ).decryptStr(Message),
                             status
                     );
                 }
                 else {
-                    throw new RuntimeException("The Encryption Mode is not Support!");
+                    ctx.writeAndFlush("The Encryption Mode is not Support!");
+                    ctx.channel().close();
                 }
             } catch (Throwable throwable)
             {
                 ctx.writeAndFlush("Invalid Input! Connection will be close");
-                ctx.close();
+                ctx.channel().close();
             }
             finally {
                 ReferenceCountUtil.release(msg);
@@ -637,8 +655,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             ClientChannel.put(ctx.channel(),new ClientStatus(EncryptionMode.NON_ENCRYPTION,"",null));
             InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-            logger.info("客户端:"+
-                    remoteAddress.getAddress().getHostAddress()+":"+remoteAddress.getPort()+"已经连接到服务器");
+            logger.info("客户端:"+ remoteAddress.getAddress()+"已经连接到服务器");
             super.channelActive(ctx);
         }
 
@@ -655,8 +672,7 @@ public class NettyNetwork extends GeneralMethod implements IServerMain{
             }
             ClientChannel.remove(ctx.channel());
             InetSocketAddress remoteAddress = (InetSocketAddress) ctx.channel().remoteAddress();
-            logger.info("客户端:"+
-                    remoteAddress.getAddress().getHostAddress()+":"+remoteAddress.getPort()+"已经断开连接");
+            logger.info("客户端:"+ remoteAddress.getAddress()+"已经断开连接");
             super.channelInactive(ctx);
         }
 

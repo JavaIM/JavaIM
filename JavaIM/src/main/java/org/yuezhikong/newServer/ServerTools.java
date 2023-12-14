@@ -13,8 +13,8 @@ public class ServerTools {
      */
     public static IServerMain getServerInstance()
     {
-        if (ServerMain.getServer() == null && NettyNetwork.getNettyNetwork().ServerStartStatus())
-            return NettyNetwork.getNettyNetwork();
+        if (ServerMain.getServer() == null && NettyServer.getNettyNetwork().ServerStartStatus())
+            return NettyServer.getNettyNetwork();
         else
             return ServerMain.getServer();
     }

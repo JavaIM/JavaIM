@@ -1,7 +1,7 @@
 package org.yuezhikong.newServer.api;
 
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.newServer.NettyNetwork;
+import org.yuezhikong.newServer.NettyServer;
 import org.yuezhikong.newServer.UserData.tcpUser.IClassicUser;
 import org.yuezhikong.newServer.UserData.tcpUser.NettyUser;
 import org.yuezhikong.newServer.UserData.user;
@@ -64,6 +64,6 @@ public class NettyAPI extends SingleAPI{
         }
     }
 
-    private final NettyNetwork network;
-    public NettyAPI(NettyNetwork instance) { super(instance); network = instance; }
+    private final NettyServer network;
+    public NettyAPI(NettyServer instance) { super(instance); network = instance; }
 }

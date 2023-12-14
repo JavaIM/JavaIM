@@ -14,7 +14,7 @@ import org.apache.commons.io.FileUtils;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.PortInputDialog;
 import org.yuezhikong.newServer.GUIServer;
 import org.yuezhikong.newServer.IServerMain;
-import org.yuezhikong.newServer.NettyNetwork;
+import org.yuezhikong.newServer.NettyServer;
 import org.yuezhikong.newServer.ServerTools;
 import org.yuezhikong.utils.Logger;
 
@@ -104,8 +104,8 @@ public class ServerUI extends DefaultController implements Initializable {
             {
                 if (ServerInstance instanceof GUIServer)
                     ((GUIServer) ServerInstance).ServerCommandSend("kick "+UISelectUserName);
-                else if (ServerInstance instanceof NettyNetwork)
-                    ((NettyNetwork) ServerInstance).ServerCommandSend("kick "+UISelectUserName);
+                else if (ServerInstance instanceof NettyServer)
+                    ((NettyServer) ServerInstance).ServerCommandSend("kick "+UISelectUserName);
             }
         });
         GraphicalUserManagement.getInstance().getTellUser().setOnAction(actionEvent -> {
@@ -130,8 +130,8 @@ public class ServerUI extends DefaultController implements Initializable {
                 {
                     if (ServerInstance instanceof GUIServer)
                         ((GUIServer) ServerInstance).ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
-                    else if (ServerInstance instanceof NettyNetwork)
-                        ((NettyNetwork) ServerInstance).ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
+                    else if (ServerInstance instanceof NettyServer)
+                        ((NettyServer) ServerInstance).ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
                 }
             }
         });
@@ -154,8 +154,8 @@ public class ServerUI extends DefaultController implements Initializable {
             return;
         if (ServerInstance instanceof GUIServer)
             ((GUIServer) ServerInstance).ServerCommandSend(CommandInput.getText());
-        else if (ServerInstance instanceof NettyNetwork)
-            ((NettyNetwork) ServerInstance).ServerCommandSend(CommandInput.getText());
+        else if (ServerInstance instanceof NettyServer)
+            ((NettyServer) ServerInstance).ServerCommandSend(CommandInput.getText());
         CommandInput.clear();
     }
 
@@ -164,8 +164,8 @@ public class ServerUI extends DefaultController implements Initializable {
             return;
         if (ServerInstance instanceof GUIServer)
             ((GUIServer) ServerInstance).ServerChatMessageSend(MessageInput.getText());
-        else if (ServerInstance instanceof NettyNetwork)
-            ((NettyNetwork) ServerInstance).ServerChatMessageSend(MessageInput.getText());
+        else if (ServerInstance instanceof NettyServer)
+            ((NettyServer) ServerInstance).ServerChatMessageSend(MessageInput.getText());
         MessageInput.clear();
     }
 
@@ -200,24 +200,24 @@ public class ServerUI extends DefaultController implements Initializable {
             } else
             {
                 Logger ServerLogger = new Logger(this);
-                if (NettyNetwork.getNettyNetwork().ServerStartStatus())
+                if (NettyServer.getNettyNetwork().ServerStartStatus())
                     throw new IllegalStateException("The Netty Server is Start Successful in this time!");
-                NettyNetwork.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", ServerLogger);
-                NettyNetwork.getNettyNetwork().setLogger(ServerLogger);
-                NettyNetwork.getNettyNetwork().AddLoginRecall((user) -> UpdateUser(true,user.getUserName()));
-                NettyNetwork.getNettyNetwork().AddDisconnectRecall((user) -> {
+                NettyServer.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", ServerLogger);
+                NettyServer.getNettyNetwork().setLogger(ServerLogger);
+                NettyServer.getNettyNetwork().AddLoginRecall((user) -> UpdateUser(true,user.getUserName()));
+                NettyServer.getNettyNetwork().AddDisconnectRecall((user) -> {
                     if (user.isUserLogined())
                     {
                         UpdateUser(false,user.getUserName());
                     }
                 });
-                ServerInstance = NettyNetwork.getNettyNetwork();
+                ServerInstance = NettyServer.getNettyNetwork();
                 new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Server Group"),"Server Thread")
                 {
                     @Override
                     public void run() {
                         try {
-                            NettyNetwork.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
+                            NettyServer.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
@@ -231,8 +231,8 @@ public class ServerUI extends DefaultController implements Initializable {
             ServerInstance = null;
             if (instance instanceof GUIServer)
                 StopServer();
-            else if (instance instanceof NettyNetwork) {
-                ((NettyNetwork) instance).StopNettyChatRoom();
+            else if (instance instanceof NettyServer) {
+                ((NettyServer) instance).StopNettyChatRoom();
                 ObservableList<String> ListOfUser = UserList.getItems();
                 ListOfUser.clear();
                 UserList.setItems(ListOfUser);

@@ -4,7 +4,7 @@ import cn.hutool.crypto.symmetric.AES;
 import io.netty.channel.Channel;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.newServer.NettyNetwork;
+import org.yuezhikong.newServer.NettyServer;
 import org.yuezhikong.newServer.ServerTools;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.newServer.UserData.Permission;
@@ -139,12 +139,12 @@ public class NettyUser implements INettyUser
     }
 
     private final Channel ConnectChannel;
-    private final NettyNetwork network;
+    private final NettyServer network;
 
     private final int id;
-    public NettyUser(Channel channel, NettyNetwork network,int ClientID) { ConnectChannel = channel; this.network = network; id = ClientID; }
+    public NettyUser(Channel channel, NettyServer network, int ClientID) { ConnectChannel = channel; this.network = network; id = ClientID; }
 
-    public NettyUser(boolean ServerSpicialUserStatus, NettyNetwork network) { server = ServerSpicialUserStatus; ConnectChannel = null; this.network = network; id = 0; }
+    public NettyUser(boolean ServerSpicialUserStatus, NettyServer network) { server = ServerSpicialUserStatus; ConnectChannel = null; this.network = network; id = 0; }
 
     @Override
     public Channel getChannel() {

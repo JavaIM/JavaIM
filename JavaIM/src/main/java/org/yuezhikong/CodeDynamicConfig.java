@@ -22,7 +22,7 @@ import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
-    private static final int ProtocolVersion = 8;
+    private static final int ProtocolVersion = 9;
     //本程序版本：
     private static final String Version = "InDev";
     //调试模式

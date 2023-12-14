@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.GraphicalUserInterface.MainUI;
 import org.yuezhikong.newClient.ClientMain;
-import org.yuezhikong.newServer.NettyNetwork;
+import org.yuezhikong.newServer.NettyServer;
 import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Logger;
@@ -265,9 +265,9 @@ public class Main {
                         if (Select == 1)
                             new ServerMain().start(ServerPort);
                         else if (Select == 2) {
-                            NettyNetwork.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", logger);
+                            NettyServer.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", logger);
                             try {
-                                NettyNetwork.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
+                                NettyServer.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }

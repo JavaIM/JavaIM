@@ -326,9 +326,9 @@ public class ChatRequest {
                             ServerMain.server = null;
                             ((ServerMain) instance).getServerGroup().interrupt();
                         }
-                        else if (instance instanceof NettyNetwork)
+                        else if (instance instanceof NettyServer)
                         {
-                            ((NettyNetwork) instance).StopNettyChatRoom();
+                            ((NettyServer) instance).StopNettyChatRoom();
                         }
                         else
                             System.exit(0);

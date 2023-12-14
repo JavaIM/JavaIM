@@ -460,7 +460,11 @@ public class ClientMain extends GeneralMethod {
             }
             String RandomForServer = protocol.getMessageBody().getMessage();
             SecretKey key = getClient().GenerateKey(RandomForServer,RandomForClient);
-            final AES aes = cn.hutool.crypto.SecureUtil.aes(key.getEncoded());
+            final AES aes = new AES(
+                    "ECB",
+                    "PKCS5Padding",
+                    key.getEncoded()
+            );
             this.aes = aes;
             //开始AES测试
             protocol = new NormalProtocol();
@@ -711,6 +715,8 @@ public class ClientMain extends GeneralMethod {
     @Contract(pure = true)
     protected boolean CommandRequest(String UserInput) throws IOException, QuitException {
         String command;
+        if (UserInput == null || UserInput.isEmpty())
+            throw new IllegalArgumentException("User Input is Empty!");
         String[] argv;
         {
             String[] CommandLineFormated = UserInput.split("\\s+"); //分割一个或者多个空格

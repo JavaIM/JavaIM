@@ -21,7 +21,6 @@ import cn.hutool.crypto.symmetric.PBKDF2;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.newServer.ServerTools;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.RSA;
@@ -57,42 +56,38 @@ public class GeneralMethod implements GeneralMethodInterface{
     @Override
     public void RSA_KeyAutogenerate(String PublicKeyFile, String PrivateKeyFile, Logger logger)
     {
-        if (!(new File(PublicKeyFile).exists()))
+        boolean PublicKeyFileExist = new File(PublicKeyFile).exists();
+        boolean PrivateKeyFileExist = new File(PrivateKeyFile).exists();
+        if (!PublicKeyFileExist && !PrivateKeyFileExist)
         {
-            if (!(new File(PrivateKeyFile).exists()))
-            {
-                try {
-                    RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
-                }
-                catch (Exception e)
-                {
-                    SaveStackTrace.saveStackTrace(e);
-                }
+            try {
+                RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
             }
-            else
+            catch (Exception e)
             {
-                logger.warning("系统检测到您的目录下不存在公钥，但，存在私钥，系统将为您覆盖一个新的rsa key");
-                try {
-                    RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
-                }
-                catch (Exception e)
-                {
-                    SaveStackTrace.saveStackTrace(e);
-                }
+                SaveStackTrace.saveStackTrace(e);
             }
         }
-        else
+        else if (!PublicKeyFileExist)
         {
-            if (!(new File(PrivateKeyFile).exists()))
+            logger.warning("系统检测到您的目录下不存在公钥，但，存在私钥，系统将为您覆盖一个新的rsa key");
+            try {
+                RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
+            }
+            catch (Exception e)
             {
-                logger.warning("系统检测到您的目录下存在公钥，但，不存在私钥，系统将为您覆盖一个新的rsa key");
-                try {
-                    RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
-                }
-                catch (Exception e)
-                {
-                    SaveStackTrace.saveStackTrace(e);
-                }
+                SaveStackTrace.saveStackTrace(e);
+            }
+        }
+        else if (!PrivateKeyFileExist)
+        {
+            logger.warning("系统检测到您的目录下存在公钥，但，不存在私钥，系统将为您覆盖一个新的rsa key");
+            try {
+                RSA.generateKeyToFile(PublicKeyFile, PrivateKeyFile);
+            }
+            catch (Exception e)
+            {
+                SaveStackTrace.saveStackTrace(e);
             }
         }
     }
