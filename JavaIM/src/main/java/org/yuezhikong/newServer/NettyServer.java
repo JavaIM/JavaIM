@@ -47,12 +47,9 @@ import org.yuezhikong.newServer.api.NettyAPI;
 import org.yuezhikong.newServer.api.api;
 import org.yuezhikong.newServer.plugin.PluginManager;
 import org.yuezhikong.newServer.plugin.SimplePluginManager;
-import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.*;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
-import org.yuezhikong.utils.RSA;
-import org.yuezhikong.utils.SaveStackTrace;
-import org.yuezhikong.utils.UnicodeToString;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.io.File;
@@ -102,6 +99,8 @@ public class NettyServer extends GeneralMethod implements IServerMain{
      */
     public void SendData(String msg, Channel channel)
     {
+        checks.checkArgument(msg == null || msg.isEmpty(), "The Message is null or Empty!");
+        checks.checkArgument(channel == null || !channel.isWritable(), "The Channel is not init or not Writable!");
         ClientStatus status = ClientChannel.get(channel);
         if (status.encryptionMode.equals(EncryptionMode.NON_ENCRYPTION))
         {
@@ -142,6 +141,8 @@ public class NettyServer extends GeneralMethod implements IServerMain{
      */
     public void StartChatRoomServerForNetty(int bindPort,String ServerPrivateKey)
     {
+        checks.checkArgument(bindPort < 1 || bindPort > 65535, "The Port is not in the range of [0,65535]!");
+        checks.checkArgument(ServerPrivateKey == null || ServerPrivateKey.isEmpty(), "The Server Private Key is null or Empty!");
         this.ServerPrivateKey = ServerPrivateKey;
         UserRequestThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
@@ -207,8 +208,11 @@ public class NettyServer extends GeneralMethod implements IServerMain{
                 while (true)
                 {
                     Scanner scanner = new Scanner(System.in);
-                    String Command = scanner.nextLine();
-                    ServerCommandSend(Command);
+                    String input = scanner.nextLine();
+                    if (input.startsWith("/"))
+                        ServerCommandSend(input);
+                    else
+                        ServerChatMessageSend(input);
                 }
             });
             logger.info("服务器启动完成");
@@ -244,15 +248,18 @@ public class NettyServer extends GeneralMethod implements IServerMain{
 
     public void AddLoginRecall(IUserAuthentication.UserRecall recall)
     {
+        checks.checkArgument(recall == null,"Recall is null");
         LoginRecall.add(recall);
     }
 
     public void AddDisconnectRecall(IUserAuthentication.UserRecall recall)
     {
+        checks.checkArgument(recall == null,"Recall is null");
         DisconnectRecall.add(recall);
     }
     public void ServerChatMessageSend(String ChatMessage)
     {
+        checks.checkArgument(ChatMessage == null || ChatMessage.isEmpty(),"ChatMessage is null or empty!");
         UserRequestThreadPool.execute(() -> {
             ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(getConsoleUser(),ChatMessage);
             getRequest().ChatFormat(input);
@@ -262,6 +269,8 @@ public class NettyServer extends GeneralMethod implements IServerMain{
     }
     public void ServerCommandSend(String Command)
     {
+        checks.checkArgument(Command == null || Command.isEmpty(),"Command is null or empty!");
+        checks.checkArgument(!Command.startsWith("/"),"Command is not start with /");
         if (Command.equals("/quit"))
         {
             getLogger().info("正在关闭服务器...");
@@ -312,6 +321,7 @@ public class NettyServer extends GeneralMethod implements IServerMain{
 
     @Override
     public boolean RegisterUser(user User) {
+        checks.checkArgument(User == null,"User is null");
         try {
             getServerAPI().GetUserByUserName(User.getUserName());
             return false;

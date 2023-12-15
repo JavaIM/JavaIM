@@ -24,12 +24,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GeneralMethod;
-import org.yuezhikong.utils.ConfigFileManager;
-import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.*;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
-import org.yuezhikong.utils.RSA;
-import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +62,7 @@ public class NettyClient extends GeneralMethod {
     }
 
     private String serverPublicKey;
-    private ExecutorService UserRequestDisponseThreadPool;
+    private ExecutorService UserRequestDisposeThreadPool;
 
     private ScheduledExecutorService TimerThreadPool;
 
@@ -84,9 +81,9 @@ public class NettyClient extends GeneralMethod {
      * @throws IllegalArgumentException host为null或空，port小于1或大于65535，ServerPublicKey为null或空
      */
     public void start(String host, int port, String ServerPublicKey) {
-        if (ServerPublicKey == null || ServerPublicKey.isEmpty()
-                || host == null || host.isEmpty() || port < 1 || port > 65535)
-           throw new IllegalArgumentException("Argument Failed");
+        checks.checkArgument(host == null || host.isEmpty(), "Host is null or empty");
+        checks.checkArgument(port < 1 || port > 65535, "The Port is not in the range of [0,65535]!");
+        checks.checkArgument(ServerPublicKey == null || ServerPublicKey.isEmpty(),"Server Public Key is null or empty");
         if (started)
             return;
         synchronized (this) {
@@ -105,7 +102,7 @@ public class NettyClient extends GeneralMethod {
                 return new Thread(IOThreadGroup, r,"Timer Thread #"+threadNumber.getAndIncrement());
             }
         });
-        UserRequestDisponseThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+        UserRequestDisposeThreadPool = Executors.newSingleThreadExecutor(new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
             public Thread newThread(@NotNull Runnable r) {
@@ -161,7 +158,7 @@ public class NettyClient extends GeneralMethod {
             RecvMessageThreadPool.shutdownGracefully();
             workerGroup.shutdownGracefully();
             TimerThreadPool.shutdownNow();
-            UserRequestDisponseThreadPool.shutdownNow();
+            UserRequestDisposeThreadPool.shutdownNow();
             ClientThreadGroup.interrupt();
         }
     }
@@ -174,12 +171,13 @@ public class NettyClient extends GeneralMethod {
      */
     @SuppressWarnings("unused")
     public void sendMessage(String message) {
-        if (message == null || message.isEmpty())
-            throw new IllegalArgumentException("message is null or empty");
-        else if (channel == null || !channel.isWritable() || !started || stopped ||
-                UserRequestDisponseThreadPool == null || UserRequestDisponseThreadPool.isShutdown())
-            throw new IllegalStateException("Client is not started or closed");
-        UserRequestDisponseThreadPool.execute(() -> channel.writeAndFlush(message));
+        checks.checkArgument(message == null || message.isEmpty(), "message is null or empty");
+        checks.checkState(channel == null || !channel.isWritable(), "Client channel is not init or is not writeable");
+        checks.checkState(!started, "Client is not started");
+        checks.checkState(stopped,"Client is stopped");
+        checks.checkState(UserRequestDisposeThreadPool == null
+                || UserRequestDisposeThreadPool.isShutdown(),"User Request Dispose Thread Pool is not init or shutdown");
+        UserRequestDisposeThreadPool.execute(() -> channel.writeAndFlush(message));
     }
     private Channel channel;
 
@@ -739,8 +737,7 @@ public class NettyClient extends GeneralMethod {
     @Contract(pure = true)
     protected boolean CommandRequest(String UserInput,ClientStatus status,Channel channel) throws IOException, QuitException {
         String command;
-        if (UserInput == null || UserInput.isEmpty())
-            throw new IllegalArgumentException("User Input is Empty!");
+        checks.checkArgument(UserInput == null || UserInput.isEmpty(), "User Input is Empty!");
         String[] argv;
         {
             String[] CommandLineFormated = UserInput.split("\\s+"); //分割一个或者多个空格
