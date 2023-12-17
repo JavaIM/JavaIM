@@ -122,6 +122,15 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.100.Final</version>
         </dependency>
+        <!-- Junit单元测试框架 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.1</version>
+            <scope>test</scope>
+        </dependency>
+
+
     </dependencies>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -130,6 +139,15 @@
     </properties>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.3</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

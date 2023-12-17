@@ -42,9 +42,14 @@ public class NettyClient extends GeneralMethod {
     static {
         instance = new NettyClient();
     }
+    private NettyClient() {}
     private static NettyClient instance;
     private final ThreadGroup ClientThreadGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(), "Client Thread Group");
     private final ThreadGroup IOThreadGroup = new ThreadGroup(ClientThreadGroup, "IO ThreadGroup");
+
+    public Channel getChannel() {
+        return channel;
+    }
 
     public static NettyClient getInstance() {
         return instance;
@@ -175,9 +180,7 @@ public class NettyClient extends GeneralMethod {
         checks.checkState(channel == null || !channel.isWritable(), "Client channel is not init or is not writeable");
         checks.checkState(!started, "Client is not started");
         checks.checkState(stopped,"Client is stopped");
-        checks.checkState(UserRequestDisposeThreadPool == null
-                || UserRequestDisposeThreadPool.isShutdown(),"User Request Dispose Thread Pool is not init or shutdown");
-        UserRequestDisposeThreadPool.execute(() -> channel.writeAndFlush(message));
+        SendData(message,status,channel);
     }
     private Channel channel;
 
@@ -265,7 +268,7 @@ public class NettyClient extends GeneralMethod {
     /**
      * 客户端加密模式
      */
-    private enum EncryptionMode
+    protected enum EncryptionMode
     {
         /**
          * 明文未加密
@@ -308,10 +311,9 @@ public class NettyClient extends GeneralMethod {
         }
     }
 
+    private ClientStatus status;
     private class ClientHandler extends ChannelInboundHandlerAdapter
     {
-
-        private ClientStatus status;
         private final Gson gson = new Gson();
 
 
@@ -347,7 +349,7 @@ public class NettyClient extends GeneralMethod {
                             body.setFileLong(0);
                             protocol.setMessageBody(body);
                             ctx.channel().writeAndFlush(gson.toJson(protocol));
-                            this.status = new ClientStatus(EncryptionMode.RSA_ENCRYPTION,null);
+                            status = new ClientStatus(EncryptionMode.RSA_ENCRYPTION,null);
                             logger.info("RSA加密配置完成");
 
                             logger.info("正在配置AES加密...");
@@ -361,7 +363,7 @@ public class NettyClient extends GeneralMethod {
                             body.setMessage(RandomForClient);
                             protocol.setMessageBody(body);
                             SendData(gson.toJson(protocol), status, ctx.channel());
-                            this.status = new ClientStatus(EncryptionMode.RSA_ENCRYPTION,RandomForClient);//借用RSA_Encryption的Encryption_Key来保存RandomForClient
+                            status = new ClientStatus(EncryptionMode.RSA_ENCRYPTION,RandomForClient);//借用RSA_Encryption的Encryption_Key来保存RandomForClient
                         } catch (IOException e) {
                             logger.info("无法读取客户端密钥文件");
                             logger.info("可能是由于文件权限问题导致的");
@@ -375,7 +377,7 @@ public class NettyClient extends GeneralMethod {
                 }
                 case "AESEncryption" : {
                     String RandomForServer = protocol.getMessageBody().getMessage();
-                    this.status = new ClientStatus(EncryptionMode.AES_ENCRYPTION,
+                    status = new ClientStatus(EncryptionMode.AES_ENCRYPTION,
                             Base64.encodeBase64String(GenerateKey(RandomForServer,status.encryptionKey).getEncoded()));
 
                     protocol = new NormalProtocol();

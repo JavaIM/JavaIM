@@ -4,6 +4,23 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <url>https://javaim.yuezhikong.cn/</url>
+    <developers>
+        <developer>
+            <id>qile</id>
+            <name>QiLechan</name>
+            <timezone>Asia/Shanghai</timezone>
+            <email>qilechan@outlook.com</email>
+            <url>https://blog.qileoffice.top</url>
+        </developer>
+        <developer>
+            <id>alexLiudev</id>
+            <name>AlexLiuDev233</name>
+            <timezone>Asia/Shanghai</timezone>
+            <email>wzylin11@outlook.com</email>
+        </developer>
+    </developers>
+
     <artifactId>JavaIM-Parent</artifactId>
     <groupId>org.yuezhikong</groupId>
     <version>1.0-SNAPSHOT</version>
