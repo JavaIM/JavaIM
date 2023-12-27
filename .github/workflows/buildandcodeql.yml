@@ -3,7 +3,7 @@ name: "CodeQL And Build"
 
 on:
   push:
-    branches: [ "main", "uploadRelease"]
+    branches: [ "main"]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
@@ -69,9 +69,11 @@ jobs:
         category: "/language:${{matrix.language}}"
   uploadRelease:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     name: Upload Release
     needs: analyze
-    if: github.repository == 'JavaIM/JavaIM'
+    if: github.repository == 'JavaIM/JavaIM' && startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Download Build Artifact
         uses: actions/download-artifact@v1
