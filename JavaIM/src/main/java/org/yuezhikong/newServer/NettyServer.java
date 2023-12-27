@@ -64,7 +64,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class NettyServer extends GeneralMethod implements IServerMain{
+public final class NettyServer extends GeneralMethod implements IServerMain{
     static {
         nettyNetwork = new NettyServer();
     }

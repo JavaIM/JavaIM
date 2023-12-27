@@ -98,6 +98,11 @@ class NettyClientTest {
             StartStatus.set(nettyClient, true);
             StartStatus.setAccessible(false);
 
+            Field StopStatus = NettyClient.class.getDeclaredField("stopped");
+            StopStatus.setAccessible(true);
+            StopStatus.set(nettyClient, false);
+            StopStatus.setAccessible(false);
+
             ExecutorService service = Executors.newSingleThreadExecutor();
             Field UserRequestDisposeThreadPool = NettyClient.class.getDeclaredField("UserRequestDisposeThreadPool");
             UserRequestDisposeThreadPool.setAccessible(true);
@@ -116,6 +121,7 @@ class NettyClientTest {
             Logger logger = new Logger(null);
             logger.info("接收到消息！");
         });
+        channel.close();
     }
 
 
@@ -128,11 +134,13 @@ class NettyClientTest {
             logger.set(client, new Logger(null));
             logger.setAccessible(false);
 
+            EmbeddedChannel channel = new EmbeddedChannel(new StringDecoder(StandardCharsets.UTF_8), new StringEncoder(StandardCharsets.UTF_8));
             assertTrue(client.CommandRequest(".help",
-                    new NettyClient.ClientStatus(NettyClient.EncryptionMode.NON_ENCRYPTION,null),null));
+                    new NettyClient.ClientStatus(NettyClient.EncryptionMode.NON_ENCRYPTION,null),channel));
 
             assertThrows(IllegalArgumentException.class,() -> client.CommandRequest("",
-                    new NettyClient.ClientStatus(NettyClient.EncryptionMode.NON_ENCRYPTION,null),null));
+                    new NettyClient.ClientStatus(NettyClient.EncryptionMode.NON_ENCRYPTION,null),channel));
+            channel.close();
         });
     }
 }

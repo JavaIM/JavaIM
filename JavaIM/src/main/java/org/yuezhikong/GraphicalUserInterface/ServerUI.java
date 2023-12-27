@@ -28,8 +28,6 @@ import java.util.ResourceBundle;
 
 public class ServerUI extends DefaultController implements Initializable {
 
-    public RadioButton NettyServerStatus;
-    public RadioButton BlockingIOServerStatus;
 
     static class GraphicalUserManagement extends ContextMenu
     {
@@ -94,10 +92,6 @@ public class ServerUI extends DefaultController implements Initializable {
         SystemLog.textProperty().addListener(
                 (observableValue, oldValue, newValue) -> SystemLog.setScrollTop(Double.MAX_VALUE)
         );
-
-        ToggleGroup toggleGroup = new ToggleGroup();
-        NettyServerStatus.setToggleGroup(toggleGroup);
-        BlockingIOServerStatus.setToggleGroup(toggleGroup);
 
         GraphicalUserManagement.getInstance().getKickUser().setOnAction(actionEvent -> {
             if (ServerInstance != null)
@@ -192,53 +186,39 @@ public class ServerUI extends DefaultController implements Initializable {
                 return;
             }
 
-            BlockingIOServerStatus.setDisable(true);
-            NettyServerStatus.setDisable(true);
-            if (BlockingIOServerStatus.isSelected()) {
-                ServerInstance = new GUIServer(this);
-                ((GUIServer) ServerInstance).start(ServerPort);
-            } else
-            {
-                Logger ServerLogger = new Logger(this);
-                if (NettyServer.getNettyNetwork().ServerStartStatus())
-                    throw new IllegalStateException("The Netty Server is Start Successful in this time!");
-                NettyServer.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", ServerLogger);
-                NettyServer.getNettyNetwork().setLogger(ServerLogger);
-                NettyServer.getNettyNetwork().AddLoginRecall((user) -> UpdateUser(true,user.getUserName()));
-                NettyServer.getNettyNetwork().AddDisconnectRecall((user) -> {
-                    if (user.isUserLogined())
-                    {
-                        UpdateUser(false,user.getUserName());
-                    }
-                });
-                ServerInstance = NettyServer.getNettyNetwork();
-                new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Server Group"),"Server Thread")
+            Logger ServerLogger = new Logger(this);
+            if (NettyServer.getNettyNetwork().ServerStartStatus())
+                throw new IllegalStateException("The Netty Server is always start!");
+            NettyServer.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", ServerLogger);
+            NettyServer.getNettyNetwork().setLogger(ServerLogger);
+            NettyServer.getNettyNetwork().AddLoginRecall((user) -> UpdateUser(true,user.getUserName()));
+            NettyServer.getNettyNetwork().AddDisconnectRecall((user) -> {
+                if (user.isUserLogined())
                 {
-                    @Override
-                    public void run() {
-                        try {
-                            NettyServer.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
+                    UpdateUser(false,user.getUserName());
+                }
+            });
+            ServerInstance = NettyServer.getNettyNetwork();
+            new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Server Group"),"Server Thread")
+            {
+                @Override
+                public void run() {
+                    try {
+                        NettyServer.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                }.start();
-            }
+                }
+            }.start();
         }
         else
         {
             IServerMain instance = ServerInstance;
             ServerInstance = null;
-            if (instance instanceof GUIServer)
-                StopServer();
-            else if (instance instanceof NettyServer) {
-                ((NettyServer) instance).StopNettyChatRoom();
-                ObservableList<String> ListOfUser = UserList.getItems();
-                ListOfUser.clear();
-                UserList.setItems(ListOfUser);
-            }
-            BlockingIOServerStatus.setDisable(false);
-            NettyServerStatus.setDisable(false);
+            ((NettyServer) instance).StopNettyChatRoom();
+            ObservableList<String> ListOfUser = UserList.getItems();
+            ListOfUser.clear();
+            UserList.setItems(ListOfUser);
         }
     }
 

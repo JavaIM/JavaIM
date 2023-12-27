@@ -1,7 +1,5 @@
 package org.yuezhikong.GraphicalUserInterface;
 
-import cn.hutool.crypto.symmetric.AES;
-import com.google.gson.Gson;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -12,18 +10,12 @@ import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.CrashReport;
-import org.yuezhikong.NetworkManager;
-import org.yuezhikong.newClient.ClientMain;
-import org.yuezhikong.newServer.GUIServer;
-import org.yuezhikong.newServer.ServerMain;
-import org.yuezhikong.newServer.UserData.user;
-import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.newClient.NettyClient;
+import org.yuezhikong.newServer.NettyServer;
 
 import java.awt.*;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -56,142 +48,13 @@ public class DefaultController {
 
     public static void StopClient()
     {
-        if (ClientMain.getClient() != null)
-        {
-            if (ClientMain.getClient().getClientStopStatus())
-            {
-
-                try {
-                    Field instance = ClientMain.class.getDeclaredField("Instance");
-                    instance.setAccessible(true);
-                    instance.set(null,null);
-                    instance.setAccessible(false);
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    CrashReport.failedException(e);
-                }
-            }
-            if (ClientMain.getClient() instanceof GUIClient)
-            {
-                ((GUIClient) ClientMain.getClient()).StopClient();
-            }
-            else {
-                try {
-                    //反射获取private成员变量
-                    Field socket = ClientMain.class.getDeclaredField("clientNetworkData");
-                    Field ClientThreadGroup = ClientMain.class.getDeclaredField("ClientThreadGroup");
-                    Field recvMessageThread = ClientMain.class.getDeclaredField("recvMessageThread");
-                    Field aes = ClientMain.class.getDeclaredField("aes");
-                    Field instance = ClientMain.class.getDeclaredField("Instance");
-                    //绕过java访问检查
-                    socket.setAccessible(true);
-                    ClientThreadGroup.setAccessible(true);
-                    recvMessageThread.setAccessible(true);
-                    aes.setAccessible(true);
-                    instance.setAccessible(true);
-                    //获取客户端实例
-                    ClientMain clientMain = ClientMain.getClient();
-                    instance.set(null,null);
-                    instance.setAccessible(false);
-                    //获取AES与Socket
-                    AES Aes = (AES) aes.get(clientMain);
-                    NetworkManager.NetworkData Socket = (NetworkManager.NetworkData) socket.get(clientMain);
-                    //恢复部分成员变量的java访问检查
-                    socket.setAccessible(false);
-                    aes.setAccessible(false);
-                    //执行发送离开服务器消息
-                    Gson gson = new Gson();
-                    NormalProtocol protocol = new NormalProtocol();
-                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                    head.setType("Leave");
-                    protocol.setMessageHead(head);
-                    NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-                    body.setMessage(".quit");
-                    body.setFileLong(0);
-                    protocol.setMessageBody(body);
-
-                    NetworkManager.WriteDataToRemote(Socket,Aes.encryptBase64(gson.toJson(protocol)));
-                    //执行强制关闭socket、线程操作
-                    ((Thread) recvMessageThread.get(clientMain)).interrupt();
-                    ((ThreadGroup) ClientThreadGroup.get(clientMain)).interrupt();
-                    Socket.close();
-                    //执行设置logger为过期
-                    clientMain.getLogger().OutDate();
-                    //执行设置为已退出操作
-                    Field ClientStatus = ClientMain.class.getDeclaredField("ClientStatus");
-                    ClientStatus.setAccessible(true);
-                    ClientStatus.setBoolean(clientMain,true);
-                    ClientStatus.setAccessible(false);
-                    //恢复java访问检查
-                    ClientThreadGroup.setAccessible(false);
-                    recvMessageThread.setAccessible(false);
-
-                } catch (NoSuchFieldException | IllegalAccessException | IOException e) {
-                    CrashReport.failedException(e);
-                }
-            }
-        }
+        if (!NettyClient.getInstance().isStopped() && NettyClient.getInstance().isStarted())
+            NettyClient.getInstance().stop();
     }
     public static void StopServer()
     {
-        if (ServerMain.getServer() != null) {
-            ServerMain.getServer().getLogger().info("正在关闭服务器...");
-            ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭");
-            for (user User : ServerMain.getServer().getUsers()) {
-                User.UserDisconnect();
-            }
-            if (!(ServerMain.getServer() instanceof GUIServer)) {
-                try {
-                    //提示用户服务器已关闭并踢出
-                    ServerMain.getServer().getServerAPI().SendMessageToAllClient("服务器已关闭");
-                    for (user User : ServerMain.getServer().getUsers())
-                    {
-                        User.UserDisconnect();
-                    }
-                    //强制中止authThread
-                    Field authThread = ServerMain.class.getDeclaredField("authThread");
-                    authThread.setAccessible(true);
-                    ((Thread) authThread.get(ServerMain.getServer())).interrupt();
-                    authThread.setAccessible(false);
-                    //卸载所有插件
-                    ServerMain.getServer().getPluginManager().UnLoadAllPlugin();
-                    //设置logger为过期
-                    ServerMain.getServer().getLogger().OutDate();
-                    //设置为未启动服务端
-                    Field ServerStarted = ServerMain.class.getDeclaredField("started");
-                    ServerStarted.setAccessible(true);
-                    ServerStarted.set(ServerMain.getServer(), false);
-                    ServerStarted.setAccessible(false);
-                    //获取Socket并关闭
-                    Field serverSocket = ServerMain.class.getDeclaredField("ServerTCPNetworkData");
-                    serverSocket.setAccessible(true);
-                    NetworkManager.NetworkData ServerSocket = (NetworkManager.NetworkData) serverSocket.get(ServerMain.getServer());
-                    if (ServerSocket != null)
-                    {
-                        ServerSocket.close();
-                    }
-                    serverSocket.setAccessible(false);
-                    //获取并移除instance
-                    ServerMain server = ServerMain.getServer();
-                    Field instance = ServerMain.class.getDeclaredField("server");
-                    instance.setAccessible(true);
-                    instance.set(null, null);
-                    instance.setAccessible(false);
-                    //终止ServerGroup中的所有线程
-                    Field ServerGroup = ServerMain.class.getDeclaredField("ServerGroup");
-                    ServerGroup.setAccessible(true);
-                    ThreadGroup group = ((ThreadGroup) ServerGroup.get(server));
-                    ServerGroup.setAccessible(false);
-                    group.interrupt();
-                } catch (NoSuchFieldException | IllegalAccessException | IOException e) {
-                    CrashReport.failedException(e);
-                }
-            }
-            else
-            {
-                ((GUIServer) ServerMain.getServer()).StopServer();
-            }
-        }
+        if (NettyServer.getNettyNetwork().ServerStartStatus())
+            NettyServer.getNettyNetwork().StopNettyChatRoom();
     }
     public void StopAllTaskAndExitProgram(ActionEvent actionEvent) {
         StopClient();
@@ -207,7 +70,7 @@ public class DefaultController {
      */
     public void SwitchToPage(@NotNull String ResourcePath, @NotNull String TitleName)
     {
-        if (ServerMain.getServer() != null)
+        if (NettyServer.getNettyNetwork().ServerStartStatus())
         {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setHeaderText("服务端仍在运行中");
@@ -228,7 +91,7 @@ public class DefaultController {
             }
             StopServer();
         }
-        if (ClientMain.getClient() != null)
+        if (NettyClient.getInstance().isStarted() && !NettyClient.getInstance().isStopped())
         {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setHeaderText("客户端仍在运行中");
@@ -239,9 +102,7 @@ public class DefaultController {
             if (type.isPresent())
             {
                 if (!(type.get().equals(ButtonType.OK)))
-                {
                     return;
-                }
             }
             else
             {
@@ -279,7 +140,7 @@ public class DefaultController {
      */
     @ApiStatus.OverrideOnly
     public void WriteChatMessage(String msg) {
-        throw new RuntimeException("This Controller is Not A Server Or Client Controller!");
+        throw new UnsupportedOperationException("This controller is not support this method!");
     }
 
     /**
@@ -289,6 +150,6 @@ public class DefaultController {
      */
     @ApiStatus.OverrideOnly
     public void WriteSystemLog(String msg) {
-        throw new RuntimeException("This Controller is Not A Server Or Client Controller!");
+        throw new UnsupportedOperationException("This controller is not support this method!");
     }
 }

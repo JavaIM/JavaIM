@@ -38,10 +38,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class NettyClient extends GeneralMethod {
+public final class NettyClient extends GeneralMethod {
     static {
         instance = new NettyClient();
     }
+
     private NettyClient() {}
     private static NettyClient instance;
     private final ThreadGroup ClientThreadGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(), "Client Thread Group");
@@ -71,12 +72,19 @@ public class NettyClient extends GeneralMethod {
 
     private ScheduledExecutorService TimerThreadPool;
 
-    protected Logger initLogger()
-    {
-        return new Logger(null);
+    private Logger logger;
+
+    private ClientDependsData data;
+
+    public ClientDependsData getDependsData() {
+        return data;
     }
 
-    private Logger logger;
+    public void writeDependsData(ClientDependsData data) {
+        checks.checkState(this.data != null || started,"Netty Client is always start!");
+        checks.checkArgument(data == null,"data is null");
+        this.data = data;
+    }
     /**
      * 启动一个Netty聊天客户端
      * @apiNote 请注意，此方法在Netty关闭前不会退出，是一个同步方法!
@@ -96,8 +104,10 @@ public class NettyClient extends GeneralMethod {
                 return;
             started = true;
         }
-        logger = initLogger();
-        RSA_KeyAutogenerate(getPublicKeyFile().getPath(),getPrivateKeyFile().getPath(),logger);
+        if (data == null)
+            data = new ClientDependsData();
+        logger = data.initLogger();
+        RSA_KeyAutogenerate(data.getPublicKeyFile().getPath(),data.getPrivateKeyFile().getPath(),logger);
         serverPublicKey = ServerPublicKey;
         TimerThreadPool = Executors.newScheduledThreadPool(1,new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
@@ -200,75 +210,103 @@ public class NettyClient extends GeneralMethod {
         instance = new NettyClient();
     }
 
-    /**
-     * 获取公钥文件
-     * @return 公钥文件
-     */
-    protected File getPublicKeyFile()
+    public static class ClientDependsData
     {
-        return new File("./ClientRSAKey/ClientPublicKey.txt");
-    }
+        /**
+         * 初始化logger
+         * @return logger
+         */
+        protected Logger initLogger()
+        {
+            return new Logger(null);
+        }
+        /**
+         * 获取公钥文件
+         * @return 公钥文件
+         */
+        protected File getPublicKeyFile()
+        {
+            return new File("./ClientRSAKey/ClientPublicKey.txt");
+        }
 
-    /**
-     * 获取私钥文件
-     * @return 私钥文件
-     */
-    protected File getPrivateKeyFile()
-    {
-        return new File("./ClientRSAKey/ClientPrivateKey.txt");
-    }
+        /**
+         * 获取私钥文件
+         * @return 私钥文件
+         */
+        protected File getPrivateKeyFile()
+        {
+            return new File("./ClientRSAKey/ClientPrivateKey.txt");
+        }
 
-    /**
-     * 获取端到端加密保存数据文件夹
-     * @return 文件夹
-     */
-    protected File getEndToEndEncryptionSavedDirectory()
-    {
-        return new File("./end-to-end_encryption_saved");
-    }
+        /**
+         * 请求用户token
+         * @return 用户token
+         */
+        protected String RequestUserToken()
+        {
+            if (!(new File("./token.txt").exists() && new File("./token.txt").isFile() && new File("./token.txt").canRead()))
+                return "";
+            try {
+                return FileIO.readFileToString(new File("./token.txt"));
+            } catch (IOException e) {
+                return "";
+            }
+        }
 
-    /**
-     * 请求用户token
-     * @return 用户token
-     */
-    protected String RequestUserToken()
-    {
-        if (!(new File("./token.txt").exists() && new File("./token.txt").isFile() && new File("./token.txt").canRead()))
-            return "";
-        try {
-            return FileIO.readFileToString(new File("./token.txt"));
-        } catch (IOException e) {
-            return "";
+        /**
+         * 写入用户token
+         * @param UserToken 新的用户token
+         * @throws IOException 出现IO错误
+         */
+        protected void writeUserToken(String UserToken) throws IOException {
+            FileIO.writeStringToFile(new File("./token.txt"),UserToken);
+        }
+
+        /**
+         * 向用户请求用户名密码
+         * @return 用户名密码
+         */
+        @Contract(pure = true)
+        protected String[] RequestUserNameAndPassword()
+        {
+            Scanner scanner = new Scanner(System.in);
+            getInstance().getLogger().info("请输入用户名：");
+            String UserName = scanner.nextLine();
+            getInstance().getLogger().info("请输入密码：");
+            String Password = scanner.nextLine();
+            return new String[] { UserName , Password };
+        }
+
+        @Contract(pure = true)
+        protected boolean isLegacyLoginORNormalLogin()
+        {
+            getInstance().logger.info("------提示------");
+            getInstance().logger.info("由于密码加密逻辑变更");
+            getInstance().logger.info("如您仍使用旧密码");
+            getInstance().logger.info("请尽快以兼容模式登录");
+            getInstance().logger.info("来进一步保护您的安全");
+            getInstance().logger.info("输入1来进行兼容模式登录");
+            getInstance().logger.info("输入其他，来进行普通登录");
+            try {
+                Scanner scanner = new Scanner(System.in);
+                int UserInput = Integer.parseInt(scanner.nextLine());
+                if (UserInput == 1)
+                {
+                    return true;
+                }
+            } catch (NumberFormatException ignored) {}
+            return false;
         }
     }
 
-    /**
-     * 写入用户token
-     * @param UserToken 新的用户token
-     * @throws IOException 出现IO错误
-     */
-    protected void writeUserToken(String UserToken) throws IOException {
-        FileIO.writeStringToFile(new File("./token.txt"),UserToken);
+    private Logger getLogger() {
+        return logger;
     }
 
     /**
-     * 向用户请求用户名密码
-     * @return 用户名密码
-     */
-    @Contract(pure = true)
-    protected String[] RequestUserNameAndPassword()
-    {
-        Scanner scanner = new Scanner(System.in);
-        logger.info("请输入用户名：");
-        String UserName = scanner.nextLine();
-        logger.info("请输入密码：");
-        String Password = scanner.nextLine();
-        return new String[] { UserName , Password };
-    }
-    /**
      * 客户端加密模式
      */
-    protected enum EncryptionMode
+    public enum EncryptionMode
     {
         /**
          * 明文未加密
@@ -312,6 +350,11 @@ public class NettyClient extends GeneralMethod {
     }
 
     private ClientStatus status;
+
+    public ClientStatus getStatus() {
+        return status;
+    }
+
     private class ClientHandler extends ChannelInboundHandlerAdapter
     {
         private final Gson gson = new Gson();
@@ -337,7 +380,7 @@ public class NettyClient extends GeneralMethod {
                     {
                         try {
                             logger.info("正在配置RSA加密...");
-                            String publicKey = FileIO.readFileToString(getPublicKeyFile(),StandardCharsets.UTF_8);
+                            String publicKey = FileIO.readFileToString(data.getPublicKeyFile(),StandardCharsets.UTF_8);
 
                             protocol = new NormalProtocol();
                             NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
@@ -415,7 +458,8 @@ public class NettyClient extends GeneralMethod {
                     {
                         logger.info("TransferProtocol配置完成");
                         logger.info("正在执行登录...");
-                        if (!RequestUserToken().isEmpty())
+                        String token = data.RequestUserToken();
+                        if (!token.isEmpty())
                         {
                             LoginProtocol loginProtocol = new LoginProtocol();
                             LoginProtocol.LoginPacketHeadBean loginPacketHead = new LoginProtocol.LoginPacketHeadBean();
@@ -423,7 +467,7 @@ public class NettyClient extends GeneralMethod {
                             loginProtocol.setLoginPacketHead(loginPacketHead);
                             LoginProtocol.LoginPacketBodyBean loginPacketBody = new LoginProtocol.LoginPacketBodyBean();
                             LoginProtocol.LoginPacketBodyBean.ReLoginBean reLogin = new LoginProtocol.LoginPacketBodyBean.ReLoginBean();
-                            reLogin.setToken(RequestUserToken());
+                            reLogin.setToken(token);
                             loginPacketBody.setReLogin(reLogin);
                             loginProtocol.setLoginPacketBody(loginPacketBody);
                             SendData(gson.toJson(loginProtocol) , status, ctx.channel());
@@ -454,7 +498,7 @@ public class NettyClient extends GeneralMethod {
                     }
                     else {
                         try {
-                            writeUserToken(protocol.getMessageBody().getMessage());
+                            data.writeUserToken(protocol.getMessageBody().getMessage());
                         } catch (IOException ignored) {
                         }
                         if (LegacyLogin.get()) {
@@ -477,37 +521,17 @@ public class NettyClient extends GeneralMethod {
                 }
             }
         }
-        @Contract(pure = true)
-        protected boolean isLegacyLoginORNormalLogin()
-        {
-            logger.info("------提示------");
-            logger.info("由于密码加密逻辑变更");
-            logger.info("如您仍使用旧密码");
-            logger.info("请尽快以兼容模式登录");
-            logger.info("来进一步保护您的安全");
-            logger.info("输入1来进行兼容模式登录");
-            logger.info("输入其他，来进行普通登录");
-            try {
-                Scanner scanner = new Scanner(System.in);
-                int UserInput = Integer.parseInt(scanner.nextLine());
-                if (UserInput == 1)
-                {
-                    return true;
-                }
-            } catch (NumberFormatException ignored) {}
-            return false;
-        }
         private String ChangePasswordJson = "";
         private final AtomicBoolean LegacyLogin = new AtomicBoolean(false);
         private final AtomicBoolean PasswordLogin = new AtomicBoolean(false);
         private void UserNameAndPasswordLogin() {
             PasswordLogin.set(true);
-            LegacyLogin.set(isLegacyLoginORNormalLogin());
+            LegacyLogin.set(data.isLegacyLoginORNormalLogin());
             String UserName;
             String Password;
             if (LegacyLogin.get())
             {
-                String[] UserData = RequestUserNameAndPassword();
+                String[] UserData = data.RequestUserNameAndPassword();
                 if (UserData.length != 2)
                     throw new RuntimeException("The RequestUserNameAndPassword Method Returned Data Is Not Support");
                 UserName = UserData[0];//UserData[0]是明文用户名
@@ -524,7 +548,7 @@ public class NettyClient extends GeneralMethod {
                 ChangePasswordJson = gson.toJson(protocol);
             }
             else {
-                String[] UserData = RequestUserNameAndPassword();
+                String[] UserData = data.RequestUserNameAndPassword();
                 if (UserData.length != 2)
                     throw new RuntimeException("The RequestUserNameAndPassword Method Returned Data Is Not Support");
                 UserName = UserData[0];//UserData[0]是明文用户名
@@ -675,7 +699,7 @@ public class NettyClient extends GeneralMethod {
                 }
                 else if (status.encryptionMode.equals(EncryptionMode.RSA_ENCRYPTION)) {
                     try {
-                        UserRequestDispose(ctx, RSA.decrypt(Msg, FileIO.readFileToString(getPrivateKeyFile())));
+                        UserRequestDispose(ctx, RSA.decrypt(Msg, FileIO.readFileToString(data.getPrivateKeyFile())));
                     } catch (CryptoException e) {
                         ctx.writeAndFlush("Decryption Error");
                     }
@@ -722,7 +746,7 @@ public class NettyClient extends GeneralMethod {
     /**
      * 代表需要退出程序的受检异常
      */
-    protected static class QuitException extends Exception
+    public static class QuitException extends Exception
     {
         public QuitException(String Message)
         {
@@ -737,8 +761,11 @@ public class NettyClient extends GeneralMethod {
      * @throws QuitException 用户的指令是.quit
      */
     @Contract(pure = true)
-    protected boolean CommandRequest(String UserInput,ClientStatus status,Channel channel) throws IOException, QuitException {
+    public boolean CommandRequest(String UserInput,ClientStatus status,Channel channel) throws IOException, QuitException {
         String command;
+        checks.checkArgument(status == null, "ClientStatus is Null!");
+        checks.checkArgument(channel == null, "Channel is Null!");
+        checks.checkArgument(!channel.isWritable(), "Channel is not can Writable!");
         checks.checkArgument(UserInput == null || UserInput.isEmpty(), "User Input is Empty!");
         String[] argv;
         {

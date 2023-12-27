@@ -16,8 +16,8 @@ import org.yuezhikong.GraphicalUserInterface.Dialogs.PortInputDialog;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.SpinnerDialog;
 import org.yuezhikong.GraphicalUserInterface.ServerAndKeyManagement.SavedServerFileLayout;
 import org.yuezhikong.GraphicalUserInterface.ServerAndKeyManagement.ServerAndKeyManagementUI;
-import org.yuezhikong.NetworkManager;
-import org.yuezhikong.newClient.ClientMain;
+import org.yuezhikong.newClient.NettyClient;
+import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.awt.*;
@@ -40,7 +40,7 @@ public class ClientUI extends DefaultController implements Initializable {
     public Button DisconnectServerButton;
     public Button ConnectToSavedServerButton;
 
-    private GUIClient Instance;
+    private NettyClientGUIDependsData NettyClientDependsData;
     public static ScheduledExecutorService TimerThreadPool;
 
 
@@ -81,11 +81,27 @@ public class ClientUI extends DefaultController implements Initializable {
      * @param ServerPort 服务器端口
      * @param ServerPublicKey 服务端公钥，null为默认
      */
-    private void StartClient(String ServerAddress,int ServerPort,File ServerPublicKey)
+    private void StartClient(String ServerAddress, int ServerPort, String ServerPublicKey)
     {
-        Instance = new GUIClient(this,ServerPublicKey);
-        Instance.writeRequiredInformation("","", false);
-        Instance.start(ServerAddress, ServerPort);
+        NettyClientDependsData = new NettyClientGUIDependsData(this);
+        StartClient(NettyClientDependsData,ServerAddress, ServerPort, ServerPublicKey, null);
+    }
+    /**
+     * 启动一个GUI客户端
+     * @param data netty客户端依赖数据
+     * @param ServerAddress 服务器地址
+     * @param ServerPort 服务器端口
+     * @param ServerPublicKey 服务端公钥，null为默认
+     * @param informationBean 服务器信息，null为空
+     */
+    private void StartClient(NettyClientGUIDependsData data,String ServerAddress, int ServerPort, String ServerPublicKey, SavedServerFileLayout.ServerInformationBean informationBean)
+    {
+        data.setServerInformation(informationBean);
+        NettyClient.getInstance().writeDependsData(data);
+        new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(),"Client Thread Group"),
+                () ->
+                        NettyClient.getInstance().start(ServerAddress, ServerPort,ServerPublicKey)
+                ,"Client Thread").start();
     }
     public void DirectConnectToServer(ActionEvent actionEvent) {
         //IP
@@ -143,10 +159,7 @@ public class ClientUI extends DefaultController implements Initializable {
             return;
         }
         try {
-            File tempServerPublicKeyFile = File.createTempFile("ServerPublicKey", ".txt");
-            FileUtils.copyFile(ServerPublicKeyFile, tempServerPublicKeyFile);
-            tempServerPublicKeyFile.deleteOnExit();
-            StartClient(ServerAddressOfUserInput.get(), Integer.parseInt(ServerPortOfUserInput.get()), tempServerPublicKeyFile);
+            StartClient(ServerAddressOfUserInput.get(), Integer.parseInt(ServerPortOfUserInput.get()), FileUtils.readFileToString(ServerPublicKeyFile, StandardCharsets.UTF_8));
             DisconnectServerButton.setDisable(false);
             DirectConnectToServerButton.setDisable(true);
             ConnectToSavedServerButton.setDisable(true);
@@ -222,22 +235,10 @@ public class ClientUI extends DefaultController implements Initializable {
                 if (SelectServerData.ServerPort() == bean.getServerPort()
                         && SelectServerData.ServerAddress().equals(bean.getServerAddress()))
                 {
-                    try
-                    {
-                        File tempServerPublicKeyFile = File.createTempFile("ServerPublicKey", ".txt");
-                        FileUtils.writeStringToFile(tempServerPublicKeyFile,bean.getServerPublicKey(),StandardCharsets.UTF_8);
-                        tempServerPublicKeyFile.deleteOnExit();
-                        StartClient(bean.getServerAddress(),bean.getServerPort(),tempServerPublicKeyFile);
-                        Instance.setServerInformation(bean);
-                    } catch (IOException e)
-                    {
-                        SaveStackTrace.saveStackTrace(e);
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.initOwner(stage);
-                        alert.setTitle("JavaIM --- 出现错误");
-                        alert.setContentText("由于出现错误，客户端启动失败! ");
-                        alert.showAndWait();
-                    }
+                    NettyClientDependsData = new NettyClientGUIDependsData(this);
+                    NettyClientDependsData.setServerInformation(bean);
+                    StartClient(NettyClientDependsData,bean.getServerAddress(),
+                            bean.getServerPort(),bean.getServerPublicKey(),bean);
                     DisconnectServerButton.setDisable(false);
                     DirectConnectToServerButton.setDisable(true);
                     ConnectToSavedServerButton.setDisable(true);
@@ -259,7 +260,7 @@ public class ClientUI extends DefaultController implements Initializable {
     }
 
     public void SendMessage(ActionEvent actionEvent) {
-        if (Instance == null)
+        if (NettyClient.getInstance().isStopped() || !NettyClient.getInstance().isStarted())
         {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.initOwner(stage);
@@ -269,41 +270,42 @@ public class ClientUI extends DefaultController implements Initializable {
             alert.showAndWait();
             return;
         }
-        Instance.UserInputRequest(InputMessage.getText());
+        String UserInput = InputMessage.getText();
+        NettyClient clientInstance = NettyClient.getInstance();
+        try {
+            if (clientInstance.CommandRequest(UserInput,clientInstance.getStatus(),clientInstance.getChannel()))
+                return;
+        } catch (IOException e) {
+            SaveStackTrace.saveStackTrace(e);
+            StopClient();
+        } catch (NettyClient.QuitException e) {
+            StopClient();
+        }
+
+        NormalProtocol protocol = new NormalProtocol();//开始构造协议
+        NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
+        NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
+        head.setVersion(CodeDynamicConfig.getProtocolVersion());
+        head.setType("Chat");//类型是聊天数据包
+        protocol.setMessageHead(head);
+        body.setMessage(UserInput);
+        protocol.setMessageBody(body);
+        clientInstance.SendData(new Gson().toJson(protocol),clientInstance.getStatus(),clientInstance.getChannel());
     }
 
     public void onClientShutdown() {
-        try {
-            if (ClientMain.getClient() != null) {
-                StopClient();
-            }
-        } catch (Throwable throwable)
-        {
-            SaveStackTrace.saveStackTrace(throwable);
-        }
-        finally {
-            if (Instance.getTimerThreadPool() != null)
-                Instance.getTimerThreadPool().shutdownNow();
-            if (Instance.getClientThreadGroup() != null)
-                Instance.getClientThreadGroup().interrupt();
-            try {
-                if (Instance.getClientNetworkData() != null)
-                    NetworkManager.ShutdownTCPConnection(Instance.getClientNetworkData());
-            } catch (IOException e) {
-                SaveStackTrace.saveStackTrace(e);
-            }
-            Instance = null;
-        }
+        NettyClientDependsData = null;
+        StopClient();
     }
 
     public String RequestUserToken() {
-        return (Instance.getServerInformation() != null)
-                ? Instance.getServerInformation().getServerToken()
+        return (NettyClientDependsData.getServerInformation() != null)
+                ? NettyClientDependsData.getServerInformation().getServerToken()
                 : "";
     }
 
     public void writeUserToken(String userToken) {
-        if (Instance.getServerInformation() != null)
+        if (NettyClientDependsData.getServerInformation() != null)
         {
             File SavedServerFile = ServerAndKeyManagementUI.getSavedServerFile();
             if (!SavedServerFile.exists() || !SavedServerFile.isFile()
@@ -340,8 +342,8 @@ public class ClientUI extends DefaultController implements Initializable {
                 }
                 for (var bean : layout.getServerInformation())
                 {
-                    if (bean.getServerAddress().equals(Instance.getServerInformation().getServerAddress()) &&
-                            Instance.getServerInformation().getServerPort() == bean.getServerPort())
+                    if (bean.getServerAddress().equals(NettyClientDependsData.getServerInformation().getServerAddress()) &&
+                            NettyClientDependsData.getServerInformation().getServerPort() == bean.getServerPort())
                     {
                         bean.setServerToken(userToken);
                         FileUtils.writeStringToFile(SavedServerFile,new Gson().toJson(layout),
