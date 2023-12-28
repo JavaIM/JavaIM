@@ -84,13 +84,13 @@ public class NettyUser implements INettyUser
             authentication.DoLogout();
         if (!isUserLogined())
         {
-            ServerTools.getServerInstance().getLogger().info("客户端:"+getChannel().remoteAddress()+"已经断开连接");
+            ServerTools.getServerInstanceOrThrow().getLogger().info("客户端:"+getChannel().remoteAddress()+"已经断开连接");
         }
         else
         {
             String message = "用户："+getUserName()+"("+getChannel().remoteAddress()+")已经断开连接";
-            ServerTools.getServerInstance().getLogger().info(message);
-            ServerTools.getServerInstance().getServerAPI().SendMessageToAllClient(message);
+            ServerTools.getServerInstanceOrThrow().getLogger().info(message);
+            ServerTools.getServerInstanceOrThrow().getServerAPI().SendMessageToAllClient(message);
         }
         return this;
     }

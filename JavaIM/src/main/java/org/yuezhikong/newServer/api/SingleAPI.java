@@ -22,9 +22,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.NetworkManager;
 import org.yuezhikong.newServer.IServerMain;
-import org.yuezhikong.newServer.UserData.tcpUser.IClassicUser;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.userData.PluginUser;
 import org.yuezhikong.utils.CustomVar;
@@ -121,24 +119,13 @@ public class SingleAPI implements api{
     @Override
     public void SendJsonToClient(@NotNull user User, @NotNull String InputData)
     {
-        String Data = InputData;
         if (User instanceof PluginUser)
         {
             //如果是插件用户，则直接调用插件用户中的方法
-            ((PluginUser) User).WriteData(Data);
+            ((PluginUser) User).WriteData(InputData);
             return;
         }
-        if (User instanceof IClassicUser classicUser) {
-            Data = classicUser.getUserAES().encryptBase64(Data);
-            try {
-                NetworkManager.WriteDataToRemote(classicUser.getUserNetworkData(), Data);
-            } catch (Exception e) {
-                SaveStackTrace.saveStackTrace(e);
-            }
-        }
-        else {
-            throw new RuntimeException("Not Support!");
-        }
+        throw new RuntimeException("Not Support!");
     }
 
     /**
@@ -171,14 +158,6 @@ public class SingleAPI implements api{
                 continue;
             if (CheckLoginStatus && !User.isUserLogined())
                 continue;
-            if (User instanceof IClassicUser classicUser) {
-                if (classicUser.getUserNetworkData() == null)
-                    continue;
-                if (classicUser.getPublicKey() == null)
-                    continue;
-                if (classicUser.getUserAES() == null)
-                    continue;
-            }
             if (User.isServer())
                 continue;
             ValidClientList.add(User);

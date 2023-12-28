@@ -2,7 +2,6 @@ package org.yuezhikong.newServer.api;
 
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.newServer.NettyServer;
-import org.yuezhikong.newServer.UserData.tcpUser.IClassicUser;
 import org.yuezhikong.newServer.UserData.tcpUser.NettyUser;
 import org.yuezhikong.newServer.UserData.user;
 import org.yuezhikong.newServer.plugin.userData.PluginUser;
@@ -25,14 +24,6 @@ public class NettyAPI extends SingleAPI{
                 continue;
             if (User instanceof NettyUser nettyUser && nettyUser.getChannel() == null)
                 continue;
-            else if (User instanceof IClassicUser classicUser) {
-                if (classicUser.getUserNetworkData() == null)
-                    continue;
-                if (classicUser.getPublicKey() == null)
-                    continue;
-                if (classicUser.getUserAES() == null)
-                    continue;
-            }
             if (User.isServer())
                 continue;
             ValidClientList.add(User);

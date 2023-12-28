@@ -2,7 +2,6 @@ package org.yuezhikong.newServer.plugin.userData;
 
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.newServer.ServerMain;
 import org.yuezhikong.newServer.ServerTools;
 import org.yuezhikong.newServer.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.newServer.UserData.Permission;
@@ -38,11 +37,11 @@ public abstract class DefaultPluginUser implements PluginUser{
             authentication.DoLogout();
         if (!isUserLogined())
         {
-            ServerMain.getServer().getLogger().info("一个客户端已经断开连接");
+            ServerTools.getServerInstanceOrThrow().getLogger().info("一个客户端已经断开连接");
         }
         else
         {
-            ServerMain.getServer().getLogger().info("用户："+getUserName()+"已经断开连接");
+            ServerTools.getServerInstanceOrThrow().getLogger().info("用户："+getUserName()+"已经断开连接");
         }
         return this;
     }
@@ -52,7 +51,7 @@ public abstract class DefaultPluginUser implements PluginUser{
     public user SetUserPermission(int permissionLevel, boolean FlashPermission) {
         if (!FlashPermission)
         {
-            ServerTools.getServerInstance().getIOThreadPool().execute(() -> {
+            ServerTools.getServerInstanceOrThrow().getIOThreadPool().execute(() -> {
                 try
                 {
                     Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());

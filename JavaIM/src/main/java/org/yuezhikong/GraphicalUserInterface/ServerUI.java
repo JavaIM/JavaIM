@@ -12,8 +12,6 @@ import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import org.apache.commons.io.FileUtils;
 import org.yuezhikong.GraphicalUserInterface.Dialogs.PortInputDialog;
-import org.yuezhikong.newServer.GUIServer;
-import org.yuezhikong.newServer.IServerMain;
 import org.yuezhikong.newServer.NettyServer;
 import org.yuezhikong.newServer.ServerTools;
 import org.yuezhikong.utils.Logger;
@@ -66,7 +64,7 @@ public class ServerUI extends DefaultController implements Initializable {
 
     private String UISelectUserName;
 
-    private IServerMain ServerInstance;
+    private NettyServer ServerInstance;
 
     @Override
     public void WriteChatMessage(String msg) {
@@ -95,12 +93,7 @@ public class ServerUI extends DefaultController implements Initializable {
 
         GraphicalUserManagement.getInstance().getKickUser().setOnAction(actionEvent -> {
             if (ServerInstance != null)
-            {
-                if (ServerInstance instanceof GUIServer)
-                    ((GUIServer) ServerInstance).ServerCommandSend("kick "+UISelectUserName);
-                else if (ServerInstance instanceof NettyServer)
-                    ((NettyServer) ServerInstance).ServerCommandSend("kick "+UISelectUserName);
-            }
+                ServerInstance.ServerCommandSend("kick "+UISelectUserName);
         });
         GraphicalUserManagement.getInstance().getTellUser().setOnAction(actionEvent -> {
             if (ServerInstance != null)
@@ -121,12 +114,7 @@ public class ServerUI extends DefaultController implements Initializable {
                     alert.showAndWait();
                 }
                 else
-                {
-                    if (ServerInstance instanceof GUIServer)
-                        ((GUIServer) ServerInstance).ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
-                    else if (ServerInstance instanceof NettyServer)
-                        ((NettyServer) ServerInstance).ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
-                }
+                    ServerInstance.ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
             }
         });
         UserList.setOnMouseClicked(mouseEvent -> {
@@ -146,20 +134,14 @@ public class ServerUI extends DefaultController implements Initializable {
     public void SendCommand(ActionEvent actionEvent) {
         if (ServerInstance == null)
             return;
-        if (ServerInstance instanceof GUIServer)
-            ((GUIServer) ServerInstance).ServerCommandSend(CommandInput.getText());
-        else if (ServerInstance instanceof NettyServer)
-            ((NettyServer) ServerInstance).ServerCommandSend(CommandInput.getText());
+        ServerInstance.ServerCommandSend(CommandInput.getText());
         CommandInput.clear();
     }
 
     public void SendMessage(ActionEvent actionEvent) {
         if (ServerInstance == null)
             return;
-        if (ServerInstance instanceof GUIServer)
-            ((GUIServer) ServerInstance).ServerChatMessageSend(MessageInput.getText());
-        else if (ServerInstance instanceof NettyServer)
-            ((NettyServer) ServerInstance).ServerChatMessageSend(MessageInput.getText());
+        ServerInstance.ServerChatMessageSend(MessageInput.getText());
         MessageInput.clear();
     }
 
@@ -213,9 +195,9 @@ public class ServerUI extends DefaultController implements Initializable {
         }
         else
         {
-            IServerMain instance = ServerInstance;
+            NettyServer instance = ServerInstance;
             ServerInstance = null;
-            ((NettyServer) instance).StopNettyChatRoom();
+            instance.StopNettyChatRoom();
             ObservableList<String> ListOfUser = UserList.getItems();
             ListOfUser.clear();
             UserList.setItems(ListOfUser);

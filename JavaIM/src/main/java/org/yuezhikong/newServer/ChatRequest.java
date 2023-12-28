@@ -168,8 +168,6 @@ public class ChatRequest {
                         for (user user : users) {
                             user.UserDisconnect();
                         }
-                        if (instance instanceof ServerMain)
-                            ((ServerMain) instance).getRecvMessageThreadGroup().interrupt();
                         instance.getUsers().clear();
                         System.gc();
                         instance.getLogger().info("已经完成内存释放，并且踢出了所有用户");
@@ -315,21 +313,8 @@ public class ChatRequest {
                         for (user User : instance.getUsers()) {
                             User.UserDisconnect();
                         }
-                        if (instance instanceof ServerMain) {
-                            ((ServerMain) instance).authThread.interrupt();
-                            try {
-                                instance.getPluginManager().UnLoadAllPlugin();
-                            } catch (IOException e) {
-                                SaveStackTrace.saveStackTrace(e);
-                            }
-                            ServerMain.started = false;
-                            ServerMain.server = null;
-                            ((ServerMain) instance).getServerGroup().interrupt();
-                        }
-                        else if (instance instanceof NettyServer)
-                        {
+                        if (instance instanceof NettyServer)
                             ((NettyServer) instance).StopNettyChatRoom();
-                        }
                         else
                             System.exit(0);
                     }
