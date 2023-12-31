@@ -50,6 +50,7 @@ public class MainUI extends DefaultController implements Initializable {
                     tray.remove(icon);
                 }
             }
+            System.exit(0);
         }
         @Override
         public void start(Stage stage) throws Exception {
