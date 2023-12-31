@@ -278,7 +278,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
             return;
         }
         UserRequestThreadPool.execute(() -> getRequest().CommandRequest(
-                new ChatRequest.ChatRequestInput(getConsoleUser(),"/"+Command)));
+                new ChatRequest.ChatRequestInput(getConsoleUser(),Command)));
     }
 
     private String ServerPrivateKey;

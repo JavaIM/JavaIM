@@ -93,7 +93,7 @@ public class ServerUI extends DefaultController implements Initializable {
 
         GraphicalUserManagement.getInstance().getKickUser().setOnAction(actionEvent -> {
             if (ServerInstance != null)
-                ServerInstance.ServerCommandSend("kick "+UISelectUserName);
+                ServerInstance.ServerCommandSend("/kick "+UISelectUserName);
         });
         GraphicalUserManagement.getInstance().getTellUser().setOnAction(actionEvent -> {
             if (ServerInstance != null)
@@ -114,7 +114,7 @@ public class ServerUI extends DefaultController implements Initializable {
                     alert.showAndWait();
                 }
                 else
-                    ServerInstance.ServerCommandSend("tell "+UISelectUserName+" "+InputMessage.get());
+                    ServerInstance.ServerCommandSend("/tell "+UISelectUserName+" "+InputMessage.get());
             }
         });
         UserList.setOnMouseClicked(mouseEvent -> {
@@ -134,7 +134,7 @@ public class ServerUI extends DefaultController implements Initializable {
     public void SendCommand(ActionEvent actionEvent) {
         if (ServerInstance == null)
             return;
-        ServerInstance.ServerCommandSend(CommandInput.getText());
+        ServerInstance.ServerCommandSend("/"+CommandInput.getText());
         CommandInput.clear();
     }
 

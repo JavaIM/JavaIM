@@ -91,7 +91,7 @@ public class NettyClientGUIDependsData extends NettyClient.ClientDependsData {
         }
         return LegacyLogin;
     }
-    private String[] UserData;
+    private String[] UserData = new String[] {};
     private boolean LegacyLogin = false;
     @Override
     protected String[] RequestUserNameAndPassword() {
