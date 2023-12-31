@@ -154,7 +154,6 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
         });
 
         pluginManager = new SimplePluginManager(this);
-        pluginManager.LoadPluginOnDirectory(new File("./plugins"));
 
         serverAPI = new NettyAPI(this);
 
@@ -215,6 +214,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
                         ServerChatMessageSend(input);
                 }
             });
+            pluginManager.LoadPluginOnDirectory(new File("./plugins"));
             logger.info("服务器启动完成");
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
