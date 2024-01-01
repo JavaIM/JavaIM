@@ -47,6 +47,7 @@ import org.yuezhikong.newServer.api.NettyAPI;
 import org.yuezhikong.newServer.api.api;
 import org.yuezhikong.newServer.plugin.PluginManager;
 import org.yuezhikong.newServer.plugin.SimplePluginManager;
+import org.yuezhikong.newServer.plugin.event.events.ServerChatEvent;
 import org.yuezhikong.utils.*;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -261,6 +262,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
     {
         checks.checkArgument(ChatMessage == null || ChatMessage.isEmpty(),"ChatMessage is null or empty!");
         UserRequestThreadPool.execute(() -> {
+            pluginManager.callEvent(new ServerChatEvent(getConsoleUser(),ChatMessage));
             ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(getConsoleUser(),ChatMessage);
             getRequest().ChatFormat(input);
             getServerAPI().SendMessageToAllClient("[服务端消息] "+input.getChatMessage());

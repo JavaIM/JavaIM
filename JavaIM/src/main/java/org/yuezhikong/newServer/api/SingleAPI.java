@@ -112,8 +112,12 @@ public class SingleAPI implements api{
             ServerInstance.getLogger().info(inputMessage);
             return;
         }
-        String Message = ChatProtocolRequest(inputMessage, CodeDynamicConfig.getProtocolVersion());
-        SendJsonToClient(user, Message);
+        String[] inputs = inputMessage.replaceAll("\r","").split("\n");
+        for (String input : inputs)
+        {
+            String Message = ChatProtocolRequest(input, CodeDynamicConfig.getProtocolVersion());
+            SendJsonToClient(user, Message);
+        }
     }
 
     @Override
@@ -137,9 +141,13 @@ public class SingleAPI implements api{
     public void SendMessageToAllClient(@NotNull @Nls String inputMessage)
     {
         List<user> ValidClientList = GetValidClientList(true);
-        for (user User : ValidClientList)
+        String[] inputs = inputMessage.replaceAll("\r","").split("\n");
+        for (String input : inputs)
         {
-            SendMessageToUser(User,inputMessage);
+            for (user User : ValidClientList)
+            {
+                SendMessageToUser(User,input);
+            }
         }
     }
     /**
