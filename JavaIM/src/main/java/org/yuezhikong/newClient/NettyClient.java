@@ -574,6 +574,8 @@ public final class NettyClient extends GeneralMethod {
             {
                 if (!(msg instanceof String Msg))
                     return;
+                org.apache.logging.log4j.Logger debugLogger = LogManager.getLogger("Debug");
+                debugLogger.debug("接收到消息 {}",Msg);
                 switch (Msg)//明文处理
                 {
                     case "Hello, Client" :

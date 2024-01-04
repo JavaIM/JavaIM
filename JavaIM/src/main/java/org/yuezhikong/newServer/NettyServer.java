@@ -103,21 +103,27 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
         checks.checkArgument(msg == null || msg.isEmpty(), "The Message is null or Empty!");
         checks.checkArgument(channel == null || !channel.isWritable(), "The Channel is not init or not Writable!");
         ClientStatus status = ClientChannel.get(channel);
+        org.apache.logging.log4j.Logger debugLogger = org.apache.logging.log4j.LogManager.getLogger("Debug");
         if (status.encryptionMode.equals(EncryptionMode.NON_ENCRYPTION))
         {
+            debugLogger.debug("正在发送数据 {}", msg);
             channel.writeAndFlush(msg);
         }
         else if (status.encryptionMode.equals(EncryptionMode.RSA_ENCRYPTION))
         {
-            channel.writeAndFlush(RSA.encrypt(msg,status.encryptionKey));
+            String data = RSA.encrypt(msg,status.encryptionKey);
+            debugLogger.debug("正在发送数据 {}", data);
+            channel.writeAndFlush(data);
         }
         else if (status.encryptionMode.equals(EncryptionMode.AES_ENCRYPTION))
         {
-            channel.writeAndFlush(new AES(
+            String data = new AES(
                     "ECB",
                     "PKCS5Padding",
                     Base64.decodeBase64(status.encryptionKey)
-            ).encryptBase64(msg));
+            ).encryptBase64(msg);
+            debugLogger.debug("正在发送数据 {}", data);
+            channel.writeAndFlush(data);
         }
         else {
             throw new RuntimeException("The Encryption Mode is not Support!");

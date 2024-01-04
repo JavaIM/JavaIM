@@ -97,6 +97,7 @@ public class SimplePluginManager implements PluginManager{
         catch (Throwable e)
         {
             serverInstance.getLogger().error("插件加载失败："+PluginFile.getName());
+            SaveStackTrace.saveStackTrace(e);
             try {
                 classLoader.close();
             } catch (IOException ignored) {}
