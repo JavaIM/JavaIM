@@ -1,32 +1,10 @@
+HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### RSA Key ###
-*.key
-### Log ###
-*.gz
-*.log
-logs
-
-### build and debug###
-out/
-dependency-reduced-pom.xml
-debug/
-.gradle/
-*.jar
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
-.idea
-*.iws
-*.iml
-*.ipr
-
-### Eclipse ###
+### STS ###
 .apt_generated
 .classpath
 .factorypath
@@ -34,6 +12,12 @@ debug/
 .settings
 .springBeans
 .sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
 
 ### NetBeans ###
 /nbproject/private/
@@ -47,6 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-### Mac OS ###
-.DS_Store
