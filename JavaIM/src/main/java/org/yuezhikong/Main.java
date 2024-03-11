@@ -16,12 +16,9 @@
  */
 package org.yuezhikong;
 
-import javafx.application.Application;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.GraphicalUserInterface.MainUI;
-import org.yuezhikong.newClient.NettyClient;
 import org.yuezhikong.newServer.NettyServer;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Logger;
@@ -37,7 +34,7 @@ import java.util.Scanner;
 import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Main {
-    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger(null);
+    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
 
     public static void CreateServerProperties(){
         ConfigFileManager prop = new ConfigFileManager();
@@ -241,103 +238,35 @@ public class Main {
     public static void ConsoleMain()
     {
         logger.info("欢迎来到JavaIM！版本："+getVersion());
-        logger.info("使用客户端模式请输入1，服务端模式请输入2:");
-        logger.info("请输入想选择的模式");
-        logger.info("1:服务端");
-        logger.info("2:客户端");
-        Scanner scanner = new Scanner(System.in);
-        int UserInput = scanner.nextInt();
-        if (UserInput == 1)
-        {
-            logger.info("请输入绑定的端口");
-            int ServerPort = scanner.nextInt();
-            logger.info("Classic Server(Blocking IO Server)已被弃用!");
-            logger.info("正在使用NettyServer启动");
-            ThreadGroup ServerGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ServerGroup");
-            try {
-                new Thread(ServerGroup,"Server Thread")
-                {
-                    @Override
-                    public void run() {
-                        this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
-                        NettyServer.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", logger);
-                        try {
-                            NettyServer.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                    public Thread start2()
-                    {
-                        start();
-                        return this;
-                    }
-                }.start2().join();
-            } catch (InterruptedException e) {
-                SaveStackTrace.saveStackTrace(e);
-            }
-            System.exit(0);
-        }
-        else if (UserInput == 2)
-        {
-            logger.info("请输入ip");
-            scanner.nextLine();
-            String Address = scanner.nextLine();
-            logger.info("请输入端口");
-            int Port = scanner.nextInt();
-            scanner.nextLine();
-            logger.info("输入1，从文件获取服务端公钥");
-            logger.info("输入2，请求您的输入");
-            int UserInput2 = scanner.nextInt();
-            scanner.nextLine();
-            String ServerPublicKey = null;
-            if (UserInput2 == 1)
-            {
-                logger.info("请输入服务端公钥文件路径");
-                try {
-                    String input = scanner.nextLine();
-                    ServerPublicKey = FileUtils.readFileToString(new File(input), StandardCharsets.UTF_8);
-                } catch (IOException e) {
-                    logger.info("此文件不存在，或无法访问!");
-                    logger.info("操作系统返回的错误:"+ e);
-                    logger.info("由于您正在使用控制台版，因此，程序即将退出");
-                    System.exit(0);
-                }
-            }
-            else if (UserInput2 == 2)
-            {
-                logger.info("请输入服务端公钥");
-                ServerPublicKey = scanner.nextLine();
-            }
-            else {
-                logger.info("无效的输入!");
-                logger.info("且因为您正在使用控制台版，因此，程序即将退出");
-                System.exit(0);
-            }
-            logger.info("正在启动客户端");
-            ThreadGroup ClientGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ClientGroup");
-            try {
-                String finalServerPublicKey = ServerPublicKey;
-                new Thread(ClientGroup,"Client Thread")
-                {
-                    public Thread start2() {
-                        super.start();
-                        return this;
-                    }
+        logger.info("正在启动服务端...");
 
-                    @Override
-                    public void run() {
-                        NettyClient.getInstance().start(
-                                Address,
-                                Port,
-                                finalServerPublicKey);
+        Scanner scanner = new Scanner(System.in);
+        logger.info("请输入绑定的端口");
+        int ServerPort = scanner.nextInt();
+        ThreadGroup ServerGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ServerGroup");
+        try {
+            new Thread(ServerGroup,"Server Thread")
+            {
+                @Override
+                public void run() {
+                    this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
+                    NettyServer.getNettyNetwork().RSA_KeyAutogenerate("./ServerRSAKey/Public.txt", "./ServerRSAKey/Private.txt", logger);
+                    try {
+                        NettyServer.getNettyNetwork().StartChatRoomServerForNetty(ServerPort, FileUtils.readFileToString(new File("./ServerRSAKey/Private.txt"), StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                }.start2().join();
-            } catch (InterruptedException ignored) {}
-            logger.info("NettyClient线程已结束");
-            logger.info("程序即将退出");
-            System.exit(0);
+                }
+                public Thread start2()
+                {
+                    start();
+                    return this;
+                }
+            }.start2().join();
+        } catch (InterruptedException e) {
+            SaveStackTrace.saveStackTrace(e);
         }
+        System.exit(0);
     }
     /**
      * 程序的入口点，程序从这里开始运行至结束
@@ -358,23 +287,6 @@ public class Main {
         //命令行参数处理
         ConsoleCommandRequest.Request(true,args);
         //启动JavaIM启动逻辑
-        if (isThisVersionIsExpVersion())
-        {
-            logger.info("欢迎来到JavaIM！版本："+getVersion());
-            logger.info("此版本为实验性版本！不会保证稳定性");
-            logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
-            logger.info("本版本测试性内容：");
-            logger.info(getExpVersionText());
-            ExpVersionCode code = new ExpVersionCode();
-            code.run(logger);
-        }
-        else if (isGUIMode())
-        {
-            logger.info("欢迎来到JavaIM！版本："+getVersion());
-            logger.info("正在加载GUI...");
-            Application.launch(MainUI.UIInit.class);
-        }
-        else
-            ConsoleMain();
+        ConsoleMain();
     }
 }

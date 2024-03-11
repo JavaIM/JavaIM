@@ -19,10 +19,8 @@ package org.yuezhikong.utils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Contract;
-import org.yuezhikong.GraphicalUserInterface.DefaultController;
 
 import java.io.PrintStream;
-import java.lang.annotation.Documented;
 
 //import java.util.logging.Level;
 
@@ -47,19 +45,7 @@ public class Logger {
     }
 
     public static final org.apache.logging.log4j.Logger logger_root = LogManager.getLogger(Logger.class.getName());//配置文件没配置Log的class名字，所以用默认的Root
-    private boolean isStdOutRedistribution;
-    /**
-     * Logger初始化
-     * @param GUIController 如果为GUI，填写GUI的Controller
-     */
-    public Logger(DefaultController GUIController)
-    {
-        if (GUIController != null)
-        {
-            isGUI = true;
-            this.GUIController = GUIController;
-        }
-    }
+    private final boolean isStdOutRedistribution;
     /**
      * Logger初始化
      * @param isStdOutRedistribution 是否为System.out的重定向logger
@@ -68,38 +54,19 @@ public class Logger {
     {
         this.isStdOutRedistribution = isStdOutRedistribution;
     }
-    //GUI相关
-    private boolean isGUI;
-    private DefaultController GUIController;
-    private boolean OutDate = false;
-    private void GUIRequest(String msg, boolean isChatMessage)
+    public Logger()
     {
-        if (OutDate)
-        {
-            throw new RuntimeException("This Logger is OutDate!");
-        }
-        if (isGUI)
-        {
-            if (isChatMessage)
-            {
-                GUIController.WriteChatMessage(msg);
-            }
-            else
-            {
-                GUIController.WriteSystemLog(msg);
-            }
-        }
-
+        this(false);
     }
-    public void OutDate()
+    private void WebLoggerRequest(String msg, boolean isChatMessage)
     {
-        OutDate = true;
+        //TODO 此处为对于web管理页面的预留，暂时不使用，作为后续进行扩展的接口
     }
 
     //Logger包装
     public void info(String msg, Object... params)
     {
-        GUIRequest("[info] "+msg, false);
+        WebLoggerRequest("[info] "+msg, false);
         logger_root.info(msg,params);
     }
     public void info(String msg)
@@ -109,7 +76,7 @@ public class Logger {
         {
             Message = "[stdout] "+msg;
         }
-        GUIRequest("[info] " + Message, false);
+        WebLoggerRequest("[info] " + Message, false);
         logger_root.info(Message);
     }
     public void error(String msg)
@@ -119,22 +86,22 @@ public class Logger {
         {
             Message = "[stderr] "+msg;
         }
-        GUIRequest("[error] " + Message, false);
+        WebLoggerRequest("[error] " + Message, false);
         logger_root.error(Message);
     }
     public void ChatMsg(String msg)
     {
-        GUIRequest(msg, true);
+        WebLoggerRequest(msg, true);
         logger_root.info(msg);
     }
     public void log(Level level, String msg)
     {
-        GUIRequest(msg,false);
+        WebLoggerRequest(msg,false);
         logger_root.log(level,msg);
     }
     public void warning(String msg)
     {
-        GUIRequest("[warning] "+msg, false);
+        WebLoggerRequest("[warning] "+msg, false);
         logger_root.warn(msg);
     }
 }

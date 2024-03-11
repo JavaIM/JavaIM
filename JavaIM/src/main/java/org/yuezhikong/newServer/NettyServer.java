@@ -296,7 +296,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
     private final ChatRequest request = new ChatRequest(this);
 
     private final List<user> users = new ArrayList<>();
-    private Logger logger = new Logger(null);
+    private Logger logger = new Logger();
 
     public void setLogger(Logger logger) {
         this.logger = logger;
@@ -610,7 +610,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
                     return;
                 }
 
-                String Message = UnicodeToString.unicodeToString(Msg);
+                String Message = Msg;
                 status = ClientChannel.get(ctx.channel());
                 //一些明文的直接回复
                 switch (Message) {
