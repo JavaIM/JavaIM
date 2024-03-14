@@ -19,7 +19,7 @@ package org.yuezhikong;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.newServer.NettyServer;
+import org.yuezhikong.Server.NettyServer;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Notice;
