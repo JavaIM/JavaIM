@@ -16,6 +16,7 @@
  */
 package org.yuezhikong.Server;
 
+import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
@@ -95,5 +96,5 @@ public interface IServer {
      * 用户接收到消息处理
      * 警告，请最好不要使用此方法来模拟用户的消息，此方法设计仅用作网络层调用
      */
-    void onReceiveMessage(user user, String message);
+    void onReceiveMessage(tcpUser user, String message);
 }

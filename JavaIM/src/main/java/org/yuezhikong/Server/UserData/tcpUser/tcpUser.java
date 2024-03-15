@@ -1,31 +1,12 @@
 package org.yuezhikong.Server.UserData.tcpUser;
 
-import cn.hutool.crypto.symmetric.AES;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.network.NetworkServer;
 
 public interface tcpUser extends user {
-
     /**
-     * 设置用户公钥
-     * @param publicKey 用户公钥
+     * 获取此用户对应的网络客户端
+     * @return 网络客户端
      */
-    user setPublicKey(String publicKey);
-
-    /**
-     * 获取用户公钥
-     * @return 用户公钥
-     */
-    String getPublicKey();
-
-    /**
-     * 设置用户的AES加密器
-     * @param userAES AES加密器
-     */
-    user setUserAES(AES userAES);
-
-    /**
-     * 返回用户的AES加密器
-     * @return AES加密器
-     */
-    AES getUserAES();
+    NetworkServer.NetworkClient getNetworkClient();
 }

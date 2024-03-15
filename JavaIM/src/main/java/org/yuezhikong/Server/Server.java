@@ -2,6 +2,7 @@ package org.yuezhikong.Server;
 
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.UserData.ConsoleUser;
+import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
@@ -9,6 +10,7 @@ import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.SimplePluginManager;
 import org.yuezhikong.Server.plugin.event.events.ServerStopEvent;
+import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.Logger;
 
 import java.io.IOException;
@@ -60,7 +62,25 @@ public class Server implements IServer {
     /**
      * 服务器API
      */
-    private final api serverAPI = new SingleAPI(this);
+    private final api serverAPI = new SingleAPI(this) {
+        @Override
+        public void SendJsonToClient(@NotNull user User, @NotNull String InputData) {
+            if (User instanceof PluginUser)
+            {
+                //如果是插件用户，则直接调用插件用户中的方法
+                ((PluginUser) User).WriteData(InputData);
+                return;
+            }
+            if (User instanceof ConsoleUser)
+            {
+                logger.info(InputData);
+            }
+            if (User instanceof tcpUser)
+            {
+                ((tcpUser) User).getNetworkClient().send(InputData);
+            }
+        }
+    };
 
     /**
      * 日志记录器
@@ -94,6 +114,11 @@ public class Server implements IServer {
         userMessageRequestThreadPool.shutdown();
         System.gc();
         getNetwork().stop();
+    }
+
+    @Override
+    public void onReceiveMessage(tcpUser user, String message) {
+
     }
 
     @Override
