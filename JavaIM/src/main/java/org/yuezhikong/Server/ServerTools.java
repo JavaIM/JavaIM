@@ -1,5 +1,6 @@
 package org.yuezhikong.Server;
 
+import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.utils.checks;
 
 @SuppressWarnings("unused")
@@ -13,10 +14,10 @@ public class ServerTools {
      * 获取服务器实例
      * @return 服务器实例
      */
-    public static IServerMain getServerInstance()
+    public static IServer getServerInstance()
     {
-        if (NettyServer.getNettyNetwork().ServerStartStatus())
-            return NettyServer.getNettyNetwork();
+        if (NettyServer_OLD.getNettyNetwork().ServerStartStatus())
+            return NettyServer_OLD.getNettyNetwork();
         else
             return null;
     }
@@ -26,8 +27,8 @@ public class ServerTools {
      * @return 服务端实例
      * @throws IllegalStateException 服务端未启动
      */
-    public static IServerMain getServerInstanceOrThrow() throws IllegalStateException{
-        IServerMain server = getServerInstance();
+    public static IServer getServerInstanceOrThrow() throws IllegalStateException{
+        IServer server = getServerInstance();
         checks.checkState(server == null, "服务器未启动");
         return server;
     }

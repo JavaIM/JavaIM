@@ -18,6 +18,7 @@ package org.yuezhikong.Server;
 
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
+import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.utils.Logger;
 
@@ -27,7 +28,12 @@ import java.util.concurrent.ExecutorService;
 /**
  * 此类被设计为仅供插件跨版本调用使用，请最好不要新增实现
  */
-public interface IServerMain {
+public interface IServer {
+
+    /**
+     * 获取IO线程池
+     * @return IO线程池
+     */
     @SuppressWarnings("unused")
     ExecutorService getIOThreadPool();
 
@@ -45,8 +51,16 @@ public interface IServerMain {
     @SuppressWarnings("unused")
     boolean RegisterUser(user User);
 
+    /**
+     * 获取聊天处理器
+     * @return 聊天处理器
+     */
     ChatRequest getRequest();
 
+    /**
+     * 获取控制台用户
+     * @return 控制台用户，此用户的操作将被视为为控制台操作
+     */
     user getConsoleUser();
 
     /**
@@ -66,4 +80,20 @@ public interface IServerMain {
      * @return Logger
      */
     Logger getLogger();
+
+    /**
+     * 获取网络层服务器
+     */
+    NetworkServer getNetwork();
+
+    /**
+     * 关闭服务器
+     */
+    void stop();
+
+    /**
+     * 用户接收到消息处理
+     * 警告，请最好不要使用此方法来模拟用户的消息，此方法设计仅用作网络层调用
+     */
+    void onReceiveMessage(user user, String message);
 }

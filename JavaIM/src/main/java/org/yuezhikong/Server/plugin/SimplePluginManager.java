@@ -18,7 +18,7 @@ package org.yuezhikong.Server.plugin;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.Server.IServerMain;
+import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.Plugin.Plugin;
 import org.yuezhikong.Server.plugin.Plugin.PluginData;
@@ -39,8 +39,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class SimplePluginManager implements PluginManager{
     
-    private final IServerMain serverInstance;
-    public SimplePluginManager(IServerMain ServerInstance) { serverInstance = ServerInstance; }
+    private final IServer serverInstance;
+    public SimplePluginManager(IServer ServerInstance) {
+        try {
+            Class.forName(new Throwable().getStackTrace()[1].getClassName()).asSubclass(IServer.class);
+        } catch (ClassCastException | ClassNotFoundException e)
+        {
+            throw new UnsupportedOperationException("only Server can create Plugin Manager!");
+        }
+        serverInstance = ServerInstance;
+    }
     private final List<Plugin> pluginList = new CopyOnWriteArrayList<>();
     private final List<PluginData> pluginDataList = new CopyOnWriteArrayList<>();
     @Override
@@ -373,6 +381,7 @@ public class SimplePluginManager implements PluginManager{
                         " by "+methodData.pluginData().getStaticData().PluginAuthor()+
                         "的事件处理程序");
             } catch (InvocationTargetException e) {
+
                 SaveStackTrace.saveStackTrace(e);
                 serverInstance.getLogger().error("插件 "+methodData.pluginData().getStaticData().PluginName()+
                         "v"+methodData.pluginData().getStaticData().PluginVersion()+

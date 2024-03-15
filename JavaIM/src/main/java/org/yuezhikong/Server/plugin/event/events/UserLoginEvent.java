@@ -16,4 +16,8 @@
  */
 package org.yuezhikong.Server.plugin.event.events;
 
+/**
+ * 用户登录事件
+ * @param UserName 用户名
+ */
 public record UserLoginEvent(String UserName) implements Event {}

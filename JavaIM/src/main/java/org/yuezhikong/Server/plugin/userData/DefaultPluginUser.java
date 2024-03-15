@@ -23,7 +23,7 @@ public abstract class DefaultPluginUser implements PluginUser{
     }
 
     @Override
-    public boolean isUserLogined() {
+    public boolean isUserLogged() {
         return authentication.isLogin();
     }
 
@@ -35,7 +35,7 @@ public abstract class DefaultPluginUser implements PluginUser{
         Disconnected = true;
         if (authentication != null)
             authentication.DoLogout();
-        if (!isUserLogined())
+        if (!isUserLogged())
         {
             ServerTools.getServerInstanceOrThrow().getLogger().info("一个客户端已经断开连接");
         }

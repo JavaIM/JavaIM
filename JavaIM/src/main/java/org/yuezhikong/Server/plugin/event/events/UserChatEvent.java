@@ -2,7 +2,9 @@ package org.yuezhikong.Server.plugin.event.events;
 
 import org.yuezhikong.Server.UserData.user;
 
-@SuppressWarnings("unused")
+/**
+ * 用户聊天事件
+ */
 public class UserChatEvent implements Event{
     private boolean Cancel = false;
     private final user UserData;

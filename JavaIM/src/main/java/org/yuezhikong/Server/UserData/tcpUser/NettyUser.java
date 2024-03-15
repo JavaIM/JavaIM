@@ -4,7 +4,7 @@ import cn.hutool.crypto.symmetric.AES;
 import io.netty.channel.Channel;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.Server.NettyServer;
+import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.Server.UserData.Permission;
@@ -41,11 +41,6 @@ public class NettyUser implements INettyUser
         return aes;
     }
 
-    @Override
-    public int getClientID() {
-        return id;
-    }
-
     private IUserAuthentication authentication;
     @Override
     public String getUserName() {
@@ -63,7 +58,7 @@ public class NettyUser implements INettyUser
     }
 
     @Override
-    public boolean isUserLogined() {
+    public boolean isUserLogged() {
         if (isServer())
         {
             //服务端虚拟用户特别处理
@@ -82,7 +77,7 @@ public class NettyUser implements INettyUser
             getChannel().close();
         if (authentication != null)
             authentication.DoLogout();
-        if (!isUserLogined())
+        if (!isUserLogged())
         {
             ServerTools.getServerInstanceOrThrow().getLogger().info("客户端:"+getChannel().remoteAddress()+"已经断开连接");
         }
@@ -139,12 +134,12 @@ public class NettyUser implements INettyUser
     }
 
     private final Channel ConnectChannel;
-    private final NettyServer network;
+    private final NettyServer_OLD network;
 
     private final int id;
-    public NettyUser(Channel channel, NettyServer network, int ClientID) { ConnectChannel = channel; this.network = network; id = ClientID; }
+    public NettyUser(Channel channel, NettyServer_OLD network, int ClientID) { ConnectChannel = channel; this.network = network; id = ClientID; }
 
-    public NettyUser(boolean ServerSpicialUserStatus, NettyServer network) { server = ServerSpicialUserStatus; ConnectChannel = null; this.network = network; id = 0; }
+    public NettyUser(boolean ServerSpicialUserStatus, NettyServer_OLD network) { server = ServerSpicialUserStatus; ConnectChannel = null; this.network = network; id = 0; }
 
     @Override
     public Channel getChannel() {

@@ -18,31 +18,10 @@ package org.yuezhikong.utils;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
-import org.jetbrains.annotations.Contract;
-
-import java.io.PrintStream;
 
 //import java.util.logging.Level;
 
 public class Logger {
-    static {
-        //初始化System.out
-        Out = System.out;
-    }
-    private static final PrintStream Out;
-
-    /**
-     * 获取原始Java标注输出流
-     * @deprecated 插件等应当尽可能的使用Log4j2 Logger，而非使用System.out!
-     * @see System#out
-     * @return 标准输出流
-     */
-    @Deprecated
-    @SuppressWarnings("unused")
-    @Contract(pure = true)
-    public static PrintStream getStdOut() {
-        return Out;
-    }
 
     public static final org.apache.logging.log4j.Logger logger_root = LogManager.getLogger(Logger.class.getName());//配置文件没配置Log的class名字，所以用默认的Root
     private final boolean isStdOutRedistribution;
@@ -58,50 +37,88 @@ public class Logger {
     {
         this(false);
     }
+
+    /**
+     * 调用web管理页面的日志输出
+     * @param msg 消息
+     * @param isChatMessage 是否为聊天消息
+     */
     private void WebLoggerRequest(String msg, boolean isChatMessage)
     {
         //TODO 此处为对于web管理页面的预留，暂时不使用，作为后续进行扩展的接口
     }
 
     //Logger包装
+
+    /**
+     * 输出普通消息
+     * @param msg 消息
+     * @param params 参数
+     */
     public void info(String msg, Object... params)
     {
-        WebLoggerRequest("[info] "+msg, false);
+        WebLoggerRequest("[普通] "+msg, false);
         logger_root.info(msg,params);
     }
+
+    /**
+     * 输出普通消息
+     * @param msg 消息
+     */
     public void info(String msg)
     {
         String Message = msg;
         if (isStdOutRedistribution)
         {
-            Message = "[stdout] "+msg;
+            Message = "[STDOUT] "+msg;
         }
-        WebLoggerRequest("[info] " + Message, false);
+        WebLoggerRequest("[普通] " + Message, false);
         logger_root.info(Message);
     }
+
+    /**
+     * 输出错误消息
+     * @param msg 消息
+     */
     public void error(String msg)
     {
         String Message = msg;
         if (isStdOutRedistribution)
         {
-            Message = "[stderr] "+msg;
+            Message = "[STDERR] "+msg;
         }
-        WebLoggerRequest("[error] " + Message, false);
+        WebLoggerRequest("[错误] " + Message, false);
         logger_root.error(Message);
     }
+
+    /**
+     * 输出聊天消息
+     * @param msg 消息
+     */
     public void ChatMsg(String msg)
     {
-        WebLoggerRequest(msg, true);
+        WebLoggerRequest("[聊天消息] "+msg, true);
         logger_root.info(msg);
     }
+
+    /**
+     * 输出日志
+     * @param level 消息等级
+     * @param msg 消息
+     */
     public void log(Level level, String msg)
     {
-        WebLoggerRequest(msg,false);
+        WebLoggerRequest("[特殊日志] "+msg,false);
         logger_root.log(level,msg);
     }
+
+    /**
+     * 输出警告消息
+     * @param msg 消息
+     */
     public void warning(String msg)
     {
-        WebLoggerRequest("[warning] "+msg, false);
+        WebLoggerRequest("[警告] "+msg, false);
         logger_root.warn(msg);
     }
 }

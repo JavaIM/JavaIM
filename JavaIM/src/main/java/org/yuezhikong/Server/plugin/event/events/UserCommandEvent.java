@@ -3,7 +3,9 @@ package org.yuezhikong.Server.plugin.event.events;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.CustomVar;
 
-@SuppressWarnings("unused")
+/**
+ * 用户使用命令事件
+ */
 public class UserCommandEvent implements Event{
     private boolean Cancel = false;
     private final user UserData;

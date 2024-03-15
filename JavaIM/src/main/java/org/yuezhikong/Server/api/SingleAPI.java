@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.Server.IServerMain;
+import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.CustomVar;
@@ -38,14 +38,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SingleAPI implements api{
-    private final IServerMain ServerInstance;
+    private final IServer ServerInstance;
 
     /**
      * 初始化服务端API
      * @param serverInstance 服务端实例
      */
-    public SingleAPI(IServerMain serverInstance)
+    public SingleAPI(IServer serverInstance)
     {
+        try {
+            Class.forName(new Throwable().getStackTrace()[1].getClassName()).asSubclass(IServer.class);
+        } catch (ClassCastException | ClassNotFoundException e)
+        {
+            throw new UnsupportedOperationException("only Server can create Server API!");
+        }
         ServerInstance = serverInstance;
     }
     /**
@@ -129,7 +135,7 @@ public class SingleAPI implements api{
             ((PluginUser) User).WriteData(InputData);
             return;
         }
-        throw new RuntimeException("Not Support!");
+        throw new UnsupportedOperationException("User type Not Support!");
     }
 
     /**
@@ -164,7 +170,7 @@ public class SingleAPI implements api{
         {
             if (User == null)
                 continue;
-            if (CheckLoginStatus && !User.isUserLogined())
+            if (CheckLoginStatus && !User.isUserLogged())
                 continue;
             if (User.isServer())
                 continue;

@@ -1,7 +1,7 @@
 package org.yuezhikong.Server.api;
 
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.Server.NettyServer;
+import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.Server.UserData.tcpUser.NettyUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
@@ -20,7 +20,7 @@ public class NettyAPI extends SingleAPI{
         {
             if (User == null)
                 continue;
-            if (CheckLoginStatus && !User.isUserLogined())
+            if (CheckLoginStatus && !User.isUserLogged())
                 continue;
             if (User instanceof NettyUser nettyUser && nettyUser.getChannel() == null)
                 continue;
@@ -55,6 +55,6 @@ public class NettyAPI extends SingleAPI{
         }
     }
 
-    private final NettyServer network;
-    public NettyAPI(NettyServer instance) { super(instance); network = instance; }
+    private final NettyServer_OLD network;
+    public NettyAPI(NettyServer_OLD instance) { super(instance); network = instance; }
 }

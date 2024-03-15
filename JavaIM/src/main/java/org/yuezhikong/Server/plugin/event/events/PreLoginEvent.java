@@ -16,20 +16,34 @@
  */
 package org.yuezhikong.Server.plugin.event.events;
 
-@SuppressWarnings("unused")
+/**
+ * 用户尝试登录事件
+ */
 public class PreLoginEvent implements Event {
     private boolean Cancel = false;
     private final String UserName;
     private final boolean TokenLogin;
 
+    /**
+     * 是否已经阻止了登录
+     * @return 是/否
+     */
     public boolean isCancel() {
         return Cancel;
     }
 
+    /**
+     * 获取用户名
+     * @return 用户名
+     */
     public String getUserName() {
         return UserName;
     }
 
+    /**
+     * 设置是否阻止登录
+     * @param cancel 阻止/不阻止
+     */
     public void setCancel(boolean cancel) {
         Cancel = cancel;
     }
@@ -40,6 +54,10 @@ public class PreLoginEvent implements Event {
         this.TokenLogin = TokenLogin;
     }
 
+    /**
+     * 是否通过token进行免密登录
+     * @return 是/否
+     */
     public boolean isTokenLogin() {
         return TokenLogin;
     }

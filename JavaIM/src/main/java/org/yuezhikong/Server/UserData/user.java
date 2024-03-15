@@ -6,13 +6,6 @@ import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
 public interface user {
 
     /**
-     * 获取客户端ID
-     * @return 客户端ID
-     * @apiNote 客户端ID每次重新连入均会更改，建议使用用户名
-     */
-    int getClientID();
-
-    /**
      * 获取用户名
      * @return 用户名
      */
@@ -29,7 +22,7 @@ public interface user {
      * 获取用户登录状态
      * @return {@code true} 已登录, {@code false} 未登录
      */
-    boolean isUserLogined();
+    boolean isUserLogged();
 
     /**
      * 使用户离线（踢出用户）

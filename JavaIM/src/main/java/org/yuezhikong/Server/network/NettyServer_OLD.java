@@ -14,7 +14,7 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.yuezhikong.Server;
+package org.yuezhikong.Server.network;
 
 import cn.hutool.crypto.CryptoException;
 import cn.hutool.crypto.symmetric.AES;
@@ -37,6 +37,8 @@ import org.apache.commons.codec.binary.Base64;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.GeneralMethod;
+import org.yuezhikong.Server.ChatRequest;
+import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.Server.UserData.tcpUser.NettyUser;
@@ -65,16 +67,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class NettyServer extends GeneralMethod implements IServerMain{
+public final class NettyServer_OLD extends GeneralMethod implements IServer {
     static {
-        nettyNetwork = new NettyServer();
+        nettyNetwork = new NettyServer_OLD();
     }
-    private static NettyServer nettyNetwork;
+    private static NettyServer_OLD nettyNetwork;
     private ExecutorService UserRequestThreadPool;
-    private NettyServer() {
+    private NettyServer_OLD() {
     }
 
-    public static NettyServer getNettyNetwork() {
+    public static NettyServer_OLD getNettyNetwork() {
         return nettyNetwork;
     }
 
@@ -148,95 +150,96 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
      */
     public void StartChatRoomServerForNetty(int bindPort,String ServerPrivateKey)
     {
-        checks.checkArgument(bindPort < 1 || bindPort > 65535, "The Port is not in the range of [0,65535]!");
-        checks.checkArgument(ServerPrivateKey == null || ServerPrivateKey.isEmpty(), "The Server Private Key is null or Empty!");
-        this.ServerPrivateKey = ServerPrivateKey;
-        UserRequestThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-            @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "UserRequestDispose ThreadGroup"),
-                        r,"UserRequestDispose Thread #"+threadNumber.getAndIncrement());
-            }
-        });
-
-        pluginManager = new SimplePluginManager(this);
-
-        serverAPI = new NettyAPI(this);
-
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1, new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-            @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(IOThreadGroup,
-                        r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
-            }
-        });
-        EventLoopGroup workerGroup = new NioEventLoopGroup(new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-            @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(IOThreadGroup,
-                        r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
-            }
-        });
-
-        DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup((new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-            @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
-                        r,"Recv Message Thread #"+threadNumber.getAndIncrement());
-            }
-        }));
-        try {
-            ServerBootstrap bootstrap = new ServerBootstrap();
-            bootstrap.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .handler(new LoggingHandler(LogLevel.DEBUG))
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        public void initChannel(SocketChannel channel) {
-                            ChannelPipeline pipeline = channel.pipeline();
-                            pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));//IO
-                            pipeline.addLast(new StringEncoder(StandardCharsets.UTF_8));
-                            pipeline.addLast(new LineBasedFrameDecoder(100000000));
-                            pipeline.addLast(new ServerInDecoder());
-                            pipeline.addLast(new ServerOutEncoder());
-
-                            pipeline.addLast(RecvMessageThreadPool,new ServerInHandler());//JavaIM逻辑
-                        }
-                    });
-
-            future = bootstrap.bind(bindPort).sync();
-
-            UserRequestThreadPool.execute(() -> {
-                while (true)
-                {
-                    Scanner scanner = new Scanner(System.in);
-                    String input = scanner.nextLine();
-                    if (input.startsWith("/"))
-                        ServerCommandSend(input);
-                    else
-                        ServerChatMessageSend(input);
-                }
-            });
-            pluginManager.LoadPluginOnDirectory(new File("./plugins"));
-            logger.info("服务器启动完成");
-            future.channel().closeFuture().sync();
-        } catch (InterruptedException e) {
-            SaveStackTrace.saveStackTrace(e);
-        } finally {
-            RecvMessageThreadPool.shutdownGracefully();
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
-            try {
-                pluginManager.UnLoadAllPlugin();
-            } catch (IOException ignored) {}
-            IOThreadPool.shutdownNow();
-            UserRequestThreadPool.shutdownNow();
-
-        }
+        throw new IllegalStateException("已弃用");
+//        checks.checkArgument(bindPort < 1 || bindPort > 65535, "The Port is not in the range of [0,65535]!");
+//        checks.checkArgument(ServerPrivateKey == null || ServerPrivateKey.isEmpty(), "The Server Private Key is null or Empty!");
+//        this.ServerPrivateKey = ServerPrivateKey;
+//        UserRequestThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+//            private final AtomicInteger threadNumber = new AtomicInteger(1);
+//            @Override
+//            public Thread newThread(@NotNull Runnable r) {
+//                return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "UserRequestDispose ThreadGroup"),
+//                        r,"UserRequestDispose Thread #"+threadNumber.getAndIncrement());
+//            }
+//        });
+//
+//        pluginManager = new SimplePluginManager(this);
+//
+//        serverAPI = new NettyAPI(this);
+//
+//        EventLoopGroup bossGroup = new NioEventLoopGroup(1, new ThreadFactory() {
+//            private final AtomicInteger threadNumber = new AtomicInteger(1);
+//            @Override
+//            public Thread newThread(@NotNull Runnable r) {
+//                return new Thread(IOThreadGroup,
+//                        r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
+//            }
+//        });
+//        EventLoopGroup workerGroup = new NioEventLoopGroup(new ThreadFactory() {
+//            private final AtomicInteger threadNumber = new AtomicInteger(1);
+//            @Override
+//            public Thread newThread(@NotNull Runnable r) {
+//                return new Thread(IOThreadGroup,
+//                        r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
+//            }
+//        });
+//
+//        DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup((new ThreadFactory() {
+//            private final AtomicInteger threadNumber = new AtomicInteger(1);
+//            @Override
+//            public Thread newThread(@NotNull Runnable r) {
+//                return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
+//                        r,"Recv Message Thread #"+threadNumber.getAndIncrement());
+//            }
+//        }));
+//        try {
+//            ServerBootstrap bootstrap = new ServerBootstrap();
+//            bootstrap.group(bossGroup, workerGroup)
+//                    .channel(NioServerSocketChannel.class)
+//                    .handler(new LoggingHandler(LogLevel.DEBUG))
+//                    .childHandler(new ChannelInitializer<SocketChannel>() {
+//                        @Override
+//                        public void initChannel(SocketChannel channel) {
+//                            ChannelPipeline pipeline = channel.pipeline();
+//                            pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));//IO
+//                            pipeline.addLast(new StringEncoder(StandardCharsets.UTF_8));
+//                            pipeline.addLast(new LineBasedFrameDecoder(100000000));
+//                            pipeline.addLast(new ServerInDecoder());
+//                            pipeline.addLast(new ServerOutEncoder());
+//
+//                            pipeline.addLast(RecvMessageThreadPool,new ServerInHandler());//JavaIM逻辑
+//                        }
+//                    });
+//
+//            future = bootstrap.bind(bindPort).sync();
+//
+//            UserRequestThreadPool.execute(() -> {
+//                while (true)
+//                {
+//                    Scanner scanner = new Scanner(System.in);
+//                    String input = scanner.nextLine();
+//                    if (input.startsWith("/"))
+//                        ServerCommandSend(input);
+//                    else
+//                        ServerChatMessageSend(input);
+//                }
+//            });
+//            pluginManager.LoadPluginOnDirectory(new File("./plugins"));
+//            logger.info("服务器启动完成");
+//            future.channel().closeFuture().sync();
+//        } catch (InterruptedException e) {
+//            SaveStackTrace.saveStackTrace(e);
+//        } finally {
+//            RecvMessageThreadPool.shutdownGracefully();
+//            bossGroup.shutdownGracefully();
+//            workerGroup.shutdownGracefully();
+//            try {
+//                pluginManager.UnLoadAllPlugin();
+//            } catch (IOException ignored) {}
+//            IOThreadPool.shutdownNow();
+//            UserRequestThreadPool.shutdownNow();
+//
+//        }
     }
 
     public void StopNettyChatRoom()
@@ -248,7 +251,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
             pluginManager.UnLoadAllPlugin();
         } catch (IOException ignored) {}
         UserRequestThreadPool.shutdownNow();
-        nettyNetwork = new NettyServer();
+        nettyNetwork = new NettyServer_OLD();
     }
     private final List<IUserAuthentication.UserRecall> LoginRecall = new ArrayList<>();
     private final List<IUserAuthentication.UserRecall> DisconnectRecall = new ArrayList<>();
@@ -364,6 +367,16 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
         return logger;
     }
 
+    @Override
+    public NetworkServer getNetwork() {
+        return null;
+    }
+
+    @Override
+    public void stop() {
+
+    }
+
     /**
      * 客户端加密模式
      */
@@ -408,7 +421,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
                 {
                     //登录协议
                     LoginProtocol loginProtocol = gson.fromJson(msg, LoginProtocol.class);
-                    if (status.bindUser == null || status.bindUser.isUserLogined())
+                    if (status.bindUser == null || status.bindUser.isUserLogged())
                     {
                         ctx.writeAndFlush("The User Login is disabled on this time");
                         return;
@@ -445,7 +458,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
                 case "ChangePassword" -> {
                     if (status.bindUser == null ||
                             status.bindUser.getUserAuthentication() == null ||
-                            !status.bindUser.isUserLogined()
+                            !status.bindUser.isUserLogged()
                     )
                     {
                         ctx.writeAndFlush("Invalid Mode! The ChangePassword Mode is disabled on this time.");
@@ -456,7 +469,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
                 case "Chat" -> {
                     if (status.bindUser == null ||
                             status.bindUser.getUserAuthentication() == null ||
-                            !status.bindUser.isUserLogined()
+                            !status.bindUser.isUserLogged()
                     )
                     {
                         ctx.writeAndFlush("Invalid Mode! The Chat Mode is disabled on this time.");
@@ -479,7 +492,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
                     tcpUser bindUser;
                     if (status.bindUser == null)
                     {
-                        bindUser = new NettyUser(ctx.channel(), NettyServer.this,users.size() + 1);
+                        bindUser = new NettyUser(ctx.channel(), NettyServer_OLD.this,users.size() + 1);
                         users.add(bindUser);
                         bindUser.setUserAuthentication(new UserAuthentication(bindUser,IOThreadPool,pluginManager,serverAPI));
                         bindUser.addLoginRecall(User -> {
@@ -570,7 +583,7 @@ public final class NettyServer extends GeneralMethod implements IServerMain{
                 case "Leave" -> {
                     if (status.bindUser != null
                             && status.bindUser.getUserAuthentication() != null
-                            && status.bindUser.isUserLogined()) {
+                            && status.bindUser.isUserLogged()) {
                         logger.info("用户:" +
                                 status.bindUser.getUserName() + "("+ctx.channel().remoteAddress()+") 正在请求离线...");
                         ctx.channel().close();

@@ -22,6 +22,7 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
+import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.Server.plugin.Plugin.PluginData;
 import org.yuezhikong.Server.plugin.event.events.UserChatEvent;
 import org.yuezhikong.Server.plugin.event.events.UserCommandEvent;
@@ -312,8 +313,8 @@ public class ChatRequest {
                         for (user User : instance.getUsers()) {
                             User.UserDisconnect();
                         }
-                        if (instance instanceof NettyServer)
-                            ((NettyServer) instance).StopNettyChatRoom();
+                        if (instance instanceof NettyServer_OLD)
+                            ((NettyServer_OLD) instance).StopNettyChatRoom();
                         else
                             System.exit(0);
                     }
@@ -440,8 +441,8 @@ public class ChatRequest {
         return false;
     }
 
-    private final IServerMain instance;
-    public ChatRequest(IServerMain serverInstance)
+    private final IServer instance;
+    public ChatRequest(IServer serverInstance)
     {
         instance = serverInstance;
         formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
