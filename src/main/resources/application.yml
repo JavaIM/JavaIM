@@ -19,8 +19,11 @@ spring:
       suffix: .html
   # thymeleaf模板引擎配置，设置编码，false取消缓存
   thymeleaf:
+    mode: HTML
     encoding: UTF-8
     cache: false
+    prefix: classpath:/templates/
+    suffix: .html
 server:
   # 修改启动端口号
   port: 8081
