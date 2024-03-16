@@ -1,0 +1,30 @@
+spring:
+  # 数据源，连接MySQL数据库
+  datasource:
+    url: jdbc:mysql://localhost:3306/user?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true
+    username: 数据库用户名
+    password: 数据库密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  # JPA配置，打印sql语句
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  # mvc配置，映射html页面
+  mvc:
+    static-path-pattern: /**
+    view:
+      prefix: /
+      suffix: .html
+  # thymeleaf模板引擎配置，设置编码，false取消缓存
+  thymeleaf:
+    encoding: UTF-8
+    cache: false
+server:
+  # 修改启动端口号
+  port: 8081
+  # 静态资源映射路径
+  web:
+    resources:
+      static-locations: classpath:/static/
