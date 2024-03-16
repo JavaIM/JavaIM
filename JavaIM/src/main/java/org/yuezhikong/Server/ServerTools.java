@@ -1,6 +1,5 @@
 package org.yuezhikong.Server;
 
-import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.utils.checks;
 
 @SuppressWarnings("unused")
@@ -16,10 +15,7 @@ public class ServerTools {
      */
     public static IServer getServerInstance()
     {
-        if (NettyServer_OLD.getNettyNetwork().ServerStartStatus())
-            return NettyServer_OLD.getNettyNetwork();
-        else
-            return null;
+        return Server.getInstance();
     }
 
     /**

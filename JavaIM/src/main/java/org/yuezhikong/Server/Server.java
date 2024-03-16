@@ -97,6 +97,19 @@ public class Server implements IServer {
      */
     public Server(NetworkServer networkServer) {
         this.networkServer = networkServer;
+        if (Instance != null)
+        {
+            throw new RuntimeException("JavaIM Server is Already running!");
+        }
+    }
+
+    private static Server Instance;
+    /**
+     * 获取JavaIM服务端实例
+     * @return JavaIM服务端实例
+     */
+    public static Server getInstance() {
+        return Instance;
     }
 
     @Override
@@ -106,6 +119,7 @@ public class Server implements IServer {
 
     @Override
     public void stop() {
+        logger.info("JavaIM服务器正在关闭...");
         users.clear();
         pluginManager.callEvent(new ServerStopEvent());
         try {
@@ -114,6 +128,8 @@ public class Server implements IServer {
         userMessageRequestThreadPool.shutdown();
         System.gc();
         getNetwork().stop();
+        Instance = null;
+        logger.info("JavaIM服务器已关闭");
     }
 
     @Override
