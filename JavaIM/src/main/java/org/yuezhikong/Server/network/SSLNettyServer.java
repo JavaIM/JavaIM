@@ -2,6 +2,19 @@ package org.yuezhikong.Server.network;
 
 import cn.hutool.crypto.KeyUtil;
 import cn.hutool.crypto.SecureUtil;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -11,14 +24,18 @@ import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
 
+import javax.net.ssl.SSLException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,18 +52,92 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SSLNettyServer implements NetworkServer {
 
     private final List<NetworkClient> clientList = new ArrayList<>();
     private PrivateKey ServerSSLPrivateKey;
-    private Certificate ServerSSLCertificate;
+    private X509Certificate ServerSSLCertificate;
     private final Logger logger = Logger.getInstance();
+
+    private ChannelFuture future;
+
+    private boolean isRunning = false;
     @Override
     public void start(int ListenPort) throws IllegalStateException {
+        if (isRunning)
+            throw new IllegalStateException("The Server is already running!");
+        isRunning = true;
         checks.checkArgument(ListenPort < 1 || ListenPort > 65535, "The Port is not in the range of [0,65535]!");
         X509CertificateGenerate();
+        ThreadGroup IOThreadGroup = new ThreadGroup("Netty IO Thread");
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1, new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(IOThreadGroup,
+                        r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
+            }
+        });
+        EventLoopGroup workerGroup = new NioEventLoopGroup(new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(IOThreadGroup,
+                        r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
+            }
+        });
+        DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup((new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
+                        r,"Recv Message Thread #"+threadNumber.getAndIncrement());
+            }
+        }));
 
+        try {
+            ServerBootstrap bootstrap = new ServerBootstrap();
+            bootstrap.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .handler(new LoggingHandler(LogLevel.DEBUG))
+                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                        @Override
+                        public void initChannel(SocketChannel channel) {
+                            ChannelPipeline pipeline = channel.pipeline();
+                            try {
+                                pipeline.addLast(
+                                        SslContextBuilder.forServer(ServerSSLPrivateKey,ServerSSLCertificate)
+                                                .sslProvider(SslProvider.JDK)
+                                                .clientAuth(ClientAuth.NONE)
+                                                .build()
+                                                .newHandler(channel.alloc())
+                                );
+                            } catch (SSLException e) {
+                                throw new RuntimeException("SSL Context Generate Failed!",e);
+                            }
+                            pipeline.addLast(new LineBasedFrameDecoder(100000000));
+                            pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));//IO
+                            pipeline.addLast(new StringEncoder(StandardCharsets.UTF_8));
+
+                            pipeline.addLast(RecvMessageThreadPool,new ServerInHandler());//JavaIM逻辑
+                        }
+                    });
+
+            future = bootstrap.bind(ListenPort).sync();
+
+            logger.info("网络层启动完成");
+            future.channel().closeFuture().sync();
+        } catch (InterruptedException e) {
+            SaveStackTrace.saveStackTrace(e);
+        } finally {
+
+            RecvMessageThreadPool.shutdownGracefully();
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+        }
     }
 
     private void X509CertificateGenerate()
@@ -149,19 +240,21 @@ public class SSLNettyServer implements NetworkServer {
             throw new RuntimeException("Generate Content Signer Failed!",e);
         }
         try {
-            ServerSSLCertificate = new X509v3CertificateBuilder(
-                    caCert.getSubject(),//证书签发者
-                    BigInteger.valueOf(currentTimeMillis),//证书序列号
-                    new Date(currentTimeMillis),//证书生效时间
-                    new Date(currentTimeMillis + (long) 365*24*60*60*1000),//证书失效时间
-                    subject,//证书主体
-                    SubjectPublicKeyInfo.getInstance(publicKey.getEncoded())//证书主体公钥
-            )
-                    .addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment))
-                    .addExtension(Extension.extendedKeyUsage, false, new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth}))
-                    .addExtension(Extension.basicConstraints, true, new BasicConstraints(false))
-                    .build(signer).toASN1Structure();
-        } catch (CertIOException e) {
+            ServerSSLCertificate = new JcaX509CertificateConverter().getCertificate(
+                    new X509v3CertificateBuilder(
+                            caCert.getSubject(),//证书签发者
+                            BigInteger.valueOf(currentTimeMillis),//证书序列号
+                            new Date(currentTimeMillis),//证书生效时间
+                            new Date(currentTimeMillis + (long) 365*24*60*60*1000),//证书失效时间
+                            subject,//证书主体
+                            SubjectPublicKeyInfo.getInstance(publicKey.getEncoded())//证书主体公钥
+                    )
+                            .addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment))
+                            .addExtension(Extension.extendedKeyUsage, false, new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth}))
+                            .addExtension(Extension.basicConstraints, true, new BasicConstraints(false))
+                            .build(signer)
+            );
+        } catch (CertIOException | CertificateException e) {
             throw new RuntimeException("Generate SSL Cert Failed!",e);
         }
     }
@@ -191,16 +284,24 @@ public class SSLNettyServer implements NetworkServer {
 
     @Override
     public boolean isRunning() {
-        return false;
+        return isRunning;
     }
 
     @Override
     public void stop() throws IllegalStateException {
-
+        if (!isRunning()) {
+            throw new IllegalStateException("Server is not running");
+        }
+        logger.info("Server is stopping...");
+        future.channel().close();
+        logger.info("Server stopped");
     }
 
     @Override
     public ExecutorService getIOThreadPool() {
         return null;
+    }
+
+    private class ServerInHandler extends ChannelInboundHandlerAdapter {
     }
 }
