@@ -17,6 +17,7 @@
 package org.yuezhikong;
 
 import org.apache.commons.io.FileUtils;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.Server.network.NettyServer_OLD;
@@ -29,12 +30,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.security.Security;
 import java.util.Scanner;
 
 import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Main {
-    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger();
+    private static final org.yuezhikong.utils.Logger logger = Logger.getInstance();
 
     public static void CreateServerProperties(){
         ConfigFileManager prop = new ConfigFileManager();
@@ -286,6 +288,8 @@ public class Main {
         }
         //命令行参数处理
         ConsoleCommandRequest.Request(true,args);
+        //初始化BouncyCastle，设置为JCE Provider
+        Security.addProvider(new BouncyCastleProvider());
         //启动JavaIM启动逻辑
         ConsoleMain();
     }

@@ -42,6 +42,7 @@ public interface NetworkServer {
      * 启动服务器
      * @param ListenPort 监听端口
      * @throws IllegalStateException 服务器已经启动
+     * @apiNote 堵塞函数
      */
     void start(int ListenPort) throws IllegalStateException;
 

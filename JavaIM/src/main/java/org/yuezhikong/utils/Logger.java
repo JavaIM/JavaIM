@@ -33,17 +33,32 @@ public class Logger {
     {
         this.isStdOutRedistribution = isStdOutRedistribution;
     }
-    public Logger()
+
+    private static Logger Instance;
+    /**
+     * 获取Logger实例
+     * @return Logger实例
+     */
+    public synchronized static Logger getInstance()
+    {
+        if (Instance == null)
+            new Logger();
+        return Instance;
+    }
+    private Logger()
     {
         this(false);
+        Instance = this;
     }
+
+
 
     /**
      * 调用web管理页面的日志输出
      * @param msg 消息
      * @param isChatMessage 是否为聊天消息
      */
-    private void WebLoggerRequest(String msg, boolean isChatMessage)
+    private static void WebLoggerRequest(String msg, boolean isChatMessage)
     {
         //TODO 此处为对于web管理页面的预留，暂时不使用，作为后续进行扩展的接口
     }
