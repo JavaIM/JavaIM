@@ -299,7 +299,7 @@ public final class NettyServer_OLD extends GeneralMethod implements IServer {
     private final ChatRequest request = new ChatRequest(this);
 
     private final List<user> users = new ArrayList<>();
-    private Logger logger = new Logger();
+    private Logger logger = Logger.getInstance();
 
     public void setLogger(Logger logger) {
         this.logger = logger;

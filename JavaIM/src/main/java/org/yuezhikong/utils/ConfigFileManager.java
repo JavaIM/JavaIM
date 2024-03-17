@@ -33,6 +33,8 @@ public class ConfigFileManager {
             sprop.setProperty("MySQLDataBaseName", "JavaIM");
             sprop.setProperty("MySQLDataBaseUser", "JavaIM");
             sprop.setProperty("MySQLDataBasePasswd", "JavaIM");
+            sprop.setProperty("Server-Name", "A JavaIM Server");
+
             sprop.store(new FileOutputStream("server.properties"), null);
         } catch (IOException ex) {
             SaveStackTrace.saveStackTrace(ex);

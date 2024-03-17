@@ -45,6 +45,9 @@ public final class CodeDynamicConfig {
     //仅服务端
     //最大客户端数量，输入-1代表禁用
     public static int MAX_CLIENT = Integer.parseInt(LoadServerProperties().getProperty("MAX_CLIENT"));
+
+    //服务器名
+    public static String ServerName = LoadServerProperties().getProperty("Server-Name","A JavaIM Server");
     //是否使用SQLITE
     public static boolean Use_SQLITE_Mode = Boolean.parseBoolean(LoadServerProperties().getProperty("Use_SQLITE_Mode"));
     //MySQL数据库地址
@@ -73,12 +76,6 @@ public final class CodeDynamicConfig {
     public static String GetMySQLDataBaseUser() { return MySQLDataBaseUser; }
     public static String GetMySQLDataBasePasswd() { return MySQLDataBasePasswd; }
 
-    public static int getMaxClient() { return MAX_CLIENT; }
-    public static boolean GetDebugMode() { return Debug_Mode; }
-    public static boolean isThisVersionIsExpVersion() {
-        return ThisVersionIsExpVersion;
-    }
-
     public static String getVersion() {
         return Version;
     }
@@ -86,15 +83,6 @@ public final class CodeDynamicConfig {
     public static int getProtocolVersion() {
         return ProtocolVersion;
     }
-
-    public static String getExpVersionText() {
-        return ExpVersionText;
-    }
-
-    public static boolean isGUIMode() {
-        return GUIMode;
-    }
-
 
     /**
      * Static Config不得被实例化

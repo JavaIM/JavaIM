@@ -86,7 +86,7 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
             channel.close();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                Logger logger = new Logger();
+                Logger logger = Logger.getInstance();
                 Logger.logger_root.fatal("程序已崩溃");
                 Logger.logger_root.fatal("详情请查看错误报告");
                 Logger.logger_root.fatal("位于："+FileName);

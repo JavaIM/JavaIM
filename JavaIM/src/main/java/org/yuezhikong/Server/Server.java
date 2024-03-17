@@ -85,7 +85,7 @@ public class Server implements IServer {
     /**
      * 日志记录器
      */
-    private final Logger logger = new Logger();
+    private final Logger logger = Logger.getInstance();
     /**
      * 网络层服务器
      */
