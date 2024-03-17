@@ -1,6 +1,8 @@
 package org.yuezhikong.Server;
 
+import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
+import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.Server.UserData.ConsoleUser;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
@@ -12,6 +14,8 @@ import org.yuezhikong.Server.plugin.SimplePluginManager;
 import org.yuezhikong.Server.plugin.event.events.ServerStopEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.Protocol.LoginProtocol;
+import org.yuezhikong.utils.Protocol.NormalProtocol;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -134,7 +138,31 @@ public class Server implements IServer {
 
     @Override
     public void onReceiveMessage(tcpUser user, String message) {
-
+        if (user.getUserAuthentication() == null){
+            user.setUserAuthentication(new UserAuthentication(user, getIOThreadPool(), getPluginManager(), getServerAPI()));
+        }
+        Gson gson = new Gson();
+        NormalProtocol protocol;
+        protocol = gson.fromJson(message, NormalProtocol.class);
+        if (protocol.getMessageHead() == null && protocol.getMessageBody() == null){
+            if (user.isUserLogged()){
+                return;
+            }
+            return;
+        }
+        switch (protocol.getMessageHead().getType()){
+            case "Chat" -> {
+                if (user.isUserLogged()){
+                    return;
+                }
+                ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(user, message);
+                if (!request.UserChatRequests(input)){
+                    protocol.getMessageBody().setMessage(input.getChatMessage());
+                    logger.ChatMsg(input.getChatMessage());
+                    serverAPI.SendJsonToClient(user, gson.toJson(protocol));
+                }
+            }
+        }
     }
 
     @Override
