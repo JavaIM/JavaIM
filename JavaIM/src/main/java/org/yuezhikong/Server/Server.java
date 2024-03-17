@@ -169,7 +169,7 @@ public class Server implements IServer {
                 }
                 getServerAPI().ChangeUserPassword(user, protocol.getMessageBody().getMessage());
             }
-            case "RSAEncryption" -> {
+            case "options" -> {
 
             }
         }
