@@ -263,7 +263,7 @@ public class SimplePluginManager implements PluginManager{
             List<File> PluginList = new ArrayList<>();
             for (String s : list) {
                 if (s.toLowerCase(Locale.ROOT).endsWith(".jar")) {
-                    File file1 = new File(Directory.getPath() + "\\" + s);
+                    File file1 = new File(Directory.getPath(),s);
                     PluginList.add(file1);
                 }
             }
