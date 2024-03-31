@@ -8,7 +8,6 @@ import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
-import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.SimplePluginManager;
@@ -35,11 +34,10 @@ public class Server implements IServer {
      * 用户消息处理线程池
      */
     private final ExecutorService userMessageRequestThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
-        private final ThreadGroup IOThreadGroup = new ThreadGroup("UserThreadPool");
         private final AtomicInteger threadNumber = new AtomicInteger(1);
         @Override
         public Thread newThread(@NotNull Runnable r) {
-            return new Thread(IOThreadGroup,
+            return new Thread(new ThreadGroup("UserThreadPool"),
                     r,"Message Request Thread #"+threadNumber.getAndIncrement());
         }
     });
@@ -71,19 +69,12 @@ public class Server implements IServer {
         @Override
         public void SendJsonToClient(@NotNull user User, @NotNull String InputData) {
             if (User instanceof PluginUser)
-            {
                 //如果是插件用户，则直接调用插件用户中的方法
                 ((PluginUser) User).WriteData(InputData);
-                return;
-            }
-            if (User instanceof ConsoleUser)
-            {
+            else if (User instanceof ConsoleUser)
                 logger.info(InputData);
-            }
-            if (User instanceof tcpUser)
-            {
+            else if (User instanceof tcpUser)
                 ((tcpUser) User).getNetworkClient().send(InputData);
-            }
         }
     };
 
@@ -130,7 +121,7 @@ public class Server implements IServer {
         try {
             pluginManager.UnLoadAllPlugin();
         } catch (IOException ignored) {}
-        userMessageRequestThreadPool.shutdown();
+        userMessageRequestThreadPool.shutdownNow();
         System.gc();
         getNetwork().stop();
         Instance = null;
