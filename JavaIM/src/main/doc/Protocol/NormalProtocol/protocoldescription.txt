@@ -10,6 +10,7 @@ MessageBody中的FileLong代表如果是FileTransfer模式，那么文件长度�
 
 新登录逻辑
 Client                                           Server
+         模式Login，内容：NextIsLogin    ->
          Login协议，发送token或用户名密码  ->
          <-模式Login，正常协议，Message:Success（仅token情况下）
          如果发送token且失败

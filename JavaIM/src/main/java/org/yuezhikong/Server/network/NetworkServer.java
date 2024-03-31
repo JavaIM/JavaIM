@@ -1,5 +1,8 @@
 package org.yuezhikong.Server.network;
 
+import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
+
+import java.net.SocketAddress;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -12,13 +15,7 @@ public interface NetworkServer {
          * 获取客户端的IP地址
          * @return IP地址
          */
-        String getClientAddress();
-
-        /**
-         * 获取客户端的端口
-         * @return 端口
-         */
-        int getClientPort();
+        SocketAddress getSocketAddress();
 
         /**
          * 发信给此客户端
@@ -36,6 +33,11 @@ public interface NetworkServer {
          * 断开连接
          */
         void disconnect();
+
+        /**
+         * 获取user
+         */
+        tcpUser getUser();
     }
 
     /**

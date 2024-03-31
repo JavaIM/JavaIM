@@ -168,7 +168,6 @@ public class ChatRequest {
                         for (user user : users) {
                             user.UserDisconnect();
                         }
-                        instance.getUsers().clear();
                         System.gc();
                         instance.getLogger().info("已经完成内存释放，并且踢出了所有用户");
                     }

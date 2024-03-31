@@ -14,11 +14,11 @@ import org.yuezhikong.Server.plugin.SimplePluginManager;
 import org.yuezhikong.Server.plugin.event.events.ServerStopEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.Logger;
-import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -137,7 +137,8 @@ public class Server implements IServer {
     }
 
     @Override
-    public void onReceiveMessage(tcpUser user, String message) {
+    public void onReceiveMessage(NetworkServer.NetworkClient client, String message) {
+        tcpUser user = client.getUser();
         if (user.getUserAuthentication() == null){
             user.setUserAuthentication(new UserAuthentication(user, getIOThreadPool(), getPluginManager(), getServerAPI()));
         }
@@ -148,6 +149,7 @@ public class Server implements IServer {
             if (user.isUserLogged()){
                 return;
             }
+            //如果消息头和消息体都为空，则说明是其他类型
             return;
         }
         switch (protocol.getMessageHead().getType()){
@@ -172,12 +174,25 @@ public class Server implements IServer {
 
     @Override
     public List<user> getUsers() {
-        return users;
+        return Collections.unmodifiableList(users);
     }
 
     @Override
     public boolean RegisterUser(user User) {
+        for (user ForEachUser : users)
+        {
+            if (ForEachUser.getUserName().equals(User.getUserName()))
+                return false;
+        }
         return users.add(User);
+    }
+
+    /**
+     * 取消注册一个用户
+     * @param User 用户
+     */
+    public void UnRegisterUser(user User) {
+        users.remove(User);
     }
 
     @Override

@@ -30,7 +30,13 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.Server.Server;
+import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
+import org.yuezhikong.Server.UserData.Permission;
+import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
@@ -40,6 +46,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.NoSuchProviderException;
@@ -50,17 +57,19 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SSLNettyServer implements NetworkServer {
-
     private final List<NetworkClient> clientList = new ArrayList<>();
     private PrivateKey ServerSSLPrivateKey;
     private X509Certificate ServerSSLCertificate;
     private final Logger logger = Logger.getInstance();
+
+    private Server JavaIMServer;
 
     private ChannelFuture future;
 
@@ -127,13 +136,19 @@ public class SSLNettyServer implements NetworkServer {
                     });
 
             future = bootstrap.bind(ListenPort).sync();
-
             logger.info("网络层启动完成");
+            if (Server.getInstance() == null)
+            {
+                JavaIMServer = new Server(this);
+            }
+            else {
+                future.channel().close();
+                throw new RuntimeException("JavaIM Start Failed, Application JavaIM is already running");
+            }
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             SaveStackTrace.saveStackTrace(e);
         } finally {
-
             RecvMessageThreadPool.shutdownGracefully();
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
@@ -303,5 +318,181 @@ public class SSLNettyServer implements NetworkServer {
     }
 
     private class ServerInHandler extends ChannelInboundHandlerAdapter {
+        private final HashMap<Channel,NetworkClient> clientNetworkClientPair = new HashMap<>();
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            NettyUser nettyUser = new NettyUser();
+            JavaIMServer.RegisterUser(nettyUser);
+            NetworkClient client = new NettyNetworkClient(nettyUser,ctx.channel().remoteAddress(),ctx.channel());
+            nettyUser.setNetworkClient(client);
+            clientNetworkClientPair.put(ctx.channel(),client);
+            clientList.add(client);
+            logger.info("检测到新客户端连接...");
+            logger.info("此客户端IP地址："+ctx.channel().remoteAddress());
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
+            JavaIMServer.UnRegisterUser(thisClient.getUser());
+            clientList.remove(thisClient);
+            logger.info("检测到客户端离线...");
+            logger.info("此客户端IP地址："+thisClient.getSocketAddress());
+        }
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            if (!(msg instanceof String Msg))
+            {
+                logger.info(String.format("客户端：%s 发送了非String消息：%s",ctx.channel().remoteAddress(),msg.toString()));
+                return;
+            }
+            NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
+            JavaIMServer.onReceiveMessage(thisClient,Msg);
+        }
+    }
+
+    private class NettyNetworkClient implements NetworkClient
+    {
+        private final tcpUser user;
+        private final SocketAddress address;
+        private final Channel channel;
+        private NettyNetworkClient(tcpUser user, SocketAddress address, Channel channel)
+        {
+            this.user = user;
+            this.address = address;
+            this.channel = channel;
+        }
+
+        @Override
+        public SocketAddress getSocketAddress() {
+            return address;
+        }
+
+        @Override
+        public void send(String message) throws IllegalStateException {
+            checks.checkState(!isOnline(),"This user is now offline!");
+            channel.writeAndFlush(message);
+        }
+
+        @Override
+        public boolean isOnline() {
+            return clientList.contains(this);
+        }
+
+        @Override
+        public void disconnect() {
+            if (isOnline())
+                channel.disconnect();
+        }
+
+        @Override
+        public tcpUser getUser() {
+            return user;
+        }
+    }
+
+    private class NettyUser implements tcpUser{
+        private NetworkClient client;
+        private IUserAuthentication authentication;
+
+        private Permission permission;
+
+        /**
+         * 设置网络层客户端
+         * @param client 客户端
+         */
+        private void setNetworkClient(NetworkClient client) {
+            this.client = client;
+        }
+        @Override
+        public NetworkClient getNetworkClient() {
+            return client;
+        }
+
+        @Override
+        public String getUserName() {
+            return (authentication == null) ? "" : authentication.getUserName();
+        }
+
+        @Override
+        public user UserLogin(String UserName) {
+            if (!JavaIMServer.RegisterUser(this))
+            {
+                throw new RuntimeException("Register User Failed");
+            }
+            return this;
+        }
+
+        @Override
+        public boolean isUserLogged() {
+            return authentication != null && authentication.isLogin();
+        }
+
+        @Override
+        public user UserDisconnect() {
+            JavaIMServer.UnRegisterUser(this);
+            client.disconnect();
+            return this;
+        }
+
+        @Override
+        public user SetUserPermission(int permissionLevel, boolean FlashPermission) {
+            if (!FlashPermission)
+                logger.info(String.format("用户：%s的权限发生更新，新权限等级：%s",getUserName(),permissionLevel));
+            permission = Permission.ToPermission(permissionLevel);
+            return this;
+        }
+
+        @Override
+        public user SetUserPermission(Permission permission) {
+            this.permission = permission;
+            return this;
+        }
+
+        @Override
+        public Permission getUserPermission() {
+            return permission;
+        }
+
+        @Override
+        public boolean isServer() {
+            return false;
+        }
+
+        @Override
+        public boolean isAllowedTransferProtocol() {
+            return false;//当前版本暂不支持
+        }
+
+        @Override
+        public user setAllowedTransferProtocol(boolean allowedTransferProtocol) {
+            throw new UnsupportedOperationException("This version of JavaIM NetworkServer not support TransferProtocol");
+        }
+
+        @Override
+        public user addLoginRecall(IUserAuthentication.UserRecall code) {
+            checks.checkState(authentication == null,"Authentication is not init");
+            authentication.RegisterLoginRecall(code);
+            return this;
+        }
+
+        @Override
+        public user addDisconnectRecall(IUserAuthentication.UserRecall code) {
+            checks.checkState(authentication == null,"Authentication is not init");
+            authentication.RegisterLogoutRecall(code);
+            return this;
+        }
+
+        @Override
+        public user setUserAuthentication(@Nullable IUserAuthentication Authentication) {
+            authentication = Authentication;
+            return this;
+        }
+
+        @Override
+        public @Nullable IUserAuthentication getUserAuthentication() {
+            return authentication;
+        }
     }
 }
