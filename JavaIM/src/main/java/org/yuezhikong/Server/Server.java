@@ -8,6 +8,7 @@ import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
+import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.SimplePluginManager;
@@ -163,6 +164,15 @@ public class Server implements IServer {
                     logger.ChatMsg(input.getChatMessage());
                     serverAPI.SendJsonToClient(user, gson.toJson(protocol));
                 }
+            }
+            case "ChangePassword" -> {
+                if (user.isUserLogged()){
+                    return;
+                }
+                getServerAPI().ChangeUserPassword(user, protocol.getMessageBody().getMessage());
+            }
+            case "options" -> {
+
             }
         }
     }
