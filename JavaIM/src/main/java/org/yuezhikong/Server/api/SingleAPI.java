@@ -46,12 +46,6 @@ public class SingleAPI implements api{
      */
     public SingleAPI(IServer serverInstance)
     {
-        try {
-            Class.forName(new Throwable().getStackTrace()[1].getClassName()).asSubclass(IServer.class);
-        } catch (ClassCastException | ClassNotFoundException e)
-        {
-            throw new UnsupportedOperationException("only Server can create Server API!");
-        }
         ServerInstance = serverInstance;
     }
     /**

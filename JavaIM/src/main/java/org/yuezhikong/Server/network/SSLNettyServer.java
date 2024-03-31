@@ -7,6 +7,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
@@ -15,6 +16,7 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.util.ReferenceCountUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -42,6 +44,7 @@ import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
 
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -60,6 +63,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -76,12 +80,24 @@ public class SSLNettyServer implements NetworkServer {
     private boolean isRunning = false;
     @Override
     public void start(int ListenPort) throws IllegalStateException {
+        checks.checkArgument(ListenPort < 1 || ListenPort > 65535, "The Port is not in the range of [0,65535]!");
         if (isRunning)
             throw new IllegalStateException("The Server is already running!");
         isRunning = true;
-        checks.checkArgument(ListenPort < 1 || ListenPort > 65535, "The Port is not in the range of [0,65535]!");
+        logger.info("正在启动网络层 JavaIM...");
+        logger.info("正在生成 X.509 SSL证书");
         X509CertificateGenerate();
-        ThreadGroup IOThreadGroup = new ThreadGroup("Netty IO Thread");
+
+        logger.info("正在创建各线程池");
+        ThreadGroup IOThreadGroup = new ThreadGroup("JavaIM IO Thread");
+        IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(IOThreadGroup,
+                        r,"IO Thread #"+threadNumber.getAndIncrement());
+            }
+        });
         EventLoopGroup bossGroup = new NioEventLoopGroup(1, new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
@@ -107,6 +123,7 @@ public class SSLNettyServer implements NetworkServer {
             }
         }));
 
+        logger.info("正在启动Netty");
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossGroup, workerGroup)
@@ -136,7 +153,7 @@ public class SSLNettyServer implements NetworkServer {
                     });
 
             future = bootstrap.bind(ListenPort).sync();
-            logger.info("网络层启动完成");
+            logger.info("JavaIM网络层启动完成");
             if (Server.getInstance() == null)
             {
                 JavaIMServer = new Server(this);
@@ -160,6 +177,7 @@ public class SSLNettyServer implements NetworkServer {
         // 生成X509证书
         if (!(new File("./ServerEncryption/cert.crt").exists() &&
                 new File("./ServerEncryption/private.key").exists())) {
+            logger.info("正在生成 X.509 CA 证书");
             X500Name subject = new X500NameBuilder()
                     .addRDN(BCStyle.C, "CN")//证书国家代号(Country Name)
                     .addRDN(BCStyle.O, "JavaIM-Server")//证书组织名(Organization Name)
@@ -216,6 +234,7 @@ public class SSLNettyServer implements NetworkServer {
         }
         // 通过CA证书签署临时SSL证书
 
+        logger.info("正在使用 X.509 CA 证书 签发新的 X.509 临时 SSL 加密证书");
         // 加载CA证书
         Certificate caCert;
         PrivateKey caPrivateKey;
@@ -272,6 +291,7 @@ public class SSLNettyServer implements NetworkServer {
         } catch (CertIOException | CertificateException e) {
             throw new RuntimeException("Generate SSL Cert Failed!",e);
         }
+        logger.info("X.509 SSL 证书已经签发完成");
     }
 
     private static String lf(String str, int length) {
@@ -312,9 +332,10 @@ public class SSLNettyServer implements NetworkServer {
         logger.info("Server stopped");
     }
 
+    private ExecutorService IOThreadPool;
     @Override
     public ExecutorService getIOThreadPool() {
-        return null;
+        return IOThreadPool;
     }
 
     private class ServerInHandler extends ChannelInboundHandlerAdapter {
@@ -342,13 +363,36 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            if (!(msg instanceof String Msg))
-            {
-                logger.info(String.format("客户端：%s 发送了非String消息：%s",ctx.channel().remoteAddress(),msg.toString()));
-                return;
+            try {
+                if (!(msg instanceof String Msg)) {
+                    logger.info(String.format("客户端：%s 发送了非String消息：%s", ctx.channel().remoteAddress(), msg.toString()));
+                    return;
+                }
+                NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
+                JavaIMServer.onReceiveMessage(thisClient, Msg);
+            } catch (Throwable throwable) {
+                logger.warning(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
+                logger.warning("错误为："+throwable.getMessage());
+                SaveStackTrace.saveStackTrace(throwable);
+            } finally {
+                ReferenceCountUtil.release(msg);
             }
-            NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
-            JavaIMServer.onReceiveMessage(thisClient,Msg);
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+            if (cause instanceof DecoderException)
+            {
+                Throwable exceptionCause = cause.getCause();
+                if (exceptionCause instanceof SSLHandshakeException)
+                {
+                    logger.warning(String.format("客户端：%s 因为SSL错误：%s已断开连接",ctx.channel().remoteAddress(),exceptionCause.getMessage()));
+                    return;
+                }
+            }
+            SaveStackTrace.saveStackTrace(cause);
+            logger.warning(String.format("客户端：%s 因为：%s 已经断开连接",ctx.channel().remoteAddress(),cause.getMessage()));
+            ctx.channel().close();
         }
     }
 

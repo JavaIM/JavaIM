@@ -92,11 +92,13 @@ public class Server implements IServer {
      * @param networkServer 网络层服务器
      */
     public Server(NetworkServer networkServer) {
+        logger.info("正在启动JavaIM");
         this.networkServer = networkServer;
         if (Instance != null)
         {
             throw new RuntimeException("JavaIM Server is Already running!");
         }
+        logger.info("JavaIM 启动完成");
     }
 
     private static Server Instance;

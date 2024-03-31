@@ -12,14 +12,6 @@
                 <SizeBasedTriggeringPolicy size="25 KB" />
             </Policies>
         </RollingRandomAccessFile>
-        <RollingRandomAccessFile name="DebugLog" fileName="logs/debug.log" filePattern="logs/%d{yyyy-MM-dd}-%i.debug.gz">
-            <PatternLayout pattern="[时间：%d{HH:mm:ss}] [线程：%t] [日志等级：%level]: %msg%n" />
-            <Policies>
-                <TimeBasedTriggeringPolicy />
-                <OnStartupTriggeringPolicy />
-                <SizeBasedTriggeringPolicy size="25 KB" />
-            </Policies>
-        </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
         <Root level="info">
@@ -27,7 +19,7 @@
             <AppenderRef ref="File"/>
         </Root>
         <Logger name="Debug" level="debug" additivity="false">
-            <AppenderRef ref="DebugLog"/>
+            <AppenderRef ref="File"/>
         </Logger>
     </Loggers>
 </Configuration>

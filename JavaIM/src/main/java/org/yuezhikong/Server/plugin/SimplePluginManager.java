@@ -41,12 +41,6 @@ public class SimplePluginManager implements PluginManager{
     
     private final IServer serverInstance;
     public SimplePluginManager(IServer ServerInstance) {
-        try {
-            Class.forName(new Throwable().getStackTrace()[1].getClassName()).asSubclass(IServer.class);
-        } catch (ClassCastException | ClassNotFoundException e)
-        {
-            throw new UnsupportedOperationException("only Server can create Plugin Manager!");
-        }
         serverInstance = ServerInstance;
     }
     private final List<Plugin> pluginList = new CopyOnWriteArrayList<>();
