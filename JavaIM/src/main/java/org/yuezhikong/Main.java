@@ -16,11 +16,9 @@
  */
 package org.yuezhikong;
 
-import org.apache.commons.io.FileUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.Server.network.SSLNettyServer;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Logger;
@@ -28,9 +26,7 @@ import org.yuezhikong.utils.Notice;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.util.Scanner;
 

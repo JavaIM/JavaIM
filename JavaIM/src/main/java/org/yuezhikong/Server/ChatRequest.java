@@ -22,7 +22,6 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
-import org.yuezhikong.Server.network.NettyServer_OLD;
 import org.yuezhikong.Server.plugin.Plugin.PluginData;
 import org.yuezhikong.Server.plugin.event.events.UserChatEvent;
 import org.yuezhikong.Server.plugin.event.events.UserCommandEvent;
@@ -312,10 +311,7 @@ public class ChatRequest {
                         for (user User : instance.getUsers()) {
                             User.UserDisconnect();
                         }
-                        if (instance instanceof NettyServer_OLD)
-                            ((NettyServer_OLD) instance).StopNettyChatRoom();
-                        else
-                            System.exit(0);
+                        instance.stop();
                     }
                     case "/change-password" -> {
                         if (!(Permission.ADMIN.equals(chatMessageInfo.getUser().getUserPermission()))) {
