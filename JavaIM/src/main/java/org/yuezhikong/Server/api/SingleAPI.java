@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -37,7 +36,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SingleAPI implements api{
+public abstract class SingleAPI implements api{
     private final IServer ServerInstance;
 
     /**
@@ -89,14 +88,8 @@ public class SingleAPI implements api{
         // 将消息根据聊天协议封装
         Gson gson = new Gson();
         NormalProtocol protocolData = new NormalProtocol();
-        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
-        MessageHead.setVersion(Version);
-        MessageHead.setType("Chat");
-        protocolData.setMessageHead(MessageHead);
-        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
-        MessageBody.setFileLong(0);
-        MessageBody.setMessage(Message);
-        protocolData.setMessageBody(MessageBody);
+        protocolData.setType("Chat");
+        protocolData.setMessage(Message);
         return gson.toJson(protocolData);
     }
     /**
@@ -116,20 +109,8 @@ public class SingleAPI implements api{
         for (String input : inputs)
         {
             String Message = ChatProtocolRequest(input, CodeDynamicConfig.getProtocolVersion());
-            SendJsonToClient(user, Message);
+            SendJsonToClient(user, Message, "Chat");
         }
-    }
-
-    @Override
-    public void SendJsonToClient(@NotNull user User, @NotNull String InputData)
-    {
-        if (User instanceof PluginUser)
-        {
-            //如果是插件用户，则直接调用插件用户中的方法
-            ((PluginUser) User).WriteData(InputData);
-            return;
-        }
-        throw new UnsupportedOperationException("User type Not Support!");
     }
 
     /**
@@ -193,7 +174,7 @@ public class SingleAPI implements api{
 
     @Override
     public void ChangeUserPassword(user User, String password) {
-        Runnable SQLUpdateThread = () -> {
+        ServerInstance.getIOThreadPool().execute(() -> {
             try {
                 Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
                 String sql = "select * from UserData where UserName = ?";
@@ -216,9 +197,6 @@ public class SingleAPI implements api{
             } finally {
                 Database.close();
             }
-        };
-        Thread UpdateThread = new Thread(SQLUpdateThread);
-        UpdateThread.start();
-        UpdateThread.setName("SQL Update Thread");
+        });
     }
 }

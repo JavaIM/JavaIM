@@ -3,7 +3,7 @@ package org.yuezhikong.utils.Protocol;
 public class TransferProtocol {
 
     /**
-     * TransferProtocolHead : {"Version":6,"TargetUserName":"","Type":""}
+     * TransferProtocolHead : {"TargetUserName":"","Type":""}
      * TransferProtocolBody : {"Data":""}
      */
 
@@ -28,22 +28,12 @@ public class TransferProtocol {
 
     public static class TransferProtocolHeadBean {
         /**
-         * Version : 6
          * TargetUserName :
          * Type :
          */
 
-        private int Version;
         private String TargetUserName;
         private String Type;
-
-        public int getVersion() {
-            return Version;
-        }
-
-        public void setVersion(int Version) {
-            this.Version = Version;
-        }
 
         public String getTargetUserName() {
             return TargetUserName;

@@ -22,74 +22,27 @@ package org.yuezhikong.utils.Protocol;
  */
 public class NormalProtocol {
 
-    private MessageHead MessageHead;
-    private MessageBody MessageBody;
+    /**
+     * type :
+     * Message :
+     */
 
-    public MessageHead getMessageHead() {
-        return MessageHead;
+    private String type;
+    private String Message;
+
+    public String getType() {
+        return type;
     }
 
-    public void setMessageHead(MessageHead MessageHead) {
-        this.MessageHead = MessageHead;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public MessageBody getMessageBody() {
-        return MessageBody;
+    public String getMessage() {
+        return Message;
     }
 
-    public void setMessageBody(MessageBody MessageBody) {
-        this.MessageBody = MessageBody;
-    }
-
-    public static class MessageHead {
-        /**
-         * Version : 0
-         * type :
-         */
-
-        private int Version;
-        private String type;
-
-        public int getVersion() {
-            return Version;
-        }
-
-        public void setVersion(int Version) {
-            this.Version = Version;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-    }
-
-    public static class MessageBody {
-        /**
-         * Message :
-         * FileLong : 0
-         */
-
-        private String Message;
-        private int FileLong;
-
-        public String getMessage() {
-            return Message;
-        }
-
-        public void setMessage(String Message) {
-            this.Message = Message;
-        }
-
-        public int getFileLong() {
-            return FileLong;
-        }
-
-        public void setFileLong(int FileLong) {
-            this.FileLong = FileLong;
-        }
+    public void setMessage(String Message) {
+        this.Message = Message;
     }
 }

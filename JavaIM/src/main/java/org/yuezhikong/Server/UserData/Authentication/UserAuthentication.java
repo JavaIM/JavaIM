@@ -2,15 +2,15 @@ package org.yuezhikong.Server.UserData.Authentication;
 
 import cn.hutool.crypto.SecureUtil;
 import com.google.gson.Gson;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.event.events.PreLoginEvent;
 import org.yuezhikong.utils.DataBase.Database;
+import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -22,7 +22,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import cn.hutool.core.lang.UUID;
-import java.util.concurrent.ExecutorService;
 
 public final class UserAuthentication implements IUserAuthentication{
 
@@ -35,66 +34,32 @@ public final class UserAuthentication implements IUserAuthentication{
     private final List<UserRecall> LoginRecalls = new ArrayList<>();
     private final Object LoginRecallLock = new Object();
 
-    private final ExecutorService IOThreadPool;
-
     private final PluginManager pluginManager;
+
+    private final Logger logger;
     private final api serverAPI;
     /**
      * 实例化用户Auth实现
      * @param User 用户
-     * @param IOThreadPool io线程池
-     * @param manager 插件管理器
-     * @param API 服务器API
+     * @param server 服务器实例
      */
-    public UserAuthentication(@NotNull user User, @NotNull ExecutorService IOThreadPool, PluginManager manager, api API)
+    public UserAuthentication(user User, IServer server)
     {
         this.User = User;
-        this.IOThreadPool = IOThreadPool;
-        pluginManager = manager;
-        serverAPI = API;
+        pluginManager = server.getPluginManager();
+        serverAPI = server.getServerAPI();
+        logger = server.getLogger();
     }
 
-    private abstract class IOPoolAndWaitResult
-    {
-        private boolean Result = false;
-        @Contract(pure = true)
-        public boolean Request()
-        {
-            IOThreadPool.execute(() -> {
-                try
-                {
-                    Result = run();
-                } finally {
-                    synchronized (this) {
-                        this.notifyAll();
-                    }
-                }
-            });
-            synchronized (this)
-            {
-                try {
-                    this.wait();
-                } catch (InterruptedException e) {
-                    SaveStackTrace.saveStackTrace(e);
-                }
-            }
-            return Result;
-        }
-        protected abstract boolean run();
-    }
     @Override
     public boolean DoLogin(String Token) {
-        if (new IOPoolAndWaitResult()
+        try
         {
-            @Override
-            protected boolean run() {
-                return DoTokenLoginNoNewThread(Token);
-            }
-        }.Request()) {
-            if (Logouted)
-            {
+            if (!DoTokenLogin0(Token))
                 return false;
-            }
+
+            if (Logouted)
+                return false;
             synchronized (LoginRecalls) {
                 for (UserRecall recall : LoginRecalls) {
                     recall.run(User);
@@ -102,11 +67,16 @@ public final class UserAuthentication implements IUserAuthentication{
                 LoginRecalls.clear();
             }
             return true;
+        } catch (Throwable throwable)
+        {
+            SaveStackTrace.saveStackTrace(throwable);
+            logger.error("用户登录流程出错，出现异常，详情请查看日志文件");
+            serverAPI.SendMessageToUser(User,"执行登录时出现内部错误，当前Unix时间："+System.currentTimeMillis()+"请联系服务器管理员");
+            return false;
         }
-        return false;
     }
 
-    private boolean DoTokenLoginNoNewThread(String Token)
+    private boolean DoTokenLogin0(String Token)
     {
         try
         {
@@ -123,15 +93,10 @@ public final class UserAuthentication implements IUserAuthentication{
                     //说明目前是已经有同一名字的用户登录了
                     //因此，禁止登录
                     NormalProtocol protocol = new NormalProtocol();
-                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                    head.setType("Login");
-                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                    protocol.setMessageHead(head);
-                    NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-                    body.setMessage("Fail");
-                    protocol.setMessageBody(body);
+                    protocol.setType("Login");
+                    protocol.setType("Fail");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User,json);
+                    serverAPI.SendJsonToClient(User,json, "Chat");
                     return false;
                 } catch (AccountNotFoundException ignored) {}
                 //插件处理
@@ -141,58 +106,38 @@ public final class UserAuthentication implements IUserAuthentication{
                 {
                     //插件要求禁止登录，所以直接关闭连接
                     NormalProtocol protocol = new NormalProtocol();
-                    NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                    head.setType("Login");
-                    head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                    protocol.setMessageHead(head);
-                    NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-                    body.setMessage("Fail");
-                    protocol.setMessageBody(body);
+                    protocol.setType("Login");
+                    protocol.setMessage("Fail");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User,json);
+                    serverAPI.SendJsonToClient(User,json, "Chat");
                     return false;
                 }
                 UserLogged = true;
                 User.UserLogin(UserName);
                 NormalProtocol protocol = new NormalProtocol();
-                NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                head.setType("Login");
-                head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                protocol.setMessageHead(head);
-                NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-                body.setMessage("Success");
-                protocol.setMessageBody(body);
+                protocol.setType("Login");
+                protocol.setMessage("Success");
                 String json = new Gson().toJson(protocol);
-                serverAPI.SendJsonToClient(User,json);
+                serverAPI.SendJsonToClient(User,json, "Chat");
                 return true;
             }
             else
             {
                 Database.close();
                 NormalProtocol protocol = new NormalProtocol();
-                NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-                head.setType("Login");
-                head.setVersion(CodeDynamicConfig.getProtocolVersion());
-                protocol.setMessageHead(head);
-                NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-                body.setMessage("Fail");
-                protocol.setMessageBody(body);
+                protocol.setType("Login");
+                protocol.setMessage("Fail");
                 String json = new Gson().toJson(protocol);
-                serverAPI.SendJsonToClient(User,json);
+                serverAPI.SendJsonToClient(User,json, "Chat");
                 return false;
             }
         } catch (Database.DatabaseException | SQLException e) {
             SaveStackTrace.saveStackTrace(e);
             NormalProtocol protocol = new NormalProtocol();
-            NormalProtocol.MessageHead head = new NormalProtocol.MessageHead();
-            head.setType("Login");
-            head.setVersion(CodeDynamicConfig.getProtocolVersion());
-            protocol.setMessageHead(head);
-            NormalProtocol.MessageBody body = new NormalProtocol.MessageBody();
-            body.setMessage("Fail");
-            protocol.setMessageBody(body);
+            protocol.setType("Login");
+            protocol.setMessage("Fail");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User,json);
+            serverAPI.SendJsonToClient(User,json, "Chat");
             return false;
         } finally {
             Database.close();
@@ -234,22 +179,16 @@ public final class UserAuthentication implements IUserAuthentication{
 
         //发送给用户
         NormalProtocol protocolData = new NormalProtocol();
-        NormalProtocol.MessageHead MessageHead = new NormalProtocol.MessageHead();
-        MessageHead.setType("Login");
-        MessageHead.setVersion(CodeDynamicConfig.getProtocolVersion());
-        protocolData.setMessageHead(MessageHead);
-        NormalProtocol.MessageBody MessageBody = new NormalProtocol.MessageBody();
-        MessageBody.setFileLong(0);
-        MessageBody.setMessage(token);
-        protocolData.setMessageBody(MessageBody);
+        protocolData.setType("Login");
+        protocolData.setMessage(token);
         String json = new Gson().toJson(protocolData);
-        serverAPI.SendJsonToClient(User,json);
+        serverAPI.SendJsonToClient(User,json, "Chat");
         //设置登录成功
         UserLogged = true;
         User.UserLogin(UserName);
         return true;
     }
-    private boolean DoPasswordLoginNoNewThread(String UserName,String Password)
+    private boolean DoPasswordLogin0(String UserName, String Password)
     {
         if ("Server".equals(UserName))
         {
@@ -322,17 +261,13 @@ public final class UserAuthentication implements IUserAuthentication{
 
     @Override
     public boolean DoLogin(String UserName, String Password) {
-        if (new IOPoolAndWaitResult()
+        try
         {
-            @Override
-            protected boolean run() {
-                return DoPasswordLoginNoNewThread(UserName,Password);
-            }
-        }.Request()) {
-            if (Logouted)
-            {
+            if (!DoPasswordLogin0(UserName,Password))
                 return false;
-            }
+
+            if (Logouted)
+                return false;
             synchronized (LoginRecalls) {
                 for (UserRecall recall : LoginRecalls) {
                     recall.run(User);
@@ -340,8 +275,13 @@ public final class UserAuthentication implements IUserAuthentication{
                 LoginRecalls.clear();
             }
             return true;
+        } catch (Throwable throwable)
+        {
+            SaveStackTrace.saveStackTrace(throwable);
+            logger.error("用户登录流程出错，出现异常，详情请查看日志文件");
+            serverAPI.SendMessageToUser(User,"执行登录时出现内部错误，当前Unix时间："+System.currentTimeMillis()+"请联系服务器管理员");
+            return false;
         }
-        return false;
     }
 
 

@@ -18,8 +18,5 @@
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>
-        <Logger name="Debug" level="debug" additivity="false">
-            <AppenderRef ref="File"/>
-        </Logger>
     </Loggers>
 </Configuration>

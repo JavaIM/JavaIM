@@ -368,7 +368,7 @@ public class SSLNettyServer implements NetworkServer {
                     logger.info(String.format("客户端：%s 发送了非String消息：%s", ctx.channel().remoteAddress(), msg.toString()));
                     return;
                 }
-                NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
+                NetworkClient thisClient = clientNetworkClientPair.get(ctx.channel());
                 JavaIMServer.onReceiveMessage(thisClient, Msg);
             } catch (Throwable throwable) {
                 logger.warning(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));

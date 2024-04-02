@@ -17,7 +17,6 @@
 package org.yuezhikong.Server;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.user;
@@ -46,12 +45,6 @@ public class ChatRequest {
         private final NormalProtocol protocol;
         private String ChatMessage;
 
-        public ChatRequestInput(@NotNull user User, @NotNull NormalProtocol protocol)
-        {
-            this.User = User;
-            this.protocol = protocol;
-            setChatMessage(protocol.getMessageBody().getMessage());
-        }
         public ChatRequestInput(@NotNull user User, @NotNull String ChatMessage)
         {
             this.User = User;
@@ -68,10 +61,6 @@ public class ChatRequest {
 
         public user getUser() {
             return User;
-        }
-
-        public @Nullable NormalProtocol getProtocol() {
-            return protocol;
         }
     }
     private final SimpleDateFormat formatter;

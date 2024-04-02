@@ -34,6 +34,7 @@ public interface api {
     @Contract("_ -> new")
     @NotNull
     CustomVar.Command CommandFormat(@NotNull @Nls String Command);
+
     /**
      * 将聊天消息转换为聊天协议格式
      * @param Message 原始信息
@@ -41,27 +42,35 @@ public interface api {
      * @return 转换为的聊天协议格式
      */
     @NotNull String ChatProtocolRequest(@NotNull @Nls String Message, int Version);
+
     /**
      * 为指定用户发送消息
-     * @param user 发信的目标用户
-     * @param inputMessage 发信的信息
+     *
+     * @param user          发信的目标用户
+     * @param inputMessage  发信的信息
      */
     void SendMessageToUser(@NotNull user user, @NotNull @Nls String inputMessage);
+
     /**
      * 新的向所有客户端发信api
+     *
      * @param inputMessage 要发信的信息
      */
     void SendMessageToAllClient(@NotNull @Nls String inputMessage);
+
     /**
      * 获取有效的客户端列表
+     *
      * @param CheckLoginStatus 是否检查登录状态
      * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      * @return 有效的客户端列表
      */
     @NotNull List<user> GetValidClientList(boolean CheckLoginStatus);
+
     /**
      * 新的获取用户User Data Class api
-     * @param UserName 用户名
+     *
+     * @param UserName  用户名
      * @return 用户User Data Class
      * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
@@ -69,15 +78,18 @@ public interface api {
 
     /**
      * 修改用户的密码
-     * @param User 用户
-     * @param password 密码
+     *
+     * @param User      用户
+     * @param password  密码
      */
     void ChangeUserPassword(user User, String password);
 
     /**
      * 直接发送信息到一个用户的函数
-     * @param User 目标用户
-     * @param InputData 信息
+     *
+     * @param User         目标用户
+     * @param InputData    信息
+     * @param ProtocolType 协议类型
      */
-    void SendJsonToClient(@NotNull user User, @NotNull String InputData);
+    void SendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType);
 }

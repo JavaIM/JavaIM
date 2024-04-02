@@ -1,10 +1,4 @@
 {
-    "MessageHead": {
-        "Version": 0,
-        "type": ""
-    },
-    "MessageBody": {
-        "Message": "",
-        "FileLong": 0
-    }
+    "type": "",
+    "Message": ""
 }
