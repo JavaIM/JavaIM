@@ -195,9 +195,9 @@ public class ChatRequest {
                     {
                         if (instance.getPluginManager().getPluginNumber() > 0)
                             API.SendMessageToUser(User,"插件详细信息 ("+instance.getPluginManager().getPluginNumber()+"个插件)");
-                        System.out.println("插件：("+instance.getPluginManager().getPluginNumber()+")");
+                        API.SendMessageToUser(User,"插件：("+instance.getPluginManager().getPluginNumber()+")");
                         instance.getPluginManager().getPluginDataList().forEach(
-                                pluginData -> System.out.println(pluginData.getStaticData().PluginName()+" ")
+                                pluginData ->  API.SendMessageToUser(User,pluginData.getStaticData().PluginName()+" ")
                         );
                     }
                 }

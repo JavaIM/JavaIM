@@ -26,6 +26,7 @@ import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -155,6 +156,7 @@ public final class Server implements IServer {
                 SaveStackTrace.saveStackTrace(throwable);
             }
         },"User Command Thread").start();
+        getPluginManager().LoadPluginOnDirectory(new File("./plugins"));
         logger.info("JavaIM 启动完成");
     }
 
