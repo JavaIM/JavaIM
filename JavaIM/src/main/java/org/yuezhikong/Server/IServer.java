@@ -49,8 +49,13 @@ public interface IServer {
      * @param User 用户
      * @return 是否成功注册(失败一般是因为同用户名的用户已经登录
      */
-    @SuppressWarnings("unused")
     boolean RegisterUser(user User);
+
+    /**
+     * 取消注册一个用户
+     * @param User 用户
+     */
+    void UnRegisterUser(user User);
 
     /**
      * 获取聊天处理器

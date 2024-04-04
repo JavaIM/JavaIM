@@ -13,18 +13,21 @@ import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.SimplePluginManager;
-import org.yuezhikong.Server.plugin.event.events.ServerStopEvent;
+import org.yuezhikong.Server.plugin.event.events.Server.ServerChatEvent;
+import org.yuezhikong.Server.plugin.event.events.Server.ServerCommandEvent;
+import org.yuezhikong.Server.plugin.event.events.Server.ServerStopEvent;
+import org.yuezhikong.Server.plugin.event.events.User.UserAddEvent;
+import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
+import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -33,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * JavaIM服务端
  */
-public class Server implements IServer {
+public final class Server implements IServer {
 
     /**
      * 用户消息处理线程池
@@ -109,11 +112,49 @@ public class Server implements IServer {
      */
     public Server(NetworkServer networkServer) {
         logger.info("正在启动JavaIM");
-        this.networkServer = networkServer;
         if (Instance != null)
         {
             throw new RuntimeException("JavaIM Server is Already running!");
         }
+        this.networkServer = networkServer;
+        Instance = this;
+        new Thread(() -> {
+            while (true) try {
+                Scanner scanner = new Scanner(System.in);
+                String consoleInput = scanner.nextLine();
+                //判断是指令还是消息
+                if (consoleInput.startsWith("/")) {
+                    CustomVar.Command command = serverAPI.CommandFormat(consoleInput);
+
+                    //通知发生事件
+                    ServerCommandEvent commandEvent = new ServerCommandEvent(consoleUser,command);
+                    getPluginManager().callEvent(commandEvent);
+                    //判断是否被取消
+                    if (commandEvent.isCancelled())
+                        return;
+
+                    //指令处理
+                    request.CommandRequest0(consoleUser,command);
+                }
+                else {
+                    //通知发生事件
+                    ServerChatEvent chatEvent = new ServerChatEvent(consoleUser,consoleInput);
+                    getPluginManager().callEvent(chatEvent);
+                    //判断是否被取消
+                    if (chatEvent.isCancelled())
+                        continue;
+                    //格式化&发送
+                    ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(getConsoleUser(),consoleInput);
+                    request.ChatFormat(input);
+                    logger.ChatMsg(input.getChatMessage());
+                    serverAPI.SendMessageToAllClient(input.getChatMessage());
+                }
+            } catch (Throwable throwable) {
+                logger.error("JavaIM User Command Thread 出现异常");
+                logger.error("请联系开发者");
+                SaveStackTrace.saveStackTrace(throwable);
+            }
+        },"User Command Thread").start();
         logger.info("JavaIM 启动完成");
     }
 
@@ -162,9 +203,8 @@ public class Server implements IServer {
                 }
                 ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(user, protocol.getMessage());
                 if (!request.UserChatRequests(input)){
-                    protocol.setMessage(input.getChatMessage());
                     logger.ChatMsg(input.getChatMessage());
-                    serverAPI.SendJsonToClient(user, gson.toJson(protocol), "NormalProtocol");
+                    serverAPI.SendMessageToAllClient(input.getChatMessage());
                 }
             }
             case "ChangePassword" -> {
@@ -252,6 +292,10 @@ public class Server implements IServer {
 
     @Override
     public boolean RegisterUser(user User) {
+        UserAddEvent addEvent = new UserAddEvent(User);
+        getPluginManager().callEvent(addEvent);
+        if (addEvent.isCancelled())
+            return false;
         for (user ForEachUser : users)
         {
             if (ForEachUser.getUserName().equals(User.getUserName()))
@@ -264,7 +308,10 @@ public class Server implements IServer {
      * 取消注册一个用户
      * @param User 用户
      */
+    @Override
     public void UnRegisterUser(user User) {
+        UserRemoveEvent removeEvent = new UserRemoveEvent(User);
+        getPluginManager().callEvent(removeEvent);
         users.remove(User);
     }
 

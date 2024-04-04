@@ -14,10 +14,53 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.yuezhikong.Server.plugin.event.events;
+package org.yuezhikong.Server.plugin.event.events.User.auth;
+
+import org.yuezhikong.Server.plugin.event.events.Event;
 
 /**
- * 用户登录事件
- * @param UserName 用户名
+ * 用户尝试登录事件
  */
-public record UserLoginEvent(String UserName) implements Event {}
+public class PreLoginEvent implements Event {
+    private boolean Cancel = false;
+    private final String UserName;
+    private final boolean TokenLogin;
+
+    /**
+     * 是否已经阻止了登录
+     * @return 是/否
+     */
+    public boolean isCancel() {
+        return Cancel;
+    }
+
+    /**
+     * 获取用户名
+     * @return 用户名
+     */
+    public String getUserName() {
+        return UserName;
+    }
+
+    /**
+     * 设置是否阻止登录
+     * @param cancel 阻止/不阻止
+     */
+    public void setCancel(boolean cancel) {
+        Cancel = cancel;
+    }
+
+    public PreLoginEvent(String UserName,boolean TokenLogin)
+    {
+        this.UserName = UserName;
+        this.TokenLogin = TokenLogin;
+    }
+
+    /**
+     * 是否通过token进行免密登录
+     * @return 是/否
+     */
+    public boolean isTokenLogin() {
+        return TokenLogin;
+    }
+}

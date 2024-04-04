@@ -60,19 +60,10 @@ public abstract class SingleAPI implements api{
         String command;
         String[] argv;
         {
-            String[] CommandLineFormated = Command.split("\\s+"); //分割一个或者多个空格
-            command = CommandLineFormated[0];
-            argv = new String[CommandLineFormated.length - 1];
-            int j = 0;//要删除的字符索引
-            int i = 0;
-            int k = 0;
-            while (i < CommandLineFormated.length) {
-                if (i != j) {
-                    argv[k] = CommandLineFormated[i];
-                    k++;
-                }
-                i++;
-            }
+            String[] CommandLineFormatted = Command.split("\\s+"); //分割一个或者多个空格
+            command = CommandLineFormatted[0];
+            argv = new String[CommandLineFormatted.length - 1];
+            System.arraycopy(CommandLineFormatted, 1, argv, 0, argv.length);
         }
         return new CustomVar.Command(command,argv);
     }

@@ -40,7 +40,7 @@ import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.event.events.UserLoginEvent;
+import org.yuezhikong.Server.plugin.event.events.User.auth.UserLoginEvent;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -348,7 +348,11 @@ public class SSLNettyServer implements NetworkServer {
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             NettyUser nettyUser = new NettyUser();
-            JavaIMServer.RegisterUser(nettyUser);
+            if (!JavaIMServer.RegisterUser(nettyUser))
+            {
+                ctx.channel().close();
+                return;
+            }
             NetworkClient client = new NettyNetworkClient(nettyUser,ctx.channel().remoteAddress(),ctx.channel());
             nettyUser.setNetworkClient(client);
             clientNetworkClientPair.put(ctx.channel(),client);
@@ -489,6 +493,7 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public user onUserLogin(String UserName) {
+            logger.info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
             UserLoginEvent event = new UserLoginEvent(UserName);
             JavaIMServer.getPluginManager().callEvent(event);
             return this;

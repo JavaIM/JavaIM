@@ -8,7 +8,7 @@ import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.plugin.PluginManager;
-import org.yuezhikong.Server.plugin.event.events.PreLoginEvent;
+import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;

@@ -1,12 +1,13 @@
-package org.yuezhikong.Server.plugin.event.events;
+package org.yuezhikong.Server.plugin.event.events.User;
 
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.plugin.event.Cancellable;
+import org.yuezhikong.Server.plugin.event.events.Event;
 
 /**
  * 用户聊天事件
  */
-public class UserChatEvent implements Event{
-    private boolean Cancel = false;
+public class UserChatEvent implements Event, Cancellable {
     private final user UserData;
     private final String ChatMessage;
     public UserChatEvent(user UserData, String ChatMessage)
@@ -15,12 +16,15 @@ public class UserChatEvent implements Event{
         this.ChatMessage = ChatMessage;
     }
 
-    public void setCancel(boolean cancel) {
-        Cancel = cancel;
+    private boolean cancel = false;
+    @Override
+    public boolean isCancelled() {
+        return cancel;
     }
 
-    public boolean isCancel() {
-        return Cancel;
+    @Override
+    public void setCancelled(boolean cancelled) {
+        cancel = cancelled;
     }
 
     public user getUserData() {
