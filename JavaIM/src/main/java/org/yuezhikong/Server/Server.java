@@ -17,12 +17,14 @@ import org.yuezhikong.Server.plugin.event.events.ServerStopEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
+import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -150,22 +152,24 @@ public class Server implements IServer {
      * @param protocol  协议
      * @param user      用户
      */
-    private void DispatchNormalProtocol(final NormalProtocol protocol, final tcpUser user)
+    private void HandleNormalProtocol(final NormalProtocol protocol, final tcpUser user)
     {
         switch (protocol.getType()){
             case "Chat" -> {
-                if (user.isUserLogged()){
+                if (!user.isUserLogged()){
+                    serverAPI.SendMessageToUser(user,"请先登录");
                     return;
                 }
                 ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(user, protocol.getMessage());
                 if (!request.UserChatRequests(input)){
                     protocol.setMessage(input.getChatMessage());
                     logger.ChatMsg(input.getChatMessage());
-                    serverAPI.SendJsonToClient(user, gson.toJson(protocol), "Chat");
+                    serverAPI.SendJsonToClient(user, gson.toJson(protocol), "NormalProtocol");
                 }
             }
             case "ChangePassword" -> {
-                if (user.isUserLogged()){
+                if (!user.isUserLogged()){
+                    serverAPI.SendMessageToUser(user,"请先登录");
                     return;
                 }
                 getServerAPI().ChangeUserPassword(user, protocol.getMessage());
@@ -175,6 +179,40 @@ public class Server implements IServer {
             }
             default -> getServerAPI().SendMessageToUser(user, "暂不支持此消息类型");
         }
+    }
+
+    /**
+     * 处理登录协议
+     *
+     * @param loginProtocol  协议
+     * @param user      用户
+     */
+    private void HandleLoginProtocol(final LoginProtocol loginProtocol, final tcpUser user) {
+        if (user.isUserLogged())
+        {
+            serverAPI.SendMessageToUser(user,"您已经登录过了");
+            NormalProtocol protocol = new NormalProtocol();
+            protocol.setType("Login");
+            protocol.setMessage("Already Logged");
+            String json = new Gson().toJson(protocol);
+            serverAPI.SendJsonToClient(user,json, "NormalProtocol");
+            return;
+        }
+        if ("token".equals(loginProtocol.getLoginPacketHead().getType()))
+        {
+            if (!Objects.requireNonNull(user.getUserAuthentication()).
+                    DoLogin(loginProtocol.getLoginPacketBody().getReLogin().getToken()))
+                user.UserDisconnect();
+        }
+        else if ("passwd".equals(loginProtocol.getLoginPacketHead().getType()))
+        {
+            if (!Objects.requireNonNull(user.getUserAuthentication()).
+                    DoLogin(loginProtocol.getLoginPacketBody().getNormalLogin().getUserName(),
+                            loginProtocol.getLoginPacketBody().getNormalLogin().getPasswd()))
+                user.UserDisconnect();
+        }
+        else
+            user.UserDisconnect();
     }
 
     @Override
@@ -187,16 +225,17 @@ public class Server implements IServer {
             protocol = gson.fromJson(message, GeneralProtocol.class);
         } catch (JsonSyntaxException e)
         {
-            getServerAPI().SendMessageToUser(user,"在处理你的请求时出现Json格式错误");
-            getServerAPI().SendMessageToUser(user,"请联系你的客户端开发者以解决此问题");
-            getServerAPI().SendMessageToUser(user,"您将被踢出本服务器");
-            user.UserDisconnect();
+            NormalProtocol normalProtocol = new NormalProtocol();
+            normalProtocol.setType("Error");
+            normalProtocol.setMessage("Protocol analysis failed");
+            serverAPI.SendJsonToClient(user,gson.toJson(normalProtocol),"NormalProtocol");
             return;
         }
         switch (protocol.getProtocolName())
         {
-            case "NormalProtocol" -> DispatchNormalProtocol(gson.fromJson(message, NormalProtocol.class),user);
-            case "TransferProtocol", "LoginProtocol" -> getServerAPI().SendMessageToUser(user,"正在开发中...请稍后");
+            case "NormalProtocol" -> HandleNormalProtocol(gson.fromJson(protocol.getProtocolData(), NormalProtocol.class),user);
+            case "LoginProtocol" -> HandleLoginProtocol(gson.fromJson(protocol.getProtocolData(),LoginProtocol.class),user);
+            case "TransferProtocol" -> getServerAPI().SendMessageToUser(user,"正在开发中...请稍后");
             default -> getServerAPI().SendMessageToUser(user,"暂不支持此协议");
         }
     }

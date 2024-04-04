@@ -109,7 +109,7 @@ public abstract class SingleAPI implements api{
         for (String input : inputs)
         {
             String Message = ChatProtocolRequest(input, CodeDynamicConfig.getProtocolVersion());
-            SendJsonToClient(user, Message, "Chat");
+            SendJsonToClient(user, Message, "NormalProtocol");
         }
     }
 

@@ -1,14 +1,13 @@
-type代表消息类型，Chat代表聊天，Login代表登录数据包，ChangePassword代表更改密码，
+type代表消息类型，Chat代表聊天，Login代表登录数据包，ChangePassword代表更改密码，Error表示出错，多数是协议少了元素
 
 MessageBody中的Message在Chat模式下，为聊天信息
 
 新登录逻辑
-Client                                           Server
-         模式Login，内容：NextIsLogin    ->
+Client                                                          Server
          Login协议，发送token或用户名密码  ->
-         <-模式Login，正常协议，Message:Success（仅token情况下）
-         如果发送token且失败
-            <-模式Login，正常协议，Message:Fail
-            （使用用户名密码登录）
-         Login协议，发送用户名密码  ->
-         <-模式Login，正常协议，Message:（token）（相当于token中的Success）
+                                                         检查是否已经登录，如果已经登录，NormalProtocol协议+Login模式发送Already Logged
+                                                         若尚未登录，首先检查调用身份验证器检查token/用户名密码是否有效
+                                                         若无效，NormalProtocol协议+Login模式发送Authentication Failed后断开连接
+                                                         若有效，发送Success(仅Token登录),发送Token(仅用户名密码登录)
+      <- Login协议，发送Success/Token/Authentication Failed/Already Logged
+解析并处理

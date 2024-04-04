@@ -94,9 +94,9 @@ public final class UserAuthentication implements IUserAuthentication{
                     //因此，禁止登录
                     NormalProtocol protocol = new NormalProtocol();
                     protocol.setType("Login");
-                    protocol.setType("Fail");
+                    protocol.setType("This user is currently online");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User,json, "Chat");
+                    serverAPI.SendJsonToClient(User,json, "NormalProtocol");
                     return false;
                 } catch (AccountNotFoundException ignored) {}
                 //插件处理
@@ -107,37 +107,36 @@ public final class UserAuthentication implements IUserAuthentication{
                     //插件要求禁止登录，所以直接关闭连接
                     NormalProtocol protocol = new NormalProtocol();
                     protocol.setType("Login");
-                    protocol.setMessage("Fail");
+                    protocol.setMessage("Authentication Failed");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User,json, "Chat");
+                    serverAPI.SendJsonToClient(User,json, "NormalProtocol");
                     return false;
                 }
                 UserLogged = true;
-                User.UserLogin(UserName);
+                User.onUserLogin(UserName);
                 NormalProtocol protocol = new NormalProtocol();
                 protocol.setType("Login");
                 protocol.setMessage("Success");
                 String json = new Gson().toJson(protocol);
-                serverAPI.SendJsonToClient(User,json, "Chat");
+                serverAPI.SendJsonToClient(User,json, "NormalProtocol");
                 return true;
             }
             else
             {
-                Database.close();
                 NormalProtocol protocol = new NormalProtocol();
                 protocol.setType("Login");
-                protocol.setMessage("Fail");
+                protocol.setMessage("Authentication Failed");
                 String json = new Gson().toJson(protocol);
-                serverAPI.SendJsonToClient(User,json, "Chat");
+                serverAPI.SendJsonToClient(User,json, "NormalProtocol");
                 return false;
             }
         } catch (Database.DatabaseException | SQLException e) {
             SaveStackTrace.saveStackTrace(e);
             NormalProtocol protocol = new NormalProtocol();
             protocol.setType("Login");
-            protocol.setMessage("Fail");
+            protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User,json, "Chat");
+            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
             return false;
         } finally {
             Database.close();
@@ -174,6 +173,11 @@ public final class UserAuthentication implements IUserAuthentication{
         if (event.isCancel())
         {
             //插件要求禁止登录，所以直接关闭连接
+            NormalProtocol protocol = new NormalProtocol();
+            protocol.setType("Login");
+            protocol.setMessage("Authentication Failed");
+            String json = new Gson().toJson(protocol);
+            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
             return false;
         }
 
@@ -182,10 +186,10 @@ public final class UserAuthentication implements IUserAuthentication{
         protocolData.setType("Login");
         protocolData.setMessage(token);
         String json = new Gson().toJson(protocolData);
-        serverAPI.SendJsonToClient(User,json, "Chat");
+        serverAPI.SendJsonToClient(User,json, "NormalProtocol");
         //设置登录成功
         UserLogged = true;
-        User.UserLogin(UserName);
+        User.onUserLogin(UserName);
         return true;
     }
     private boolean DoPasswordLogin0(String UserName, String Password)
@@ -193,17 +197,32 @@ public final class UserAuthentication implements IUserAuthentication{
         if ("Server".equals(UserName))
         {
             serverAPI.SendMessageToUser(User,"禁止使用受保护的用户名：Server");
+            NormalProtocol protocol = new NormalProtocol();
+            protocol.setType("Login");
+            protocol.setMessage("Authentication Failed");
+            String json = new Gson().toJson(protocol);
+            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
             return false;
         }
         if (UserName == null || Password == null || UserName.isEmpty() || Password.isEmpty())
         {
             serverAPI.SendMessageToUser(User,"禁止使用空字符串！");
+            NormalProtocol protocol = new NormalProtocol();
+            protocol.setType("Login");
+            protocol.setMessage("Authentication Failed");
+            String json = new Gson().toJson(protocol);
+            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
             return false;
         }
         try {
             serverAPI.GetUserByUserName(UserName);
             //说明目前是已经有同一名字的用户登录了
             //因此，禁止登录
+            NormalProtocol protocol = new NormalProtocol();
+            protocol.setType("Login");
+            protocol.setType("This user is currently online");
+            String json = new Gson().toJson(protocol);
+            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
             return false;
         } catch (AccountNotFoundException ignored) {}
         try
@@ -227,6 +246,11 @@ public final class UserAuthentication implements IUserAuthentication{
                 else
                 {
                     serverAPI.SendMessageToUser(User,"登录失败，用户名或密码错误");
+                    NormalProtocol protocol = new NormalProtocol();
+                    protocol.setType("Login");
+                    protocol.setMessage("Authentication Failed");
+                    String json = new Gson().toJson(protocol);
+                    serverAPI.SendJsonToClient(User,json, "NormalProtocol");
                     return false;
                 }
             }
@@ -253,6 +277,11 @@ public final class UserAuthentication implements IUserAuthentication{
             }
         } catch (Database.DatabaseException | SQLException e) {
             SaveStackTrace.saveStackTrace(e);
+            NormalProtocol protocol = new NormalProtocol();
+            protocol.setType("Login");
+            protocol.setMessage("Authentication Failed");
+            String json = new Gson().toJson(protocol);
+            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
             return false;
         } finally {
             Database.close();

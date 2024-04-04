@@ -21,7 +21,7 @@ public class ConsoleUser implements user {
     }
 
     @Override
-    public user UserLogin(String UserName) {
+    public user onUserLogin(String UserName) {
         throw new UnsupportedOperationException("Server can not login");
     }
 

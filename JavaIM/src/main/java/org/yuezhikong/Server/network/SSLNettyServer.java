@@ -2,6 +2,7 @@ package org.yuezhikong.Server.network;
 
 import cn.hutool.crypto.KeyUtil;
 import cn.hutool.crypto.SecureUtil;
+import com.google.gson.Gson;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -39,7 +40,10 @@ import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.plugin.event.events.UserLoginEvent;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.Protocol.GeneralProtocol;
+import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
 
@@ -182,8 +186,8 @@ public class SSLNettyServer implements NetworkServer {
                     .addRDN(BCStyle.C, "CN")//证书国家代号(Country Name)
                     .addRDN(BCStyle.O, "JavaIM-Server")//证书组织名(Organization Name)
                     .addRDN(BCStyle.OU, CodeDynamicConfig.ServerName)//证书组织单位名(Organization Unit Name)
-                    .addRDN(BCStyle.CN, "JavaIM Server("+CodeDynamicConfig.ServerName+") CA")
-                    .addRDN(BCStyle.ST, "Beijing")//证书州或省份(State or Province Name);//证书通用名(Common Name)
+                    .addRDN(BCStyle.CN, "JavaIM Server("+CodeDynamicConfig.ServerName+") CA")//证书通用名(Common Name)
+                    .addRDN(BCStyle.ST, "Beijing")//证书州或省份(State or Province Name);
                     .addRDN(BCStyle.L, "Beijing")//证书所属城市名(Locality Name)
                     .build();
             // 创建密钥对
@@ -327,9 +331,9 @@ public class SSLNettyServer implements NetworkServer {
         if (!isRunning()) {
             throw new IllegalStateException("Server is not running");
         }
-        logger.info("Server is stopping...");
+        logger.info("JavaIM 网络层正在关闭...");
         future.channel().close();
-        logger.info("Server stopped");
+        logger.info("服务器关闭完成");
     }
 
     private ExecutorService IOThreadPool;
@@ -340,8 +344,9 @@ public class SSLNettyServer implements NetworkServer {
 
     private class ServerInHandler extends ChannelInboundHandlerAdapter {
         private final HashMap<Channel,NetworkClient> clientNetworkClientPair = new HashMap<>();
+        private final Gson gson = new Gson();
         @Override
-        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        public void channelActive(ChannelHandlerContext ctx) {
             NettyUser nettyUser = new NettyUser();
             JavaIMServer.RegisterUser(nettyUser);
             NetworkClient client = new NettyNetworkClient(nettyUser,ctx.channel().remoteAddress(),ctx.channel());
@@ -353,7 +358,7 @@ public class SSLNettyServer implements NetworkServer {
         }
 
         @Override
-        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        public void channelInactive(ChannelHandlerContext ctx) {
             NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
             JavaIMServer.UnRegisterUser(thisClient.getUser());
             clientList.remove(thisClient);
@@ -362,10 +367,23 @@ public class SSLNettyServer implements NetworkServer {
         }
 
         @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
             try {
                 if (!(msg instanceof String Msg)) {
                     logger.info(String.format("客户端：%s 发送了非String消息：%s", ctx.channel().remoteAddress(), msg.toString()));
+                    return;
+                }
+                if (Msg.isEmpty())
+                {
+                    NormalProtocol normalProtocol = new NormalProtocol();
+                    normalProtocol.setType("Error");
+                    normalProtocol.setMessage("Empty Packet");
+
+                    GeneralProtocol protocol = new GeneralProtocol();
+                    protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
+                    protocol.setProtocolName("NormalProtocol");
+                    protocol.setProtocolData(gson.toJson(normalProtocol));
+                    ctx.writeAndFlush(gson.toJson(protocol));
                     return;
                 }
                 NetworkClient thisClient = clientNetworkClientPair.get(ctx.channel());
@@ -374,13 +392,23 @@ public class SSLNettyServer implements NetworkServer {
                 logger.warning(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
                 logger.warning("错误为："+throwable.getMessage());
                 SaveStackTrace.saveStackTrace(throwable);
+
+                NormalProtocol normalProtocol = new NormalProtocol();
+                normalProtocol.setType("Error");
+                normalProtocol.setMessage("uncaught exception");
+
+                GeneralProtocol protocol = new GeneralProtocol();
+                protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
+                protocol.setProtocolName("NormalProtocol");
+                protocol.setProtocolData(gson.toJson(normalProtocol));
+                ctx.writeAndFlush(gson.toJson(protocol));
             } finally {
                 ReferenceCountUtil.release(msg);
             }
         }
 
         @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             if (cause instanceof DecoderException)
             {
                 Throwable exceptionCause = cause.getCause();
@@ -460,11 +488,9 @@ public class SSLNettyServer implements NetworkServer {
         }
 
         @Override
-        public user UserLogin(String UserName) {
-            if (!JavaIMServer.RegisterUser(this))
-            {
-                throw new RuntimeException("Register User Failed");
-            }
+        public user onUserLogin(String UserName) {
+            UserLoginEvent event = new UserLoginEvent(UserName);
+            JavaIMServer.getPluginManager().callEvent(event);
             return this;
         }
 

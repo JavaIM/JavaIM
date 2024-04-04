@@ -12,11 +12,11 @@ public interface user {
     String getUserName();
 
     /**
-     * 使用户登录
+     * 当用户登录时
      * @param UserName 用户名
-     * @apiNote 请注意，此方法将会触发UserLoginEvent
+     * @apiNote 在用户登录时，请调用此方法
      */
-    user UserLogin(String UserName);
+    user onUserLogin(String UserName);
 
     /**
      * 获取用户登录状态
