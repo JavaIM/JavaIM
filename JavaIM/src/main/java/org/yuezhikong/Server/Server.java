@@ -273,6 +273,15 @@ public final class Server implements IServer {
             serverAPI.SendJsonToClient(user,gson.toJson(normalProtocol),"NormalProtocol");
             return;
         }
+        if (protocol.getProtocolVersion() != CodeDynamicConfig.getProtocolVersion())
+        {
+            NormalProtocol normalProtocol = new NormalProtocol();
+            normalProtocol.setType("Error");
+            normalProtocol.setMessage("Protocol version not support");
+            serverAPI.SendJsonToClient(user,gson.toJson(normalProtocol),"NormalProtocol");
+            return;
+        }
+
         switch (protocol.getProtocolName())
         {
             case "NormalProtocol" -> HandleNormalProtocol(gson.fromJson(protocol.getProtocolData(), NormalProtocol.class),user);

@@ -10,6 +10,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
@@ -54,6 +55,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.SocketAddress;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.NoSuchProviderException;
@@ -102,7 +104,7 @@ public class SSLNettyServer implements NetworkServer {
                         r,"IO Thread #"+threadNumber.getAndIncrement());
             }
         });
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1, new ThreadFactory() {
+        EventLoopGroup bossGroup = new NioEventLoopGroup(2, new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
             public Thread newThread(@NotNull Runnable r) {
@@ -110,7 +112,7 @@ public class SSLNettyServer implements NetworkServer {
                         r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
             }
         });
-        EventLoopGroup workerGroup = new NioEventLoopGroup(new ThreadFactory() {
+        EventLoopGroup workerGroup = new NioEventLoopGroup(10,new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
             public Thread newThread(@NotNull Runnable r) {
@@ -118,21 +120,21 @@ public class SSLNettyServer implements NetworkServer {
                         r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
             }
         });
-        DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup((new ThreadFactory() {
+        DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup(10,new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
             public Thread newThread(@NotNull Runnable r) {
                 return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
                         r,"Recv Message Thread #"+threadNumber.getAndIncrement());
             }
-        }));
+        });
 
         logger.info("正在启动Netty");
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .handler(new LoggingHandler(LogLevel.DEBUG))
+                    .handler(new LoggingHandler(LogLevel.DEBUG)) // Channel Debug等级日志记录器，用于调试
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel channel) {
@@ -148,10 +150,16 @@ public class SSLNettyServer implements NetworkServer {
                             } catch (SSLException e) {
                                 throw new RuntimeException("SSL Context Generate Failed!",e);
                             }
-                            pipeline.addLast(new LineBasedFrameDecoder(100000000));
+                            pipeline.addLast(new LoggingHandler(LogLevel.DEBUG));
+                            pipeline.addLast(new LineBasedFrameDecoder(1024));
                             pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));//IO
                             pipeline.addLast(new StringEncoder(StandardCharsets.UTF_8));
-
+                            pipeline.addLast(new MessageToMessageEncoder<CharSequence>() {
+                                @Override
+                                protected void encode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) {
+                                    out.add(CharBuffer.wrap(msg+"\n"));
+                                }
+                            });// 每行消息添加换行符
                             pipeline.addLast(RecvMessageThreadPool,new ServerInHandler());//JavaIM逻辑
                         }
                     });
@@ -211,17 +219,19 @@ public class SSLNettyServer implements NetworkServer {
             } catch (OperatorCreationException e) {
                 throw new RuntimeException("Generate Content Signer Failed!",e);
             }
-            X509CertificateHolder certHolder = new X509v3CertificateBuilder(
-                    subject,//证书签发者
-                    BigInteger.valueOf(currentTimeMillis),//证书序列号
-                    new Date(currentTimeMillis),//证书生效时间
-                    new Date(currentTimeMillis + (long) 365*24*60*60*1000),//证书失效时间
-                    subject,//证书主体
-                    SubjectPublicKeyInfo.getInstance(publicKey.getEncoded())//证书主体公钥
-            ).build(signer);
-            Certificate certificate = certHolder.toASN1Structure();
             // 将证书写入文件
             try {
+                X509CertificateHolder certHolder = new X509v3CertificateBuilder(
+                        subject,//证书签发者
+                        BigInteger.valueOf(currentTimeMillis),//证书序列号
+                        new Date(currentTimeMillis),//证书生效时间
+                        new Date(currentTimeMillis + (long) 365*24*60*60*1000),//证书失效时间
+                        subject,//证书主体
+                        SubjectPublicKeyInfo.getInstance(publicKey.getEncoded())//证书主体公钥
+                )
+                        .addExtension(Extension.basicConstraints, true, new BasicConstraints(true))
+                        .build(signer);
+                Certificate certificate = certHolder.toASN1Structure();
                 byte[] certificateEncode = certificate.getEncoded();
                 String certificateContent =
                         "-----BEGIN CERTIFICATE-----\n"+
@@ -467,7 +477,6 @@ public class SSLNettyServer implements NetworkServer {
             return user;
         }
     }
-
     private class NettyUser implements tcpUser{
         private NetworkClient client;
         private IUserAuthentication authentication;

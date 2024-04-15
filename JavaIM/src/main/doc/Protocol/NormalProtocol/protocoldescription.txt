@@ -9,5 +9,5 @@ Client                                                          Server
                                                          若尚未登录，首先检查调用身份验证器检查token/用户名密码是否有效
                                                          若无效，NormalProtocol协议+Login模式发送Authentication Failed后断开连接
                                                          若有效，发送Success(仅Token登录),发送Token(仅用户名密码登录)
-      <- Login协议，发送Success/Token/Authentication Failed/Already Logged
+      <- Login模式，发送Success/Token/Authentication Failed/Already Logged
 解析并处理
