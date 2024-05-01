@@ -114,11 +114,19 @@ public final class UserAuthentication implements IUserAuthentication{
                 }
                 UserLogged = true;
                 User.onUserLogin(UserName);
+
                 NormalProtocol protocol = new NormalProtocol();
                 protocol.setType("Login");
                 protocol.setMessage("Success");
                 String json = new Gson().toJson(protocol);
                 serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+
+                User.SetUserPermission(rs.getInt("Permission"),true);
+                if (User.getUserPermission().equals(Permission.BAN))
+                {
+                    serverAPI.SendMessageToUser(User,"登录失败，此用户已被永久封禁");
+                    return false;
+                }
                 return true;
             }
             else

@@ -248,10 +248,22 @@ public final class Server implements IServer {
         }
         else if ("passwd".equals(loginProtocol.getLoginPacketHead().getType()))
         {
+            if (loginProtocol.getLoginPacketBody().getNormalLogin().getUserName() == null ||
+                    loginProtocol.getLoginPacketBody().getNormalLogin().getUserName().contains("\n") ||
+                    loginProtocol.getLoginPacketBody().getNormalLogin().getUserName().contains("\r"))
+            {
+                getServerAPI().SendMessageToUser(user, "用户名中出现非法字符");
+                user.UserDisconnect();
+                return;
+            }
             if (!Objects.requireNonNull(user.getUserAuthentication()).
                     DoLogin(loginProtocol.getLoginPacketBody().getNormalLogin().getUserName(),
-                            loginProtocol.getLoginPacketBody().getNormalLogin().getPasswd()))
+                            loginProtocol.getLoginPacketBody().getNormalLogin().getPasswd())) {
                 user.UserDisconnect();
+                return;
+            }
+
+            
         }
         else
             user.UserDisconnect();

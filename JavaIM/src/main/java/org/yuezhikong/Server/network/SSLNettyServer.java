@@ -42,6 +42,7 @@ import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.event.events.User.auth.UserLoginEvent;
+import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -64,6 +65,9 @@ import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -522,8 +526,25 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public user SetUserPermission(int permissionLevel, boolean FlashPermission) {
-            if (!FlashPermission)
-                logger.info(String.format("用户：%s的权限发生更新，新权限等级：%s",getUserName(),permissionLevel));
+            if (!FlashPermission) {
+                IOThreadPool.execute(() -> {
+                    try
+                    {
+                        Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                        String sql = "UPDATE UserData SET Permission = ? where UserName = ?";
+                        PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
+                        ps.setInt(1,permissionLevel);
+                        ps.setString(2,getUserName());
+                        ps.executeUpdate();
+                    } catch (Database.DatabaseException | SQLException e) {
+                        SaveStackTrace.saveStackTrace(e);
+                    }
+                    finally {
+                        Database.close();
+                    }
+                });
+                logger.info(String.format("用户：%s的权限发生更新，新权限等级：%s", getUserName(), permissionLevel));
+            }
             permission = Permission.ToPermission(permissionLevel);
             return this;
         }
