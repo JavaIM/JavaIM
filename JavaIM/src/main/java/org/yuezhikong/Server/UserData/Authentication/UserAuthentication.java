@@ -1,6 +1,5 @@
 package org.yuezhikong.Server.UserData.Authentication;
 
-import cn.hutool.crypto.SecureUtil;
 import com.google.gson.Gson;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.IServer;
@@ -12,6 +11,7 @@ import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
@@ -21,7 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import cn.hutool.core.lang.UUID;
+import java.util.UUID;
 
 public final class UserAuthentication implements IUserAuthentication{
 
@@ -164,7 +164,7 @@ public final class UserAuthentication implements IUserAuthentication{
         ResultSet rs;
         do {
             //获取一个安全的，不重复的token
-            token = UUID.randomUUID(true).toString();
+            token = UUID.randomUUID().toString();
             ps = DatabaseConnection.prepareStatement("select * from UserData where token = ?");
             ps.setString(1, token);
             rs = ps.executeQuery();
@@ -246,7 +246,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 String sha256;
                 salt = rs.getString("salt");
                 //为保护安全，保存密码是加盐sha256，只有对密码处理后，才能进行比较
-                sha256 = SecureUtil.sha256(Password + salt);
+                sha256 = SHA256.sha256(Password + salt);
                 if (rs.getString("Passwd").equals(sha256))
                 {
                     return PostUserNameAndPasswordLogin(UserName,DatabaseConnection,rs.getInt("Permission"));
@@ -268,13 +268,13 @@ public final class UserAuthentication implements IUserAuthentication{
                 String salt;
                 do {
                     //寻找一个安全的盐
-                    salt = UUID.randomUUID(true).toString();
+                    salt = UUID.randomUUID().toString();
                     ps = DatabaseConnection.prepareStatement("select * from UserData where salt = ?");
                     ps.setString(1, salt);
                     rs = ps.executeQuery();
                 } while (rs.next());
                 //密码加盐并保存
-                String sha256 = SecureUtil.sha256(Password + salt);
+                String sha256 = SHA256.sha256(Password + salt);
                 ps = DatabaseConnection.prepareStatement
                         ("INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`) VALUES (0,?, ?, ?);");
                 ps.setString(1, UserName);

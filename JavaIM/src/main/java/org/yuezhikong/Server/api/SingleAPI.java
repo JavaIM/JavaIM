@@ -16,7 +16,6 @@
  */
 package org.yuezhikong.Server.api;
 
-import cn.hutool.crypto.SecureUtil;
 import com.google.gson.Gson;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
@@ -27,6 +26,7 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
@@ -177,7 +177,7 @@ public abstract class SingleAPI implements api{
                     ps = DatabaseConnection.prepareStatement(sql);
                     String salt = rs.getString("salt");
                     //为保护安全，保存密码是加盐sha256
-                    String sha256 = SecureUtil.sha256(password + salt);
+                    String sha256 = SHA256.sha256(password + salt);
                     ps.setString(1,sha256);
                     ps.setString(2,User.getUserName());
                     ps.executeUpdate();

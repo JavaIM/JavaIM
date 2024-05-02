@@ -73,10 +73,6 @@ public class Database {
             //不存在时，添加”token“列
             DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN token VARCHAR(255) NOT NULL DEFAULT '';");
         }
-        if (CheckColumnsExist("UserLogged","Database", DatabaseConnection))
-        {
-            DatabaseConnection.createStatement().executeUpdate("ALTER TABLE Database DROP COLUMN UserLogged;");
-        }
     }
     /**
      * 初始化数据库连接

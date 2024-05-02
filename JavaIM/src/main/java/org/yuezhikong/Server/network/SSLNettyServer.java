@@ -1,7 +1,5 @@
 package org.yuezhikong.Server.network;
 
-import cn.hutool.crypto.KeyUtil;
-import cn.hutool.crypto.SecureUtil;
 import com.google.gson.Gson;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -24,6 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x509.Certificate;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.cert.CertIOException;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -58,13 +57,12 @@ import java.math.BigInteger;
 import java.net.SocketAddress;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -203,7 +201,14 @@ public class SSLNettyServer implements NetworkServer {
                     .addRDN(BCStyle.L, "Beijing")//证书所属城市名(Locality Name)
                     .build();
             // 创建密钥对
-            KeyPair pair = SecureUtil.generateKeyPair("RSA",2048);
+            KeyPair pair;
+            try {
+                KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+                generator.initialize(2048);
+                pair = generator.generateKeyPair();
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException("Failed to generate keypair!", e);
+            }
             PublicKey publicKey = pair.getPublic();
             PrivateKey privateKey = pair.getPrivate();
             // 根据规范将privateKey写入到文件
@@ -259,12 +264,14 @@ public class SSLNettyServer implements NetworkServer {
         try (FileInputStream stream = new FileInputStream("./ServerEncryption/cert.crt")){
             CertificateFactory factory = CertificateFactory.getInstance("X.509","BC");
             caCert = new JcaX509CertificateHolder((X509Certificate) factory.generateCertificate(stream)).toASN1Structure();
-            caPrivateKey = KeyUtil.generatePrivateKey("RSA",
-                    Base64.decodeBase64(
-                            FileUtils.readFileToString(new File("./ServerEncryption/private.key"),StandardCharsets.UTF_8)
+            caPrivateKey = KeyFactory.getInstance("RSA").generatePrivate(
+                    new PKCS8EncodedKeySpec(
+                            Base64.decodeBase64(
+                                    FileUtils.readFileToString(new File("./ServerEncryption/private.key"),StandardCharsets.UTF_8)
+                            )
                     )
             );
-        } catch (CertificateException | NoSuchProviderException | IOException e) {
+        } catch (CertificateException | NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
             throw new RuntimeException("Failed to open X.509 CA Cert & X.509 RSA Private key, Permission denied?",e);
         }
 
@@ -279,7 +286,14 @@ public class SSLNettyServer implements NetworkServer {
                 .build();
 
         // 创建密钥对
-        KeyPair pair = SecureUtil.generateKeyPair("RSA",2048);
+        KeyPair pair;
+        try {
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            pair = generator.generateKeyPair();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Failed to generate keypair!", e);
+        }
         PublicKey publicKey = pair.getPublic();
         ServerSSLPrivateKey = pair.getPrivate();
 
