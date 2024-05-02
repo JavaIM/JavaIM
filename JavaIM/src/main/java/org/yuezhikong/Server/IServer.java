@@ -16,7 +16,7 @@
  */
 package org.yuezhikong.Server;
 
-import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
+import org.apache.ibatis.session.SqlSession;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
@@ -86,6 +86,12 @@ public interface IServer {
      * @return Logger
      */
     Logger getLogger();
+
+    /**
+     * 获取Mybatis SQL会话
+     * @return SQL会话
+     */
+    SqlSession getSqlSession();
 
     /**
      * 获取网络层服务器

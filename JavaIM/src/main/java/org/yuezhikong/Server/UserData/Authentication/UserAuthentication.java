@@ -1,24 +1,22 @@
 package org.yuezhikong.Server.UserData.Authentication;
 
 import com.google.gson.Gson;
-import org.yuezhikong.CodeDynamicConfig;
+import org.apache.ibatis.session.SqlSession;
 import org.yuezhikong.Server.IServer;
+import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Permission;
+import org.yuezhikong.Server.UserData.dao.userInformationDao;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.UserData.userInformation;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
-import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
 import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -80,15 +78,13 @@ public final class UserAuthentication implements IUserAuthentication{
     {
         try
         {
-            Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-            PreparedStatement ps = DatabaseConnection.prepareStatement("select * from UserData where token = ?");
-            ps.setString(1,Token);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next())
+            SqlSession sqlSession = ServerTools.getServerInstanceOrThrow().getSqlSession();
+            userInformationDao mapper = sqlSession.getMapper(userInformationDao.class);
+            userInformation information = mapper.getUserByToken(Token);
+            if (information != null)
             {
-                UserName = rs.getString("UserName");
+                UserName = information.getUserName();
                 try {
-
                     serverAPI.GetUserByUserName(UserName);
                     //说明目前是已经有同一名字的用户登录了
                     //因此，禁止登录
@@ -114,6 +110,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 }
                 UserLogged = true;
                 User.onUserLogin(UserName);
+                User.setUserInformation(information);
 
                 NormalProtocol protocol = new NormalProtocol();
                 protocol.setType("Login");
@@ -121,7 +118,6 @@ public final class UserAuthentication implements IUserAuthentication{
                 String json = new Gson().toJson(protocol);
                 serverAPI.SendJsonToClient(User,json, "NormalProtocol");
 
-                User.SetUserPermission(rs.getInt("Permission"),true);
                 if (User.getUserPermission().equals(Permission.BAN))
                 {
                     serverAPI.SendMessageToUser(User,"登录失败，此用户已被永久封禁");
@@ -138,42 +134,36 @@ public final class UserAuthentication implements IUserAuthentication{
                 serverAPI.SendJsonToClient(User,json, "NormalProtocol");
                 return false;
             }
-        } catch (Database.DatabaseException | SQLException e) {
-            SaveStackTrace.saveStackTrace(e);
+        } catch (Throwable t) {
+            SaveStackTrace.saveStackTrace(t);
             NormalProtocol protocol = new NormalProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
             serverAPI.SendJsonToClient(User,json, "NormalProtocol");
             return false;
-        } finally {
-            Database.close();
         }
     }
 
-    private boolean PostUserNameAndPasswordLogin(String UserName,Connection DatabaseConnection,int PermissionLevel) throws SQLException {
+    private boolean PostUserNameAndPasswordLogin(String UserName,userInformation information) {
         this.UserName = UserName;
-        User.SetUserPermission(PermissionLevel,true);
-        if (User.getUserPermission().equals(Permission.BAN))
+        if (Permission.ToPermission(information.getPermission()).equals(Permission.BAN))
         {
             serverAPI.SendMessageToUser(User,"登录失败，此用户已被永久封禁");
             return false;
         }
+        SqlSession sqlSession = ServerTools.getServerInstance().getSqlSession();
+        userInformationDao mapper = sqlSession.getMapper(userInformationDao.class);
+
         String token;
-        PreparedStatement ps;
-        ResultSet rs;
+        userInformation tempInformation;
         do {
-            //获取一个安全的，不重复的token
+            //寻找一个安全的，不重复的token
             token = UUID.randomUUID().toString();
-            ps = DatabaseConnection.prepareStatement("select * from UserData where token = ?");
-            ps.setString(1, token);
-            rs = ps.executeQuery();
-        } while (rs.next());
-        //将这个token填入数据库
-        ps = DatabaseConnection.prepareStatement("UPDATE UserData SET token = ? where UserName = ?;");
-        ps.setString(1, token);
-        ps.setString(2, UserName);
-        ps.executeUpdate();
+            tempInformation = mapper.getUserByToken(token);
+        } while (tempInformation != null);
+        information.setToken(token);
+        User.setUserInformation(information);
 
         //插件处理
         PreLoginEvent event = new PreLoginEvent(UserName,false);
@@ -235,21 +225,20 @@ public final class UserAuthentication implements IUserAuthentication{
         } catch (AccountNotFoundException ignored) {}
         try
         {
-            Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-            PreparedStatement ps = DatabaseConnection.prepareStatement("select * from UserData where UserName = ?");
-            ps.setString(1,UserName);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next())
+            SqlSession sqlSession = ServerTools.getServerInstance().getSqlSession();
+            userInformationDao mapper = sqlSession.getMapper(userInformationDao.class);
+            userInformation userInformation = mapper.getUserByName(UserName);
+            if (userInformation != null)
             {
                 //登录代码
                 String salt;
                 String sha256;
-                salt = rs.getString("salt");
+                salt = userInformation.getSalt();
                 //为保护安全，保存密码是加盐sha256，只有对密码处理后，才能进行比较
                 sha256 = SHA256.sha256(Password + salt);
-                if (rs.getString("Passwd").equals(sha256))
+                if (userInformation.getPasswd().equals(sha256))
                 {
-                    return PostUserNameAndPasswordLogin(UserName,DatabaseConnection,rs.getInt("Permission"));
+                    return PostUserNameAndPasswordLogin(UserName,userInformation);
                 }
                 else
                 {
@@ -266,33 +255,32 @@ public final class UserAuthentication implements IUserAuthentication{
             {
                 //注册代码
                 String salt;
+                userInformation tempInformation;
                 do {
                     //寻找一个安全的盐
                     salt = UUID.randomUUID().toString();
-                    ps = DatabaseConnection.prepareStatement("select * from UserData where salt = ?");
-                    ps.setString(1, salt);
-                    rs = ps.executeQuery();
-                } while (rs.next());
+                    tempInformation = mapper.getUserBySalt(salt);
+                } while (tempInformation != null);
                 //密码加盐并保存
                 String sha256 = SHA256.sha256(Password + salt);
-                ps = DatabaseConnection.prepareStatement
-                        ("INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`) VALUES (0,?, ?, ?);");
-                ps.setString(1, UserName);
-                ps.setString(2, sha256);
-                ps.setString(3, salt);
-                ps.executeUpdate();
-                return PostUserNameAndPasswordLogin(UserName,DatabaseConnection,0);
+                userInformation = new userInformation();
+                userInformation.setPasswd(sha256);
+                userInformation.setPermission(0);
+                userInformation.setSalt(salt);
+                userInformation.setToken("");
+                userInformation.setUserName(UserName);
+
+                mapper.addUser(userInformation);
+                return PostUserNameAndPasswordLogin(UserName,userInformation);
             }
-        } catch (Database.DatabaseException | SQLException e) {
-            SaveStackTrace.saveStackTrace(e);
+        } catch (Throwable t) {
+            SaveStackTrace.saveStackTrace(t);
             NormalProtocol protocol = new NormalProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
             serverAPI.SendJsonToClient(User,json, "NormalProtocol");
             return false;
-        } finally {
-            Database.close();
         }
     }
 

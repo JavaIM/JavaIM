@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace=绑定一个对应的Dao/Mapper接口-->
+<mapper namespace="org.yuezhikong.Server.UserData.dao.userInformationDao">
+    <!--select查询语句-->
+    <select id="getUserList" resultType="org.yuezhikong.Server.UserData.userInformation">
+        select * from UserData
+    </select>
+
+    <select id="getUserByName" parameterType="String" resultType="org.yuezhikong.Server.UserData.userInformation">
+        select * from UserData where UserName = #{userName}
+    </select>
+
+    <select id="getUserByToken" parameterType="String" resultType="org.yuezhikong.Server.UserData.userInformation">
+        select * from UserData where token = #{token}
+    </select>
+
+    <select id="getUserBySalt" parameterType="String" resultType="org.yuezhikong.Server.UserData.userInformation">
+        select * from UserData where salt = #{salt}
+    </select>
+
+    <insert id="addUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
+        INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`,`token`) VALUES (#{Permission}, #{UserName}, #{Passwd}, #{salt}, #{token});
+    </insert>
+
+    <insert id="updateUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
+        UPDATE UserData SET `Permission`=#{Permission}, `Passwd`=#{Passwd}, `salt`=#{salt}, `token`=#{token} where UserName = #{UserName}
+    </insert>
+</mapper>

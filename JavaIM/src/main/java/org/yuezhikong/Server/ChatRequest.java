@@ -17,22 +17,17 @@
 package org.yuezhikong.Server;
 
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.Permission;
+import org.yuezhikong.Server.UserData.dao.userInformationDao;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.UserData.userInformation;
 import org.yuezhikong.Server.api.api;
-import org.yuezhikong.Server.plugin.Plugin.PluginData;
 import org.yuezhikong.Server.plugin.event.events.User.UserChatEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserCommandEvent;
 import org.yuezhikong.utils.CustomVar;
-import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -212,7 +207,7 @@ public class ChatRequest {
                             if (Permission.ADMIN.equals(targetUser.getUserPermission())) {
                                 API.SendMessageToUser(User, "无法给予权限，对方已是管理员");
                             } else {
-                                targetUser.SetUserPermission(1, false);
+                                targetUser.SetUserPermission(1);
                                 API.SendMessageToUser(User, "已将" + targetUser.getUserName() + "设为管理员");
                                 API.SendMessageToUser(targetUser, User.getUserName() + "已将你设为管理员");
                             }
@@ -232,7 +227,7 @@ public class ChatRequest {
                         try {
                             user targetUser = API.GetUserByUserName(command.argv()[0]);
                             if (Permission.ADMIN.equals(targetUser.getUserPermission())) {
-                                targetUser.SetUserPermission(0, false);
+                                targetUser.SetUserPermission(0);
                                 API.SendMessageToUser(User, "已剥夺" + targetUser.getUserName() + "的管理员权限");
                             } else {
                                 API.SendMessageToUser(User, "无法剥夺权限，对方不是管理员");
@@ -255,7 +250,7 @@ public class ChatRequest {
                             if (Permission.BAN.equals(targetUser.getUserPermission())) {
                                 API.SendMessageToUser(User, "无法封禁，对方已被封禁");
                             } else {
-                                targetUser.SetUserPermission(-1, false);
+                                targetUser.SetUserPermission(-1);
                                 targetUser.UserDisconnect();
                                 API.SendMessageToUser(User, "已将" + targetUser.getUserName() + "封禁");
                             }
@@ -272,26 +267,10 @@ public class ChatRequest {
                         break;
                     }
                     if (command.argv().length == 1) {
-                        instance.getIOThreadPool().execute(() -> {
-                            try {
-                                Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-                                String sql = "select * from UserData where UserName = ?";
-                                PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-                                ps.setString(1, command.argv()[0]);
-                                ResultSet rs = ps.executeQuery();
-                                if (rs.next()) {
-                                    sql = "UPDATE UserData SET Permission = 0 where UserName = ?";
-                                    ps = DatabaseConnection.prepareStatement(sql);
-                                    ps.setString(1, command.argv()[0]);
-                                    ps.executeUpdate();
-                                    API.SendMessageToUser(User, "已解封" + command.argv()[0]);
-                                }
-                            } catch (Database.DatabaseException | SQLException e) {
-                                SaveStackTrace.saveStackTrace(e);
-                            } finally {
-                                Database.close();
-                            }
-                        });
+                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                        userInformation information = mapper.getUserByName(command.argv()[0]);
+                        information.setPermission(0);
+                        mapper.updateUser(information);
                     } else {
                         API.SendMessageToUser(User, "语法错误，正确的语法为：/unban <用户名>");
                     }

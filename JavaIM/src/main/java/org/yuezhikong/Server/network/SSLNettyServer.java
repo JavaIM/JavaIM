@@ -33,15 +33,12 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
-import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
-import org.yuezhikong.Server.UserData.Permission;
+import org.yuezhikong.Server.ServerTools;
+import org.yuezhikong.Server.UserData.JavaUser;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.event.events.User.auth.UserLoginEvent;
-import org.yuezhikong.utils.DataBase.Database;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.NormalProtocol;
@@ -63,9 +60,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -495,12 +489,8 @@ public class SSLNettyServer implements NetworkServer {
             return user;
         }
     }
-    private class NettyUser implements tcpUser{
+    private static class NettyUser extends JavaUser implements tcpUser{
         private NetworkClient client;
-        private IUserAuthentication authentication;
-
-        private Permission permission;
-
         /**
          * 设置网络层客户端
          * @param client 客户端
@@ -512,71 +502,15 @@ public class SSLNettyServer implements NetworkServer {
         public NetworkClient getNetworkClient() {
             return client;
         }
-
         @Override
-        public String getUserName() {
-            return (authentication == null) ? "" : authentication.getUserName();
+        public boolean isServer() {
+            return false;
         }
 
         @Override
         public user onUserLogin(String UserName) {
-            logger.info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
-            UserLoginEvent event = new UserLoginEvent(UserName);
-            JavaIMServer.getPluginManager().callEvent(event);
-            return this;
-        }
-
-        @Override
-        public boolean isUserLogged() {
-            return authentication != null && authentication.isLogin();
-        }
-
-        @Override
-        public user UserDisconnect() {
-            JavaIMServer.UnRegisterUser(this);
-            client.disconnect();
-            return this;
-        }
-
-        @Override
-        public user SetUserPermission(int permissionLevel, boolean FlashPermission) {
-            if (!FlashPermission) {
-                IOThreadPool.execute(() -> {
-                    try
-                    {
-                        Connection DatabaseConnection = Database.Init(CodeDynamicConfig.GetMySQLDataBaseHost(), CodeDynamicConfig.GetMySQLDataBasePort(), CodeDynamicConfig.GetMySQLDataBaseName(), CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
-                        String sql = "UPDATE UserData SET Permission = ? where UserName = ?";
-                        PreparedStatement ps = DatabaseConnection.prepareStatement(sql);
-                        ps.setInt(1,permissionLevel);
-                        ps.setString(2,getUserName());
-                        ps.executeUpdate();
-                    } catch (Database.DatabaseException | SQLException e) {
-                        SaveStackTrace.saveStackTrace(e);
-                    }
-                    finally {
-                        Database.close();
-                    }
-                });
-                logger.info(String.format("用户：%s的权限发生更新，新权限等级：%s", getUserName(), permissionLevel));
-            }
-            permission = Permission.ToPermission(permissionLevel);
-            return this;
-        }
-
-        @Override
-        public user SetUserPermission(Permission permission) {
-            this.permission = permission;
-            return this;
-        }
-
-        @Override
-        public Permission getUserPermission() {
-            return permission;
-        }
-
-        @Override
-        public boolean isServer() {
-            return false;
+            ServerTools.getServerInstanceOrThrow().getLogger().info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
+            return super.onUserLogin(UserName);
         }
 
         @Override
@@ -587,31 +521,6 @@ public class SSLNettyServer implements NetworkServer {
         @Override
         public user setAllowedTransferProtocol(boolean allowedTransferProtocol) {
             throw new UnsupportedOperationException("This version of JavaIM NetworkServer not support TransferProtocol");
-        }
-
-        @Override
-        public user addLoginRecall(IUserAuthentication.UserRecall code) {
-            checks.checkState(authentication == null,"Authentication is not init");
-            authentication.RegisterLoginRecall(code);
-            return this;
-        }
-
-        @Override
-        public user addDisconnectRecall(IUserAuthentication.UserRecall code) {
-            checks.checkState(authentication == null,"Authentication is not init");
-            authentication.RegisterLogoutRecall(code);
-            return this;
-        }
-
-        @Override
-        public user setUserAuthentication(@Nullable IUserAuthentication Authentication) {
-            authentication = Authentication;
-            return this;
-        }
-
-        @Override
-        public @Nullable IUserAuthentication getUserAuthentication() {
-            return authentication;
         }
     }
 }

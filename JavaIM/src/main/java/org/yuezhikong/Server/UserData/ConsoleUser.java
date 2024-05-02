@@ -36,12 +36,7 @@ public class ConsoleUser implements user {
     }
 
     @Override
-    public user SetUserPermission(int permissionLevel, boolean FlashPermission) {
-        throw new UnsupportedOperationException("Server can not set permission");
-    }
-
-    @Override
-    public user SetUserPermission(Permission permission) {
+    public user SetUserPermission(int permissionLevel) {
         throw new UnsupportedOperationException("Server can not set permission");
     }
 
@@ -83,5 +78,15 @@ public class ConsoleUser implements user {
     @Override
     public @Nullable IUserAuthentication getUserAuthentication() {
         throw new UnsupportedOperationException("Server can not use authentication");
+    }
+
+    @Override
+    public void setUserInformation(userInformation userInformation) {
+        throw new UnsupportedOperationException("Server not in database");
+    }
+
+    @Override
+    public userInformation getUserInformation() {
+        throw new UnsupportedOperationException("server not in database");
     }
 }

@@ -31,18 +31,11 @@ public interface user {
 
     /**
      * 设置用户权限级别
+     *
      * @param permissionLevel 权限级别
-     * @param FlashPermission 是否为刷新权限
      * @apiNote 如果是刷新权限，权限信息将不会记录到数据库中
      */
-    user SetUserPermission(int permissionLevel, boolean FlashPermission);
-
-    /**
-     * 设置用户权限级别
-     * @param permission 权限
-     * @apiNote 通过此方法，将不会记录到数据库中
-     */
-    user SetUserPermission(Permission permission);
+    user SetUserPermission(int permissionLevel);
 
     /**
      * 获取用户的权限级别
@@ -94,4 +87,17 @@ public interface user {
      */
     @Nullable
     IUserAuthentication getUserAuthentication();
+
+    /**
+     * 设置用户数据库信息
+     * @param userInformation 用户数据库信息
+     */
+    void setUserInformation(userInformation userInformation);
+
+    /**
+     * 获取用户数据库信息
+     * @return 用户数据库信息
+     * @apiNote 操作后请使用setUserInformation重新写入，操作后只有通过此方法才会持久化保存
+     */
+    userInformation getUserInformation();
 }

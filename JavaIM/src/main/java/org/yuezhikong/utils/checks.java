@@ -11,9 +11,8 @@ public class checks {
      * @throws IllegalArgumentException 表达式为true时抛出的异常
      */
     public static void checkArgument(boolean expression,String errorMessage) {
-        if (expression) {
+        if (expression)
             throw new IllegalArgumentException(errorMessage);
-        }
     }
 
     /**
@@ -23,9 +22,8 @@ public class checks {
      * @throws IllegalStateException 表达式为true时抛出的异常
      */
     public static void checkState(boolean expression,String errorMessage) {
-        if (expression) {
+        if (expression)
             throw new IllegalStateException(errorMessage);
-        }
     }
 
 }

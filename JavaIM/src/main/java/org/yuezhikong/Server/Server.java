@@ -2,6 +2,7 @@ package org.yuezhikong.Server;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
@@ -20,6 +21,7 @@ import org.yuezhikong.Server.plugin.event.events.User.UserAddEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.CustomVar;
+import org.yuezhikong.utils.DataBase.DatabaseHelper;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
@@ -108,6 +110,16 @@ public final class Server implements IServer {
     private final NetworkServer networkServer;
 
     /**
+     * Mybatis会话
+     */
+    private final SqlSession sqlSession;
+
+    @Override
+    public SqlSession getSqlSession() {
+        return sqlSession;
+    }
+
+    /**
      * 启动JavaIM服务端
      * @param networkServer 网络层服务器
      */
@@ -119,6 +131,19 @@ public final class Server implements IServer {
         }
         this.networkServer = networkServer;
         Instance = this;
+
+        logger.info("正在处理数据库");
+        //获取JDBCUrl,创建表与自动更新数据库
+        String JDBCUrl = DatabaseHelper.InitDataBase();
+        //初始化Mybatis
+        sqlSession = DatabaseHelper.InitMybatis(JDBCUrl);
+        logger.info("数据库启动完成");
+
+        logger.info("正在加载插件");
+        getPluginManager().LoadPluginOnDirectory(new File("./plugins"));
+        logger.info("插件加载完成");
+
+        logger.info("正在启动用户指令处理线程");
         new Thread(() -> {
             while (true) try {
                 Scanner scanner = new Scanner(System.in);
@@ -156,7 +181,8 @@ public final class Server implements IServer {
                 SaveStackTrace.saveStackTrace(throwable);
             }
         },"User Command Thread").start();
-        getPluginManager().LoadPluginOnDirectory(new File("./plugins"));
+        logger.info("用户指令处理线程启动完成");
+
         logger.info("JavaIM 启动完成");
     }
 
@@ -178,6 +204,7 @@ public final class Server implements IServer {
     public void stop() {
         logger.info("JavaIM服务器正在关闭...");
         users.clear();
+        sqlSession.close();
         pluginManager.callEvent(new ServerStopEvent());
         try {
             pluginManager.UnLoadAllPlugin();
@@ -260,10 +287,7 @@ public final class Server implements IServer {
                     DoLogin(loginProtocol.getLoginPacketBody().getNormalLogin().getUserName(),
                             loginProtocol.getLoginPacketBody().getNormalLogin().getPasswd())) {
                 user.UserDisconnect();
-                return;
             }
-
-            
         }
         else
             user.UserDisconnect();
