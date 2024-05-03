@@ -16,35 +16,14 @@
  */
 package org.yuezhikong;
 
-import static org.yuezhikong.utils.ConfigFileManager.LoadClientProperties;
 import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
-    private static final int ProtocolVersion = 9;
+    private static final int ProtocolVersion = 10;
     //本程序版本：
     private static final String Version = "InDev";
-    //调试模式
-    private static final boolean Debug_Mode = false;
-    //本版本为实验性版本
-    private static final boolean ThisVersionIsExpVersion = false;
-    //如果为测试性版本，则信息为：
-    private static final String ExpVersionText = "此版本包含GUI测试";
-
-    //仅客户端
-    //保存的服务器文件版本
-    public final static int SavedServerFileVersion = 2;
-
-    //动态区，可动态通过配置文件修改
-    //是否是GUI模式
-    public static boolean GUIMode = Boolean.parseBoolean(LoadClientProperties().getProperty("GUIMode"));
-    //是否允许TransferProtocol协议
-    public static boolean AllowedTransferProtocol = true;
-
-    //仅服务端
-    //最大客户端数量，输入-1代表禁用
-    public static int MAX_CLIENT = Integer.parseInt(LoadServerProperties().getProperty("MAX_CLIENT"));
 
     //服务器名
     public static String ServerName = LoadServerProperties().getProperty("Server-Name","A JavaIM Server");
@@ -60,13 +39,6 @@ public final class CodeDynamicConfig {
     public static String MySQLDataBaseUser = LoadServerProperties().getProperty("MySQLDataBaseUser");
     //MySQL数据库密码
     public static String MySQLDataBasePasswd = LoadServerProperties().getProperty("MySQLDataBasePasswd");
-    //socket最大空闲时间，单位为：毫秒
-    //如果这么长的时间无任何数据发来，则认为客户端已断开
-    public static int SocketTimeout = 120000;
-
-    //仅客户端
-    //心跳包时间间隔，单位为：秒
-    public static int HeartbeatInterval = 30;
 
     public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }
 

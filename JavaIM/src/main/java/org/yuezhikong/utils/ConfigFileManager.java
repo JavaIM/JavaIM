@@ -25,7 +25,6 @@ public class ConfigFileManager {
     public void CreateServerprop(){
         Properties sprop = new Properties();
         try {
-            sprop.setProperty("MAX_CLIENT", "-1");
             sprop.setProperty("EnableLoginSystem", "true");
             sprop.setProperty("Use_SQLITE_Mode", "true");
             sprop.setProperty("MySQLDataBaseHost", "127.0.0.1");
@@ -35,28 +34,10 @@ public class ConfigFileManager {
             sprop.setProperty("MySQLDataBasePasswd", "JavaIM");
             sprop.setProperty("Server-Name", "A JavaIM Server");
 
-            sprop.store(new FileOutputStream("server.properties"), null);
+            sprop.store(new FileOutputStream("server.properties"), "JavaIM Server Configuration");
         } catch (IOException ex) {
             SaveStackTrace.saveStackTrace(ex);
         }
-    }
-    public void CreateClientprop(){
-        Properties cprop = new Properties();
-        try {
-            cprop.setProperty("GUIMode", "true");
-            cprop.store(new FileOutputStream("client.properties"), null);
-        } catch (IOException ex) {
-            SaveStackTrace.saveStackTrace(ex);
-        }
-    }
-    public static @NotNull Properties LoadClientProperties(){
-        Properties prop = new Properties();
-        try {
-            prop.load(new FileInputStream("client.properties"));
-        } catch (IOException ex) {
-            SaveStackTrace.saveStackTrace(ex);
-        }
-        return prop;
     }
     public static @NotNull Properties LoadServerProperties(){
         Properties prop = new Properties();

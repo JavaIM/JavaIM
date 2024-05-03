@@ -39,10 +39,6 @@ public class Main {
         ConfigFileManager prop = new ConfigFileManager();
         prop.CreateServerprop();
     }
-    public static void CreateClientProperties(){
-        ConfigFileManager prop = new ConfigFileManager();
-        prop.CreateClientprop();
-    }
 
     /**
      * 重定向System.out与System.err
@@ -270,17 +266,13 @@ public class Main {
         new Notice();
         stdoutRedistribution();
         Thread.currentThread().setUncaughtExceptionHandler(CrashReport.getCrashReport());
-        //服务端与客户端配置文件初始化
+        //服务端配置文件初始化
         if (!(new File("server.properties").exists())){
             logger.info("目录下没有检测到服务端配置文件，正在创建");
             CreateServerProperties();
         }
-        if (!(new File("client.properties").exists())){
-            logger.info("目录下没有检测到客户端配置文件，正在创建");
-            CreateClientProperties();
-        }
         //命令行参数处理
-        ConsoleCommandRequest.Request(true,args);
+        ConsoleCommandRequest.Request(args);
         //初始化BouncyCastle，设置为JCE Provider
         Security.addProvider(new BouncyCastleProvider());
         //启动JavaIM启动逻辑
