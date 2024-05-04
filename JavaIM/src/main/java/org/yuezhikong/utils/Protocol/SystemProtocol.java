@@ -14,14 +14,35 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.yuezhikong;
+package org.yuezhikong.utils.Protocol;
 
-import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.utils.Logger;
+/**
+ * 接受/发送的json的序列化/反序列化流程
+ * <p>如果修改了protocol，请使用GsonFormat插件直接替换</p>
+ */
+public class SystemProtocol {
 
-public class ExpVersionCode {
-    public void run(@NotNull Logger logger)
-    {
+    /**
+     * type :
+     * Message :
+     */
 
+    private String type;
+    private String Message;
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getMessage() {
+        return Message;
+    }
+
+    public void setMessage(String Message) {
+        this.Message = Message;
     }
 }

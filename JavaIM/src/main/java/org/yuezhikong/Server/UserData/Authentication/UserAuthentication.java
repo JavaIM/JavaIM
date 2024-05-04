@@ -12,7 +12,7 @@ import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
 import org.yuezhikong.utils.Logger;
-import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -88,11 +88,11 @@ public final class UserAuthentication implements IUserAuthentication{
                     serverAPI.GetUserByUserName(UserName);
                     //说明目前是已经有同一名字的用户登录了
                     //因此，禁止登录
-                    NormalProtocol protocol = new NormalProtocol();
+                    SystemProtocol protocol = new SystemProtocol();
                     protocol.setType("Login");
-                    protocol.setType("This user is currently online");
+                    protocol.setMessage("Already Logged");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+                    serverAPI.SendJsonToClient(User,json, "SystemProtocol");
                     return false;
                 } catch (AccountNotFoundException ignored) {}
                 //插件处理
@@ -101,22 +101,22 @@ public final class UserAuthentication implements IUserAuthentication{
                 if (event.isCancel())
                 {
                     //插件要求禁止登录，所以直接关闭连接
-                    NormalProtocol protocol = new NormalProtocol();
+                    SystemProtocol protocol = new SystemProtocol();
                     protocol.setType("Login");
                     protocol.setMessage("Authentication Failed");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+                    serverAPI.SendJsonToClient(User,json, "SystemProtocol");
                     return false;
                 }
                 UserLogged = true;
                 User.onUserLogin(UserName);
                 User.setUserInformation(information);
 
-                NormalProtocol protocol = new NormalProtocol();
+                SystemProtocol protocol = new SystemProtocol();
                 protocol.setType("Login");
                 protocol.setMessage("Success");
                 String json = new Gson().toJson(protocol);
-                serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+                serverAPI.SendJsonToClient(User,json, "SystemProtocol");
 
                 if (User.getUserPermission().equals(Permission.BAN))
                 {
@@ -127,20 +127,20 @@ public final class UserAuthentication implements IUserAuthentication{
             }
             else
             {
-                NormalProtocol protocol = new NormalProtocol();
+                SystemProtocol protocol = new SystemProtocol();
                 protocol.setType("Login");
                 protocol.setMessage("Authentication Failed");
                 String json = new Gson().toJson(protocol);
-                serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+                serverAPI.SendJsonToClient(User,json, "SystemProtocol");
                 return false;
             }
         } catch (Throwable t) {
             SaveStackTrace.saveStackTrace(t);
-            NormalProtocol protocol = new NormalProtocol();
+            SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+            serverAPI.SendJsonToClient(User,json, "SystemProtocol");
             return false;
         }
     }
@@ -171,20 +171,20 @@ public final class UserAuthentication implements IUserAuthentication{
         if (event.isCancel())
         {
             //插件要求禁止登录，所以直接关闭连接
-            NormalProtocol protocol = new NormalProtocol();
+            SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+            serverAPI.SendJsonToClient(User,json, "SystemProtocol");
             return false;
         }
 
         //发送给用户
-        NormalProtocol protocolData = new NormalProtocol();
+        SystemProtocol protocolData = new SystemProtocol();
         protocolData.setType("Login");
         protocolData.setMessage(token);
         String json = new Gson().toJson(protocolData);
-        serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+        serverAPI.SendJsonToClient(User,json, "SystemProtocol");
         //设置登录成功
         UserLogged = true;
         User.onUserLogin(UserName);
@@ -195,32 +195,32 @@ public final class UserAuthentication implements IUserAuthentication{
         if ("Server".equals(UserName))
         {
             serverAPI.SendMessageToUser(User,"禁止使用受保护的用户名：Server");
-            NormalProtocol protocol = new NormalProtocol();
+            SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+            serverAPI.SendJsonToClient(User,json, "SystemProtocol");
             return false;
         }
         if (UserName == null || Password == null || UserName.isEmpty() || Password.isEmpty())
         {
             serverAPI.SendMessageToUser(User,"禁止使用空字符串！");
-            NormalProtocol protocol = new NormalProtocol();
+            SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+            serverAPI.SendJsonToClient(User,json, "SystemProtocol");
             return false;
         }
         try {
             serverAPI.GetUserByUserName(UserName);
             //说明目前是已经有同一名字的用户登录了
             //因此，禁止登录
-            NormalProtocol protocol = new NormalProtocol();
+            SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
-            protocol.setType("This user is currently online");
+            protocol.setMessage("Already Logged");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+            serverAPI.SendJsonToClient(User,json, "SystemProtocol");
             return false;
         } catch (AccountNotFoundException ignored) {}
         try
@@ -243,11 +243,11 @@ public final class UserAuthentication implements IUserAuthentication{
                 else
                 {
                     serverAPI.SendMessageToUser(User,"登录失败，用户名或密码错误");
-                    NormalProtocol protocol = new NormalProtocol();
+                    SystemProtocol protocol = new SystemProtocol();
                     protocol.setType("Login");
                     protocol.setMessage("Authentication Failed");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+                    serverAPI.SendJsonToClient(User,json, "SystemProtocol");
                     return false;
                 }
             }
@@ -275,11 +275,11 @@ public final class UserAuthentication implements IUserAuthentication{
             }
         } catch (Throwable t) {
             SaveStackTrace.saveStackTrace(t);
-            NormalProtocol protocol = new NormalProtocol();
+            SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User,json, "NormalProtocol");
+            serverAPI.SendJsonToClient(User,json, "SystemProtocol");
             return false;
         }
     }

@@ -16,6 +16,7 @@
  */
 package org.yuezhikong.Server;
 
+import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.dao.userInformationDao;
@@ -25,11 +26,10 @@ import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.plugin.event.events.User.UserChatEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserCommandEvent;
 import org.yuezhikong.utils.CustomVar;
+import org.yuezhikong.utils.Protocol.ChatProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 public class ChatRequest {
@@ -55,25 +55,7 @@ public class ChatRequest {
             return User;
         }
     }
-    private final SimpleDateFormat formatter;
 
-    /**
-     * 聊天信息格式化
-     * @param ChatMessageInfo 聊天信息
-     */
-    public void ChatFormat(@NotNull ChatRequestInput ChatMessageInfo)
-    {
-        //被格式化过的当前时间
-        String CurrentTimeFormatted = formatter.format(new Date(System.currentTimeMillis()));
-        //每条消息的头
-        String ChatPrefix = String.format("[%s] [%s]:",CurrentTimeFormatted,ChatMessageInfo.getUser().getUserName());
-        //为消息补上消息头
-        ChatMessageInfo.setChatMessage(ChatPrefix+ChatMessageInfo.ChatMessage);
-        //如果出现换行，把他处理为一个“新的”消息，加上一个新的消息头，这样看来就是两条消息了，防止通过换行来伪装发信
-        ChatMessageInfo.setChatMessage(ChatMessageInfo.getChatMessage().replaceAll("\n",
-                "\n"+ChatPrefix
-        ));
-    }
     /**
      * 对于用户聊天信息的进一步处理
      * @param ChatMessageInfo 聊天信息<p>包括用户信息与原始通讯协议信息</p>
@@ -82,27 +64,18 @@ public class ChatRequest {
     public boolean UserChatRequests(@NotNull ChatRequestInput ChatMessageInfo)
     {
         if (ChatMessageInfo.getChatMessage().isEmpty())
-        {
             //如果发送过来的消息是空的，就没必要再继续处理了
             return true;
-        }
 
         //执行命令处理程序
         if (CommandRequest(ChatMessageInfo))
-        {
             return true;
-        }
 
         //执行插件处理程序
         UserChatEvent chatEvent = new UserChatEvent(ChatMessageInfo.getUser(), ChatMessageInfo.getChatMessage());
         instance.getPluginManager().callEvent(chatEvent);
-        if (chatEvent.isCancelled())
-        {
-            //插件表明取消此事件，就不要额外处理了
-            return true;
-        }
-        ChatFormat(ChatMessageInfo);
-        return false;
+        // 根据插件返回，决定是否继续发送
+        return chatEvent.isCancelled();
     }
     /**
      * 用户命令处理程序
@@ -117,9 +90,8 @@ public class ChatRequest {
             //插件事件处理
             UserCommandEvent event = new UserCommandEvent(chatMessageInfo.getUser(), CommandInformation);
             instance.getPluginManager().callEvent(event);
-            if (event.isCancelled()) {
+            if (event.isCancelled())
                 return true;
-            }
             CommandRequest0(chatMessageInfo.getUser(),instance.getServerAPI().CommandFormat(chatMessageInfo.getChatMessage()));
             return true;
         }
@@ -376,19 +348,21 @@ public class ChatRequest {
                         }
 
                         stringBuilder.delete(0,command.argv()[0].length() + 1);
+                        stringBuilder.insert(0,"[私聊] ");
 
                         String ChatMessage = stringBuilder.toString();
-                        ChatRequestInput input = new ChatRequestInput(User, ChatMessage);
-                        ChatFormat(input);
 
                         if (command.argv()[0].equals("Server"))//当私聊目标为后台时
                         {
-                            instance.getLogger().ChatMsg("[私聊] " + input.getChatMessage());
+                            instance.getLogger().ChatMsg("["+User.getUserName()+"]:"+ChatMessage);
                             API.SendMessageToUser(User, "你对" + command.argv()[0] + "发送了私聊：" + ChatMessage);
                             break;
                         }
                         try {
-                            API.SendMessageToUser(API.GetUserByUserName(command.argv()[0]), "[私聊] " + input.getChatMessage());
+                            ChatProtocol chatProtocol = new ChatProtocol();
+                            chatProtocol.setSourceUserName(User.getUserName());
+                            chatProtocol.setMessage(ChatMessage);
+                            API.SendJsonToClient(API.GetUserByUserName(command.argv()[0]),new Gson().toJson(chatProtocol),"ChatProtocol");
                             API.SendMessageToUser(User, "你对" + command.argv()[0] + "发送了私聊：" + ChatMessage);
                         } catch (AccountNotFoundException e) {
                             API.SendMessageToUser(User, "此用户不存在");
@@ -410,6 +384,5 @@ public class ChatRequest {
     public ChatRequest(IServer serverInstance)
     {
         instance = serverInstance;
-        formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
     }
 }

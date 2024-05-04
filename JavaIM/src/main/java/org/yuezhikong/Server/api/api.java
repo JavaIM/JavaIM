@@ -36,14 +36,6 @@ public interface api {
     CustomVar.Command CommandFormat(@NotNull @Nls String Command);
 
     /**
-     * 将聊天消息转换为聊天协议格式
-     * @param Message 原始信息
-     * @param Version 协议版本
-     * @return 转换为的聊天协议格式
-     */
-    @NotNull String ChatProtocolRequest(@NotNull @Nls String Message, int Version);
-
-    /**
      * 为指定用户发送消息
      *
      * @param user          发信的目标用户

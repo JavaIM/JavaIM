@@ -41,7 +41,7 @@ import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
-import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
 
@@ -401,14 +401,14 @@ public class SSLNettyServer implements NetworkServer {
                 }
                 if (Msg.isEmpty())
                 {
-                    NormalProtocol normalProtocol = new NormalProtocol();
-                    normalProtocol.setType("Error");
-                    normalProtocol.setMessage("Empty Packet");
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("Empty Packet");
 
                     GeneralProtocol protocol = new GeneralProtocol();
                     protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
                     protocol.setProtocolName("NormalProtocol");
-                    protocol.setProtocolData(gson.toJson(normalProtocol));
+                    protocol.setProtocolData(gson.toJson(systemProtocol));
                     ctx.writeAndFlush(gson.toJson(protocol));
                     return;
                 }
@@ -419,14 +419,14 @@ public class SSLNettyServer implements NetworkServer {
                 logger.warning("错误为："+throwable.getMessage());
                 SaveStackTrace.saveStackTrace(throwable);
 
-                NormalProtocol normalProtocol = new NormalProtocol();
-                normalProtocol.setType("Error");
-                normalProtocol.setMessage("uncaught exception");
+                SystemProtocol systemProtocol = new SystemProtocol();
+                systemProtocol.setType("Error");
+                systemProtocol.setMessage("uncaught exception");
 
                 GeneralProtocol protocol = new GeneralProtocol();
                 protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
                 protocol.setProtocolName("NormalProtocol");
-                protocol.setProtocolData(gson.toJson(normalProtocol));
+                protocol.setProtocolData(gson.toJson(systemProtocol));
                 ctx.writeAndFlush(gson.toJson(protocol));
             } finally {
                 ReferenceCountUtil.release(msg);
@@ -511,6 +511,12 @@ public class SSLNettyServer implements NetworkServer {
         public user onUserLogin(String UserName) {
             ServerTools.getServerInstanceOrThrow().getLogger().info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
             return super.onUserLogin(UserName);
+        }
+
+        @Override
+        public user UserDisconnect() {
+            getNetworkClient().disconnect();
+            return super.UserDisconnect();
         }
 
         @Override

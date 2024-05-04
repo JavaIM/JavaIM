@@ -23,9 +23,10 @@ import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.DatabaseHelper;
 import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.Protocol.ChatProtocol;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
-import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
@@ -170,10 +171,14 @@ public final class Server implements IServer {
                     if (chatEvent.isCancelled())
                         continue;
                     //格式化&发送
-                    ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(getConsoleUser(),consoleInput);
-                    request.ChatFormat(input);
-                    logger.ChatMsg(input.getChatMessage());
-                    serverAPI.SendMessageToAllClient(input.getChatMessage());
+                    logger.ChatMsg("[Server]:"+consoleInput);
+                    ChatProtocol chatProtocol = new ChatProtocol();
+                    chatProtocol.setSourceUserName("Server");
+                    chatProtocol.setMessage(consoleInput);
+                    String SendProtocolData = gson.toJson(chatProtocol);
+                    serverAPI.GetValidClientList(true).forEach((user) -> {
+                        serverAPI.SendJsonToClient(user,SendProtocolData,"ChatProtocol");
+                    });
                 }
             } catch (Throwable throwable) {
                 logger.error("JavaIM User Command Thread 出现异常");
@@ -217,34 +222,51 @@ public final class Server implements IServer {
     }
 
     /**
-     * 处理普通协议
+     * 处理聊天协议
+     * @param protocol 聊天协议
+     * @param user 用户
+     */
+    private void HandleChatProtocol(final ChatProtocol protocol, final tcpUser user)
+    {
+        if (!user.isUserLogged()){
+            getServerAPI().SendMessageToUser(user,"请先登录");
+            return;
+        }
+        ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(user, protocol.getMessage());
+        if (!getRequest().UserChatRequests(input)){
+            getLogger().ChatMsg("["+user.getUserName()+"]:"+input.getChatMessage());
+
+            ChatProtocol chatProtocol = new ChatProtocol();
+            chatProtocol.setSourceUserName(user.getUserName());
+            chatProtocol.setMessage(input.getChatMessage());
+            String SendProtocolData = gson.toJson(chatProtocol);
+            serverAPI.GetValidClientList(true).forEach((forEachUser) -> {
+                serverAPI.SendJsonToClient(forEachUser,SendProtocolData,"ChatProtocol");
+            });
+        }
+    }
+
+    /**
+     * 处理系统协议
      *
      * @param protocol  协议
      * @param user      用户
      */
-    private void HandleNormalProtocol(final NormalProtocol protocol, final tcpUser user)
+    private void HandleSystemProtocol(final SystemProtocol protocol, final tcpUser user)
     {
         switch (protocol.getType()){
-            case "Chat" -> {
-                if (!user.isUserLogged()){
-                    serverAPI.SendMessageToUser(user,"请先登录");
-                    return;
-                }
-                ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(user, protocol.getMessage());
-                if (!request.UserChatRequests(input)){
-                    logger.ChatMsg(input.getChatMessage());
-                    serverAPI.SendMessageToAllClient(input.getChatMessage());
-                }
-            }
             case "ChangePassword" -> {
                 if (!user.isUserLogged()){
-                    serverAPI.SendMessageToUser(user,"请先登录");
+                    getServerAPI().SendMessageToUser(user,"请先登录");
                     return;
                 }
                 getServerAPI().ChangeUserPassword(user, protocol.getMessage());
             }
-            case "options" -> {
-
+            case "Login","Error","DisplayMessage" -> {
+                SystemProtocol systemProtocol = new SystemProtocol();
+                systemProtocol.setType("Error");
+                systemProtocol.setMessage("Invalid Protocol Type, Please Check it");
+                getServerAPI().SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             }
             default -> getServerAPI().SendMessageToUser(user, "暂不支持此消息类型");
         }
@@ -260,11 +282,11 @@ public final class Server implements IServer {
         if (user.isUserLogged())
         {
             serverAPI.SendMessageToUser(user,"您已经登录过了");
-            NormalProtocol protocol = new NormalProtocol();
+            SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Already Logged");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(user,json, "NormalProtocol");
+            serverAPI.SendJsonToClient(user,json, "SystemProtocol");
             return;
         }
         if ("token".equals(loginProtocol.getLoginPacketHead().getType()))
@@ -303,25 +325,26 @@ public final class Server implements IServer {
             protocol = gson.fromJson(message, GeneralProtocol.class);
         } catch (JsonSyntaxException e)
         {
-            NormalProtocol normalProtocol = new NormalProtocol();
-            normalProtocol.setType("Error");
-            normalProtocol.setMessage("Protocol analysis failed");
-            serverAPI.SendJsonToClient(user,gson.toJson(normalProtocol),"NormalProtocol");
+            SystemProtocol systemProtocol = new SystemProtocol();
+            systemProtocol.setType("Error");
+            systemProtocol.setMessage("Protocol analysis failed");
+            serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
             return;
         }
         if (protocol.getProtocolVersion() != CodeDynamicConfig.getProtocolVersion())
         {
-            NormalProtocol normalProtocol = new NormalProtocol();
-            normalProtocol.setType("Error");
-            normalProtocol.setMessage("Protocol version not support");
-            serverAPI.SendJsonToClient(user,gson.toJson(normalProtocol),"NormalProtocol");
+            SystemProtocol systemProtocol = new SystemProtocol();
+            systemProtocol.setType("Error");
+            systemProtocol.setMessage("Protocol version not support");
+            serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
             return;
         }
 
         switch (protocol.getProtocolName())
         {
-            case "NormalProtocol" -> HandleNormalProtocol(gson.fromJson(protocol.getProtocolData(), NormalProtocol.class),user);
+            case "SystemProtocol" -> HandleSystemProtocol(gson.fromJson(protocol.getProtocolData(), SystemProtocol.class),user);
             case "LoginProtocol" -> HandleLoginProtocol(gson.fromJson(protocol.getProtocolData(),LoginProtocol.class),user);
+            case "ChatProtocol" -> HandleChatProtocol(gson.fromJson(protocol.getProtocolData(),ChatProtocol.class),user);
             case "TransferProtocol" -> getServerAPI().SendMessageToUser(user,"正在开发中...请稍后");
             default -> getServerAPI().SendMessageToUser(user,"暂不支持此协议");
         }

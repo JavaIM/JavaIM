@@ -20,14 +20,13 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.dao.userInformationDao;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.UserData.userInformation;
 import org.yuezhikong.utils.CustomVar;
-import org.yuezhikong.utils.Protocol.NormalProtocol;
+import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
 
 import javax.security.auth.login.AccountNotFoundException;
@@ -66,22 +65,6 @@ public abstract class SingleAPI implements api{
         return new CustomVar.Command(command,argv);
     }
     /**
-     * 将聊天消息转换为聊天协议格式
-     * @param Message 原始信息
-     * @param Version 协议版本
-     * @return 转换为的聊天协议格式
-     */
-    @Override
-    public @NotNull String ChatProtocolRequest(@NotNull @Nls String Message, int Version)
-    {
-        // 将消息根据聊天协议封装
-        Gson gson = new Gson();
-        NormalProtocol protocolData = new NormalProtocol();
-        protocolData.setType("Chat");
-        protocolData.setMessage(Message);
-        return gson.toJson(protocolData);
-    }
-    /**
      * 为指定用户发送消息
      * @param user 发信的目标用户
      * @param inputMessage 发信的信息
@@ -97,8 +80,12 @@ public abstract class SingleAPI implements api{
         String[] inputs = inputMessage.replaceAll("\r","").split("\n");
         for (String input : inputs)
         {
-            String Message = ChatProtocolRequest(input, CodeDynamicConfig.getProtocolVersion());
-            SendJsonToClient(user, Message, "NormalProtocol");
+            Gson gson = new Gson();
+            SystemProtocol protocolData = new SystemProtocol();
+            protocolData.setType("DisplayMessage");
+            protocolData.setMessage(input);
+            String Message = gson.toJson(protocolData);
+            SendJsonToClient(user, Message, "SystemProtocol");
         }
     }
 
