@@ -136,7 +136,6 @@
                                     <artifact>*:*</artifact>
                                     <excludes>
                                         <exclude>org/iq80/snappy/**</exclude>
-                                        <exclude>org/slf4j/**</exclude>
                                         <exclude>google/protobuf/**</exclude>
                                         <exclude>license/**</exclude>
                                         <exclude>org/apache/maven/**</exclude>
