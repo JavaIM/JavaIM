@@ -16,13 +16,8 @@
  */
 package org.yuezhikong.utils;
 
-import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.Server.ServerTools;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import org.yuezhikong.utils.logging.Logger;
 
 /**
  * 调用堆栈保存到日志
@@ -36,23 +31,6 @@ public class SaveStackTrace {
      */
     public static void saveStackTrace(@NotNull Throwable e)
     {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        e.printStackTrace(pw);
-        pw.flush();
-        sw.flush();
-        try {
-            ServerTools.getServerInstanceOrThrow().getLogger().error(sw.toString());
-        } catch (IllegalStateException ex) {
-            LogManager.getLogger().error(sw.toString());
-        }
-        pw.close();
-        try {
-            sw.close();
-        }
-        catch (IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
+        Logger.getLogger(SaveStackTrace.class).error("出现错误!",e);
     }
 }

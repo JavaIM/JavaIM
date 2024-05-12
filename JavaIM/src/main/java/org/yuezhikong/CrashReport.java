@@ -1,9 +1,8 @@
 package org.yuezhikong;
 
-import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
 import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.*;
@@ -86,15 +85,14 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
             channel.close();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                Logger logger = Logger.getInstance();
-                Logger.logger_root.fatal("程序已崩溃");
-                Logger.logger_root.fatal("详情请查看错误报告");
-                Logger.logger_root.fatal("位于："+FileName);
-                Logger.logger_root.fatal("请自行查看");
+                Logger logger = org.yuezhikong.utils.logging.Logger.getLogger(CrashReport.class);
+                logger.error("程序已崩溃");
+                logger.error("详情请查看错误报告");
+                logger.error("位于：{}", FileName);
+                logger.error("请自行查看");
                 try {
                     ServerTools.getServerInstanceOrThrow().stop();
                 } catch (IllegalStateException ignored) {}
-                logger.log(Level.FATAL, "程序已崩溃，详情查看控制台");
             }));
             System.exit(1);
         } catch (IOException ex) {

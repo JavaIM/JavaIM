@@ -19,9 +19,10 @@ package org.yuezhikong;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.network.SSLNettyServer;
 import org.yuezhikong.utils.ConfigFileManager;
-import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Notice;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -33,7 +34,7 @@ import java.util.Scanner;
 import static org.yuezhikong.CodeDynamicConfig.*;
 
 public class Main {
-    private static final org.yuezhikong.utils.Logger logger = Logger.getInstance();
+    private static final Logger logger = org.yuezhikong.utils.logging.Logger.getLogger(Main.class);
 
     public static void CreateServerProperties(){
         ConfigFileManager prop = new ConfigFileManager();
@@ -45,187 +46,186 @@ public class Main {
      */
     private static void stdoutRedistribution()
     {
-        Logger stdOut = new Logger(true);
         System.setOut(new PrintStream(System.out)
         {
             @Override
             public void print(boolean b) {
-                stdOut.info(String.valueOf(b));
+                logger.info("[STDOUT] {}", b);
             }
 
             @Override
             public void print(char c) {
-                stdOut.info(String.valueOf(c));
+                logger.info("[STDOUT] {}", c);
             }
 
             @Override
             public void print(int i) {
-                stdOut.info(String.valueOf(i));
+                logger.info("[STDOUT] {}", i);
             }
 
             @Override
             public void print(long l) {
-                stdOut.info(String.valueOf(l));
+                logger.info("[STDOUT] {}", l);
             }
 
             @Override
             public void print(float f) {
-                stdOut.info(String.valueOf(f));
+                logger.info("[STDOUT] {}", f);
             }
 
             @Override
             public void print(double d) {
-                stdOut.info(String.valueOf(d));
+                logger.info("[STDOUT] {}", d);
             }
 
             @Override
             public void print(char @NotNull [] s) {
-                stdOut.info(new String(s));
+                logger.info("[STDOUT] {}", new String(s));
             }
 
             @Override
             public void print(@Nullable String s) {
-                stdOut.info(s);
+                logger.info("[STDOUT] {}", s);
             }
 
             @Override
             public void print(@Nullable Object obj) {
-                stdOut.info(String.valueOf(obj));
+                logger.info("[STDOUT] {}", obj);
             }
             @Override
             public void println(boolean b) {
-                stdOut.info(String.valueOf(b));
+                logger.info("[STDOUT] {}", b);
             }
 
             @Override
             public void println(char c) {
-                stdOut.info(String.valueOf(c));
+                logger.info("[STDOUT] {}", c);
             }
 
             @Override
             public void println(int i) {
-                stdOut.info(String.valueOf(i));
+                logger.info("[STDOUT] {}", i);
             }
 
             @Override
             public void println(long l) {
-                stdOut.info(String.valueOf(l));
+                logger.info("[STDOUT] {}", l);
             }
 
             @Override
             public void println(float f) {
-                stdOut.info(String.valueOf(f));
+                logger.info("[STDOUT] {}", f);
             }
 
             @Override
             public void println(double d) {
-                stdOut.info(String.valueOf(d));
+                logger.info("[STDOUT] {}", d);
             }
 
             @Override
             public void println(char @NotNull [] s) {
-                stdOut.info(new String(s));
+                logger.info("[STDOUT] {}", new String(s));
             }
 
             @Override
             public void println(@Nullable String s) {
-                stdOut.info(s);
+                logger.info("[STDOUT] {}", s);
             }
 
             @Override
             public void println(@Nullable Object obj) {
-                stdOut.info(String.valueOf(obj));
+                logger.info("[STDOUT] {}", obj);
             }
         });
         System.setErr(new PrintStream(System.err)
         {
             @Override
             public void print(boolean b) {
-                stdOut.error(String.valueOf(b));
+                logger.error("[STDERR] {}", b);
             }
 
             @Override
             public void print(char c) {
-                stdOut.error(String.valueOf(c));
+                logger.error("[STDERR] {}", c);
             }
 
             @Override
             public void print(int i) {
-                stdOut.error(String.valueOf(i));
+                logger.error("[STDERR] {}", i);
             }
 
             @Override
             public void print(long l) {
-                stdOut.error(String.valueOf(l));
+                logger.error("[STDERR] {}", l);
             }
 
             @Override
             public void print(float f) {
-                stdOut.error(String.valueOf(f));
+                logger.error("[STDERR] {}", f);
             }
 
             @Override
             public void print(double d) {
-                stdOut.error(String.valueOf(d));
+                logger.error("[STDERR] {}", d);
             }
 
             @Override
             public void print(char @NotNull [] s) {
-                stdOut.error(new String(s));
+                logger.error("[STDERR] {}", new String(s));
             }
 
             @Override
             public void print(@Nullable String s) {
-                stdOut.error(s);
+                logger.error("[STDERR] {}", s);
             }
 
             @Override
             public void print(@Nullable Object obj) {
-                stdOut.error(String.valueOf(obj));
+                logger.error("[STDERR] {}", obj);
             }
             @Override
             public void println(boolean b) {
-                stdOut.error(String.valueOf(b));
+                logger.error("[STDERR] {}", b);
             }
 
             @Override
             public void println(char c) {
-                stdOut.error(String.valueOf(c));
+                logger.error("[STDERR] {}", c);
             }
 
             @Override
             public void println(int i) {
-                stdOut.error(String.valueOf(i));
+                logger.error("[STDERR] {}", i);
             }
 
             @Override
             public void println(long l) {
-                stdOut.error(String.valueOf(l));
+                logger.error("[STDERR] {}", l);
             }
 
             @Override
             public void println(float f) {
-                stdOut.error(String.valueOf(f));
+                logger.error("[STDERR] {}", f);
             }
 
             @Override
             public void println(double d) {
-                stdOut.error(String.valueOf(d));
+                logger.error("[STDERR] {}", d);
             }
 
             @Override
             public void println(char @NotNull [] s) {
-                stdOut.error(new String(s));
+                logger.error("[STDERR] {}", new String(s));
             }
 
             @Override
             public void println(@Nullable String s) {
-                stdOut.error(s);
+                logger.error("[STDERR] {}", s);
             }
 
             @Override
             public void println(@Nullable Object obj) {
-                stdOut.error(String.valueOf(obj));
+                logger.error("[STDERR] {}", obj);
             }
         });
 
@@ -264,18 +264,22 @@ public class Main {
      */
     public static void main(String[] args) {
         new Notice();
+        // 初始化BouncyCastle，设置为JCE Provider
+        Security.addProvider(new BouncyCastleProvider());
+        // 初始化Slf4j与Log4j bind
+        System.setProperty(LoggerFactory.PROVIDER_PROPERTY_KEY,"org.apache.logging.slf4j.SLF4JServiceProvider");
+        // 初始化Stdout重定向
         stdoutRedistribution();
+        // 初始化主线程崩溃报告程序
         Thread.currentThread().setUncaughtExceptionHandler(CrashReport.getCrashReport());
-        //服务端配置文件初始化
+        // 服务端配置文件初始化
         if (!(new File("server.properties").exists())){
             logger.info("目录下没有检测到服务端配置文件，正在创建");
             CreateServerProperties();
         }
-        //命令行参数处理
+        // 命令行参数处理
         ConsoleCommandRequest.Request(args);
-        //初始化BouncyCastle，设置为JCE Provider
-        Security.addProvider(new BouncyCastleProvider());
-        //启动JavaIM启动逻辑
+        // 启动JavaIM启动逻辑
         ConsoleMain();
     }
 }

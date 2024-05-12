@@ -21,7 +21,8 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
-import org.yuezhikong.utils.Logger;
+import org.slf4j.Logger;
+import org.yuezhikong.utils.logging.CustomLogger;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -85,7 +86,7 @@ public interface IServer {
      * 获取Logger
      * @return Logger
      */
-    Logger getLogger();
+    CustomLogger getLogger();
 
     /**
      * 获取Mybatis SQL会话

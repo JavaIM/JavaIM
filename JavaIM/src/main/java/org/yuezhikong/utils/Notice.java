@@ -5,7 +5,7 @@ import java.util.Scanner;
 
 public class Notice {
     public Notice(){
-        if (!(new File("client.properties").exists())) {
+        if (!(new File("server.properties").exists())) {
             int Input;
             Scanner scanner;
             do {

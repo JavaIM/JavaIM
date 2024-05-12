@@ -2,6 +2,7 @@ package org.yuezhikong.Server.UserData.Authentication;
 
 import com.google.gson.Gson;
 import org.apache.ibatis.session.SqlSession;
+import org.slf4j.Logger;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Permission;
@@ -11,7 +12,6 @@ import org.yuezhikong.Server.UserData.userInformation;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
-import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -34,7 +34,7 @@ public final class UserAuthentication implements IUserAuthentication{
 
     private final PluginManager pluginManager;
 
-    private final Logger logger;
+    private final Logger logger = org.yuezhikong.utils.logging.Logger.getLogger(UserAuthentication.class);
     private final api serverAPI;
     /**
      * 实例化用户Auth实现
@@ -46,7 +46,6 @@ public final class UserAuthentication implements IUserAuthentication{
         this.User = User;
         pluginManager = server.getPluginManager();
         serverAPI = server.getServerAPI();
-        logger = server.getLogger();
     }
 
     @Override

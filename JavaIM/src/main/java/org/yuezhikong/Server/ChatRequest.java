@@ -30,6 +30,8 @@ import org.yuezhikong.utils.Protocol.ChatProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ChatRequest {
@@ -253,7 +255,7 @@ public class ChatRequest {
                         break;
                     }
                     instance.getServerAPI().SendMessageToAllClient("服务器已关闭");
-                    for (user requestUser : instance.getUsers()) {
+                    for (user requestUser : API.GetValidClientList(false)) {
                         requestUser.UserDisconnect();
                     }
                     instance.stop();

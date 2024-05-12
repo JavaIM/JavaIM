@@ -20,14 +20,15 @@ import org.yuezhikong.Server.plugin.event.events.Server.ServerStopEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserAddEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
+import org.yuezhikong.utils.logging.CustomLogger;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.DataBase.DatabaseHelper;
-import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.ChatProtocol;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
+import org.yuezhikong.utils.logging.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * JavaIM服务端
  */
-public final class Server implements IServer {
+public final class Server implements IServer{
 
     /**
      * 用户消息处理线程池
@@ -104,7 +105,7 @@ public final class Server implements IServer {
     /**
      * 日志记录器
      */
-    private final Logger logger = Logger.getInstance();
+    private final CustomLogger logger = Logger.getLogger(Server.class);
     /**
      * 网络层服务器
      */
@@ -406,7 +407,7 @@ public final class Server implements IServer {
     }
 
     @Override
-    public Logger getLogger() {
+    public CustomLogger getLogger() {
         return logger;
     }
 }

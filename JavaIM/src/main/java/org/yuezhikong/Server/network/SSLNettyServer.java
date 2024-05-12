@@ -33,13 +33,13 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.JavaUser;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.utils.Logger;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -73,7 +73,7 @@ public class SSLNettyServer implements NetworkServer {
     private final List<NetworkClient> clientList = new ArrayList<>();
     private PrivateKey ServerSSLPrivateKey;
     private X509Certificate ServerSSLCertificate;
-    private final Logger logger = Logger.getInstance();
+    private final Logger logger = org.yuezhikong.utils.logging.Logger.getLogger(SSLNettyServer.class);
 
     private Server JavaIMServer;
 
@@ -415,8 +415,8 @@ public class SSLNettyServer implements NetworkServer {
                 NetworkClient thisClient = clientNetworkClientPair.get(ctx.channel());
                 JavaIMServer.onReceiveMessage(thisClient, Msg);
             } catch (Throwable throwable) {
-                logger.warning(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
-                logger.warning("错误为："+throwable.getMessage());
+                logger.warn(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
+                logger.warn("错误为："+throwable.getMessage());
                 SaveStackTrace.saveStackTrace(throwable);
 
                 SystemProtocol systemProtocol = new SystemProtocol();
@@ -440,12 +440,12 @@ public class SSLNettyServer implements NetworkServer {
                 Throwable exceptionCause = cause.getCause();
                 if (exceptionCause instanceof SSLHandshakeException)
                 {
-                    logger.warning(String.format("客户端：%s 因为SSL错误：%s已断开连接",ctx.channel().remoteAddress(),exceptionCause.getMessage()));
+                    logger.warn(String.format("客户端：%s 因为SSL错误：%s已断开连接",ctx.channel().remoteAddress(),exceptionCause.getMessage()));
                     return;
                 }
             }
             SaveStackTrace.saveStackTrace(cause);
-            logger.warning(String.format("客户端：%s 因为：%s 已经断开连接",ctx.channel().remoteAddress(),cause.getMessage()));
+            logger.warn(String.format("客户端：%s 因为：%s 已经断开连接",ctx.channel().remoteAddress(),cause.getMessage()));
             ctx.channel().close();
         }
     }
