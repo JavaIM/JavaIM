@@ -21,6 +21,8 @@ public interface Plugin {
      * 当被加载时
      */
     void onLoad();
+
+    void onPreload();
     void setPluginData(PluginData pluginData);
     PluginData getPluginData();
     void onUnload();

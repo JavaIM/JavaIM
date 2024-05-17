@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yuezhikong.Server.network.SSLNettyServer;
+import org.yuezhikong.Server.Server;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Notice;
 import org.yuezhikong.utils.SaveStackTrace;
@@ -31,10 +31,35 @@ import java.io.PrintStream;
 import java.security.Security;
 import java.util.Scanner;
 
-import static org.yuezhikong.CodeDynamicConfig.*;
+import static org.yuezhikong.CodeDynamicConfig.getVersion;
 
 public class Main {
-    private static final Logger logger = org.yuezhikong.utils.logging.Logger.getLogger(Main.class);
+    static {
+        // 初始化Slf4j Service Provider
+        System.setProperty(LoggerFactory.PROVIDER_PROPERTY_KEY,"org.yuezhikong.utils.logging.SLF4JServiceProvider");
+        // 暂时禁止sysOut与sysErr
+        PrintStream err = System.err;
+        PrintStream out = System.out;
+        System.setOut(new PrintStream(System.out)
+        {
+            @Override
+            public void println(@Nullable String x) {
+                return;
+            }
+        });
+        System.setErr(new PrintStream(System.err)
+        {
+            @Override
+            public void println(@Nullable String x) {
+            }
+        });
+        // 初始化 STDOUT Logger
+        logger = LoggerFactory.getLogger(Main.class);
+        // 恢复sysOut与sysErr
+        System.setOut(out);
+        System.setErr(err);
+    }
+    private static final Logger logger;
 
     public static void CreateServerProperties(){
         ConfigFileManager prop = new ConfigFileManager();
@@ -245,8 +270,7 @@ public class Main {
                 @Override
                 public void run() {
                     this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
-                    SSLNettyServer sslNettyServer = new SSLNettyServer();
-                    sslNettyServer.start(ServerPort);
+                    new Server().start(ServerPort);
                 }
                 public Thread start2()
                 {
@@ -266,8 +290,6 @@ public class Main {
         new Notice();
         // 初始化BouncyCastle，设置为JCE Provider
         Security.addProvider(new BouncyCastleProvider());
-        // 初始化Slf4j与Log4j bind
-        System.setProperty(LoggerFactory.PROVIDER_PROPERTY_KEY,"org.apache.logging.slf4j.SLF4JServiceProvider");
         // 初始化Stdout重定向
         stdoutRedistribution();
         // 初始化主线程崩溃报告程序

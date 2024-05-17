@@ -2,6 +2,7 @@ package org.yuezhikong;
 
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.utils.SaveStackTrace;
 
@@ -85,7 +86,7 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
             channel.close();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                Logger logger = org.yuezhikong.utils.logging.Logger.getLogger(CrashReport.class);
+                Logger logger = LoggerFactory.getLogger(CrashReport.class);
                 logger.error("程序已崩溃");
                 logger.error("详情请查看错误报告");
                 logger.error("位于：{}", FileName);

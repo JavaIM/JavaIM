@@ -16,7 +16,6 @@
  */
 package org.yuezhikong.utils.logging;
 
-import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 
 import java.io.PrintWriter;
@@ -24,32 +23,23 @@ import java.io.StringWriter;
 
 public class Logger implements CustomLogger {
 
-    /**
-     * 获取对应Class的Slf4j Logger(经过 JavaIM 修改的)
-     * @param clazz class
-     * @return Slf4j Logger
-     */
-    public static CustomLogger getLogger(Class<?> clazz) {
-        return new Logger(LoggerFactory.getLogger(clazz));
-    }
-
     private final org.slf4j.Logger orig_logger;
 
     /**
-     * web界面控制台处理
+     * 自定义Logger处理
      * @param format 格式化
      * @param params 请求参数
      */
-    private void WebLoggerRequest(String format, Object ... params)
+    protected void CustomLoggerRequest(String format, Object ... params)
     {
-        // TODO 为即将到来的Web管理面板预留的
+        // TODO 为即将到来的Web管理面板以及插件预留的方法
     }
 
     /**
      * 创建 JavaIM Logger 中间层
      * @param orig_logger 原始 slf4j Logger
      */
-    private Logger(org.slf4j.Logger orig_logger)
+    Logger(org.slf4j.Logger orig_logger)
     {
         this.orig_logger = orig_logger;
     }
@@ -57,7 +47,7 @@ public class Logger implements CustomLogger {
     @Override
     public void ChatMsg(String msg) {
         info(msg);
-        WebLoggerRequest(msg);
+        CustomLoggerRequest(msg);
     }
 
     @Override
@@ -75,7 +65,7 @@ public class Logger implements CustomLogger {
         if (isTraceEnabled())
         {
             orig_logger.trace(s);
-            WebLoggerRequest(s);
+            CustomLoggerRequest(s);
         }
     }
 
@@ -84,7 +74,7 @@ public class Logger implements CustomLogger {
         if (isTraceEnabled())
         {
             orig_logger.trace(s,o);
-            WebLoggerRequest(s,o);
+            CustomLoggerRequest(s,o);
         }
     }
 
@@ -93,7 +83,7 @@ public class Logger implements CustomLogger {
         if (isTraceEnabled())
         {
             orig_logger.trace(s,o,o1);
-            WebLoggerRequest(s,o,o1);
+            CustomLoggerRequest(s,o,o1);
         }
     }
 
@@ -102,7 +92,7 @@ public class Logger implements CustomLogger {
         if (isTraceEnabled())
         {
             orig_logger.trace(s,objects);
-            WebLoggerRequest(s,objects);
+            CustomLoggerRequest(s,objects);
         }
     }
 
@@ -115,7 +105,7 @@ public class Logger implements CustomLogger {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             throwable.printStackTrace(pw);
-            WebLoggerRequest(s,sw.toString());
+            CustomLoggerRequest(s,sw.toString());
             pw.close();
         }
     }
@@ -166,7 +156,7 @@ public class Logger implements CustomLogger {
         if (isDebugEnabled())
         {
             orig_logger.debug(s);
-            WebLoggerRequest(s);
+            CustomLoggerRequest(s);
         }
     }
 
@@ -175,7 +165,7 @@ public class Logger implements CustomLogger {
         if (isDebugEnabled())
         {
             orig_logger.debug(s,o);
-            WebLoggerRequest(s,o);
+            CustomLoggerRequest(s,o);
         }
     }
 
@@ -184,7 +174,7 @@ public class Logger implements CustomLogger {
         if (isDebugEnabled())
         {
             orig_logger.debug(s,o,o1);
-            WebLoggerRequest(s,o,o1);
+            CustomLoggerRequest(s,o,o1);
         }
     }
 
@@ -193,7 +183,7 @@ public class Logger implements CustomLogger {
         if (isDebugEnabled())
         {
             orig_logger.debug(s,objects);
-            WebLoggerRequest(s,objects);
+            CustomLoggerRequest(s,objects);
         }
     }
 
@@ -206,7 +196,7 @@ public class Logger implements CustomLogger {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             throwable.printStackTrace(pw);
-            WebLoggerRequest(s,sw.toString());
+            CustomLoggerRequest(s,sw.toString());
             pw.close();
         }
     }
@@ -258,7 +248,7 @@ public class Logger implements CustomLogger {
         if (isInfoEnabled())
         {
             orig_logger.info(s);
-            WebLoggerRequest(s);
+            CustomLoggerRequest(s);
         }
     }
 
@@ -267,7 +257,7 @@ public class Logger implements CustomLogger {
         if (isInfoEnabled())
         {
             orig_logger.info(s,o);
-            WebLoggerRequest(s,o);
+            CustomLoggerRequest(s,o);
         }
     }
 
@@ -276,7 +266,7 @@ public class Logger implements CustomLogger {
         if (isInfoEnabled())
         {
             orig_logger.info(s,o,o1);
-            WebLoggerRequest(s,o,o1);
+            CustomLoggerRequest(s,o,o1);
         }
     }
 
@@ -285,7 +275,7 @@ public class Logger implements CustomLogger {
         if (isInfoEnabled())
         {
             orig_logger.info(s,objects);
-            WebLoggerRequest(s,objects);
+            CustomLoggerRequest(s,objects);
         }
     }
 
@@ -298,7 +288,7 @@ public class Logger implements CustomLogger {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             throwable.printStackTrace(pw);
-            WebLoggerRequest(s,sw.toString());
+            CustomLoggerRequest(s,sw.toString());
             pw.close();
         }
     }
@@ -349,7 +339,7 @@ public class Logger implements CustomLogger {
         if (isWarnEnabled())
         {
             orig_logger.warn(s);
-            WebLoggerRequest(s);
+            CustomLoggerRequest(s);
         }
     }
 
@@ -358,7 +348,7 @@ public class Logger implements CustomLogger {
         if (isWarnEnabled())
         {
             orig_logger.warn(s,o);
-            WebLoggerRequest(s,o);
+            CustomLoggerRequest(s,o);
         }
     }
 
@@ -367,7 +357,7 @@ public class Logger implements CustomLogger {
         if (isWarnEnabled())
         {
             orig_logger.warn(s,objects);
-            WebLoggerRequest(s,objects);
+            CustomLoggerRequest(s,objects);
         }
     }
 
@@ -376,7 +366,7 @@ public class Logger implements CustomLogger {
         if (isWarnEnabled())
         {
             orig_logger.warn(s,o,o1);
-            WebLoggerRequest(s,o,o1);
+            CustomLoggerRequest(s,o,o1);
         }
     }
 
@@ -390,7 +380,7 @@ public class Logger implements CustomLogger {
             PrintWriter pw = new PrintWriter(sw);
             throwable.printStackTrace(pw);
 
-            WebLoggerRequest(s,sw.toString());
+            CustomLoggerRequest(s,sw.toString());
             pw.close();
         }
     }
@@ -440,7 +430,7 @@ public class Logger implements CustomLogger {
         if (isErrorEnabled())
         {
             orig_logger.error(s);
-            WebLoggerRequest(s);
+            CustomLoggerRequest(s);
         }
     }
 
@@ -449,7 +439,7 @@ public class Logger implements CustomLogger {
         if (isErrorEnabled())
         {
             orig_logger.error(s,o);
-            WebLoggerRequest(s,o);
+            CustomLoggerRequest(s,o);
         }
     }
 
@@ -458,7 +448,7 @@ public class Logger implements CustomLogger {
         if (isErrorEnabled())
         {
             orig_logger.error(s,o,o1);
-            WebLoggerRequest(s,o,o1);
+            CustomLoggerRequest(s,o,o1);
         }
     }
 
@@ -467,7 +457,7 @@ public class Logger implements CustomLogger {
         if (isErrorEnabled())
         {
             orig_logger.error(s,objects);
-            WebLoggerRequest(s,objects);
+            CustomLoggerRequest(s,objects);
         }
     }
 
@@ -480,7 +470,7 @@ public class Logger implements CustomLogger {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             throwable.printStackTrace(pw);
-            WebLoggerRequest(s,sw.toString());
+            CustomLoggerRequest(s,sw.toString());
             pw.close();
         }
     }

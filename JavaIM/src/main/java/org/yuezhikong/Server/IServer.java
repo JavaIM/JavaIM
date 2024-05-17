@@ -21,7 +21,6 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
-import org.slf4j.Logger;
 import org.yuezhikong.utils.logging.CustomLogger;
 
 import java.util.List;
@@ -109,4 +108,10 @@ public interface IServer {
      * 警告，请最好不要使用此方法来模拟用户的消息，此方法设计仅用作网络层调用
      */
     void onReceiveMessage(NetworkServer.NetworkClient client, String message);
+
+    /**
+     * 服务器是否启动完成
+     * @return 是/否
+     */
+    boolean isServerCompleateStart();
 }

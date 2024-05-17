@@ -17,7 +17,7 @@
 package org.yuezhikong.utils;
 
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.utils.logging.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 调用堆栈保存到日志
@@ -31,6 +31,6 @@ public class SaveStackTrace {
      */
     public static void saveStackTrace(@NotNull Throwable e)
     {
-        Logger.getLogger(SaveStackTrace.class).error("出现错误!",e);
+        LoggerFactory.getLogger(SaveStackTrace.class).error("出现错误!",e);
     }
 }

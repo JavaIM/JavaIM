@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.Server.UserData.ConsoleUser;
@@ -12,11 +13,13 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
+import org.yuezhikong.Server.network.SSLNettyServer;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.SimplePluginManager;
 import org.yuezhikong.Server.plugin.event.events.Server.ServerChatEvent;
 import org.yuezhikong.Server.plugin.event.events.Server.ServerCommandEvent;
 import org.yuezhikong.Server.plugin.event.events.Server.ServerStopEvent;
+import org.yuezhikong.Server.plugin.event.events.Server.onServerStartSuccessfulEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserAddEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
@@ -28,7 +31,6 @@ import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
-import org.yuezhikong.utils.logging.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -105,91 +107,122 @@ public final class Server implements IServer{
     /**
      * 日志记录器
      */
-    private final CustomLogger logger = Logger.getLogger(Server.class);
+    private CustomLogger logger;
     /**
      * 网络层服务器
      */
-    private final NetworkServer networkServer;
+    private NetworkServer networkServer;
 
     /**
      * Mybatis会话
      */
-    private final SqlSession sqlSession;
+    private SqlSession sqlSession;
 
     @Override
     public SqlSession getSqlSession() {
         return sqlSession;
     }
 
+    boolean startSuccessful = false;
+    @Override
+    public boolean isServerCompleateStart() {
+        return startSuccessful;
+    }
+
     /**
      * 启动JavaIM服务端
-     * @param networkServer 网络层服务器
+     * @param ListenPort 监听的端口
      */
-    public Server(NetworkServer networkServer) {
-        logger.info("正在启动JavaIM");
+    public void start(int ListenPort) {
+        long startUnix = System.currentTimeMillis();
+        LoggerFactory.getLogger(Server.class).info("正在启动JavaIM");
         if (Instance != null)
-        {
-            throw new RuntimeException("JavaIM Server is Already running!");
-        }
-        this.networkServer = networkServer;
+            throw new RuntimeException("JavaIM Server is already running!");
         Instance = this;
 
-        logger.info("正在处理数据库");
-        //获取JDBCUrl,创建表与自动更新数据库
-        String JDBCUrl = DatabaseHelper.InitDataBase();
-        //初始化Mybatis
-        sqlSession = DatabaseHelper.InitMybatis(JDBCUrl);
-        logger.info("数据库启动完成");
+        LoggerFactory.getLogger(Server.class).info("正在预加载插件");
+        getPluginManager().PreloadPluginOnDirectory(new File("./plugins"));
+        LoggerFactory.getLogger(Server.class).info("插件预加载完成");
 
-        logger.info("正在加载插件");
-        getPluginManager().LoadPluginOnDirectory(new File("./plugins"));
-        logger.info("插件加载完成");
+        logger = (CustomLogger) LoggerFactory.getLogger(Server.class);//初始化日志
 
-        logger.info("正在启动用户指令处理线程");
         new Thread(() -> {
-            while (true) try {
-                Scanner scanner = new Scanner(System.in);
-                String consoleInput = scanner.nextLine();
-                //判断是指令还是消息
-                if (consoleInput.startsWith("/")) {
-                    CustomVar.Command command = serverAPI.CommandFormat(consoleInput);
+            logger.info("正在处理数据库");
+            //获取JDBCUrl,创建表与自动更新数据库
+            String JDBCUrl = DatabaseHelper.InitDataBase();
+            //初始化Mybatis
+            sqlSession = DatabaseHelper.InitMybatis(JDBCUrl);
+            logger.info("数据库启动完成");
 
-                    //通知发生事件
-                    ServerCommandEvent commandEvent = new ServerCommandEvent(consoleUser,command);
-                    getPluginManager().callEvent(commandEvent);
-                    //判断是否被取消
-                    if (commandEvent.isCancelled())
-                        return;
+            logger.info("正在加载插件");
+            getPluginManager().LoadPluginOnDirectory(new File("./plugins"));
+            logger.info("插件加载完成");
 
-                    //指令处理
-                    request.CommandRequest0(consoleUser,command);
+            Thread UserCommandRequestThread = new Thread(() -> {
+                while (true) try {
+                    Scanner scanner = new Scanner(System.in);
+                    String consoleInput = scanner.nextLine();
+                    //判断是指令还是消息
+                    if (consoleInput.startsWith("/")) {
+                        CustomVar.Command command = serverAPI.CommandFormat(consoleInput);
+
+                        //通知发生事件
+                        ServerCommandEvent commandEvent = new ServerCommandEvent(consoleUser,command);
+                        getPluginManager().callEvent(commandEvent);
+                        //判断是否被取消
+                        if (commandEvent.isCancelled())
+                            return;
+
+                        //指令处理
+                        request.CommandRequest0(consoleUser,command);
+                    }
+                    else {
+                        //通知发生事件
+                        ServerChatEvent chatEvent = new ServerChatEvent(consoleUser,consoleInput);
+                        getPluginManager().callEvent(chatEvent);
+                        //判断是否被取消
+                        if (chatEvent.isCancelled())
+                            continue;
+                        //格式化&发送
+                        logger.ChatMsg("[Server]:"+consoleInput);
+                        ChatProtocol chatProtocol = new ChatProtocol();
+                        chatProtocol.setSourceUserName("Server");
+                        chatProtocol.setMessage(consoleInput);
+                        String SendProtocolData = gson.toJson(chatProtocol);
+                        serverAPI.GetValidClientList(true).forEach((user) -> {
+                            serverAPI.SendJsonToClient(user,SendProtocolData,"ChatProtocol");
+                        });
+                    }
+                } catch (Throwable throwable) {
+                    logger.error("JavaIM User Command Thread 出现异常");
+                    logger.error("请联系开发者");
+                    SaveStackTrace.saveStackTrace(throwable);
                 }
-                else {
-                    //通知发生事件
-                    ServerChatEvent chatEvent = new ServerChatEvent(consoleUser,consoleInput);
-                    getPluginManager().callEvent(chatEvent);
-                    //判断是否被取消
-                    if (chatEvent.isCancelled())
-                        continue;
-                    //格式化&发送
-                    logger.ChatMsg("[Server]:"+consoleInput);
-                    ChatProtocol chatProtocol = new ChatProtocol();
-                    chatProtocol.setSourceUserName("Server");
-                    chatProtocol.setMessage(consoleInput);
-                    String SendProtocolData = gson.toJson(chatProtocol);
-                    serverAPI.GetValidClientList(true).forEach((user) -> {
-                        serverAPI.SendJsonToClient(user,SendProtocolData,"ChatProtocol");
-                    });
+            },"User Command Thread");
+            if (!networkServer.isRunning()) {
+                synchronized (SSLNettyServer.class) {
+                    if (!networkServer.isRunning()) {
+                        try {
+                            SSLNettyServer.class.wait();
+                        } catch (InterruptedException ignored) {
+
+                        }
+                    }
                 }
-            } catch (Throwable throwable) {
-                logger.error("JavaIM User Command Thread 出现异常");
-                logger.error("请联系开发者");
-                SaveStackTrace.saveStackTrace(throwable);
             }
-        },"User Command Thread").start();
-        logger.info("用户指令处理线程启动完成");
 
-        logger.info("JavaIM 启动完成");
+            logger.info("正在启动用户指令处理线程");
+            UserCommandRequestThread.start();
+            logger.info("用户指令处理线程启动完成");
+
+            logger.info("JavaIM 启动完成 (耗时:{}ms)",System.currentTimeMillis() - startUnix);
+            startSuccessful = true;
+            getPluginManager().callEvent(new onServerStartSuccessfulEvent());
+        }, "Server Thread").start();
+
+        Thread.currentThread().setName("Network Thread");
+        networkServer = new SSLNettyServer();
+        networkServer.start(ListenPort);
     }
 
     private static Server Instance;

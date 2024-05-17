@@ -19,6 +19,7 @@ package org.yuezhikong.Server.plugin.Plugin;
 import org.yuezhikong.Server.plugin.PluginClassLoader;
 import org.yuezhikong.Server.plugin.event.Listener;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -29,7 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @SuppressWarnings("unused")
 public class PluginData {
 
-    public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor, PluginClassLoader PluginClassLoader)
+    public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor, PluginClassLoader PluginClassLoader, File PluginMainFile, boolean loaded)
     {}
     private final List<Listener> EventListener = new CopyOnWriteArrayList<>();
     private final staticData data;

@@ -34,8 +34,8 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.JavaUser;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
@@ -73,19 +73,23 @@ public class SSLNettyServer implements NetworkServer {
     private final List<NetworkClient> clientList = new ArrayList<>();
     private PrivateKey ServerSSLPrivateKey;
     private X509Certificate ServerSSLCertificate;
-    private final Logger logger = org.yuezhikong.utils.logging.Logger.getLogger(SSLNettyServer.class);
+    private Logger logger;
 
-    private Server JavaIMServer;
+
 
     private ChannelFuture future;
 
     private boolean isRunning = false;
+    private boolean run = false;
     @Override
     public void start(int ListenPort) throws IllegalStateException {
         checks.checkArgument(ListenPort < 1 || ListenPort > 65535, "The Port is not in the range of [0,65535]!");
-        if (isRunning)
+        if (run)
             throw new IllegalStateException("The Server is already running!");
-        isRunning = true;
+        run = true;
+
+        logger = LoggerFactory.getLogger(SSLNettyServer.class);// 临时启动过程中logger
+
         logger.info("正在启动网络层 JavaIM...");
         logger.info("正在生成 X.509 SSL证书");
         X509CertificateGenerate();
@@ -162,14 +166,10 @@ public class SSLNettyServer implements NetworkServer {
 
             future = bootstrap.bind(ListenPort).sync();
             logger.info("JavaIM网络层启动完成");
-            if (Server.getInstance() == null)
-            {
-                JavaIMServer = new Server(this);
+            synchronized (SSLNettyServer.class) {
+                SSLNettyServer.class.notifyAll();
             }
-            else {
-                future.channel().close();
-                throw new RuntimeException("JavaIM Start Failed, Application JavaIM is already running");
-            }
+            isRunning = true;
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             SaveStackTrace.saveStackTrace(e);
@@ -370,7 +370,7 @@ public class SSLNettyServer implements NetworkServer {
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             NettyUser nettyUser = new NettyUser();
-            if (!JavaIMServer.RegisterUser(nettyUser))
+            if (!ServerTools.getServerInstanceOrThrow().RegisterUser(nettyUser))
             {
                 ctx.channel().close();
                 return;
@@ -386,7 +386,7 @@ public class SSLNettyServer implements NetworkServer {
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
-            JavaIMServer.UnRegisterUser(thisClient.getUser());
+            ServerTools.getServerInstanceOrThrow().UnRegisterUser(thisClient.getUser());
             clientList.remove(thisClient);
             logger.info("检测到客户端离线...");
             logger.info("此客户端IP地址："+thisClient.getSocketAddress());
@@ -413,7 +413,7 @@ public class SSLNettyServer implements NetworkServer {
                     return;
                 }
                 NetworkClient thisClient = clientNetworkClientPair.get(ctx.channel());
-                JavaIMServer.onReceiveMessage(thisClient, Msg);
+                ServerTools.getServerInstanceOrThrow().onReceiveMessage(thisClient, Msg);
             } catch (Throwable throwable) {
                 logger.warn(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
                 logger.warn("错误为："+throwable.getMessage());

@@ -33,6 +33,21 @@ import java.util.List;
 
 @SuppressWarnings("unused")
 public interface PluginManager {
+
+    /**
+     * 预加载一个插件
+     * @param PluginFile 这个插件的文件
+     * @throws IOException Input/Output出现错误
+     * @throws ClassNotFoundException 插件指定的主类不存在
+     * @throws NoSuchMethodException 找不到无参数构造器
+     * @throws InvocationTargetException 插件构造器抛出了一个异常
+     * @throws InstantiationException 插件主类是一个抽象类或接口
+     * @throws IllegalAccessException 没有权限访问构造器
+     * @throws ClassCastException 插件主类未实现Plugin接口
+     * @throws UnsupportedOperationException 此插件不允许在此时间节点加载
+     */
+    void PreLoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException, UnsupportedOperationException;
+
     /**
      * 加载一个插件
      * @param PluginFile 这个插件的文件
@@ -43,8 +58,9 @@ public interface PluginManager {
      * @throws InstantiationException 插件主类是一个抽象类或接口
      * @throws IllegalAccessException 没有权限访问构造器
      * @throws ClassCastException 插件主类未实现Plugin接口
+     * @throws UnsupportedOperationException 此插件不允许在此时间节点加载
      */
-    void LoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException;
+    void LoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException, UnsupportedOperationException;
 
     /**
      * 注册一个新的命令
@@ -96,6 +112,13 @@ public interface PluginManager {
      * @throws IOException 无法关闭URLClassLoader
      */
     void UnLoadAllPlugin() throws IOException;
+
+    /**
+     * 预加载一个文件夹中的插件
+     * @param Directory 文件夹
+     * @apiNote 注意，通过此方法加载，只会加载后缀为.jar的插件
+     */
+    void PreloadPluginOnDirectory(@NotNull File Directory);
     /**
      * 加载一个文件夹中的插件
      * @param Directory 文件夹

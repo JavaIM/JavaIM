@@ -3,6 +3,7 @@ package org.yuezhikong.Server.UserData.Authentication;
 import com.google.gson.Gson;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Permission;
@@ -34,7 +35,7 @@ public final class UserAuthentication implements IUserAuthentication{
 
     private final PluginManager pluginManager;
 
-    private final Logger logger = org.yuezhikong.utils.logging.Logger.getLogger(UserAuthentication.class);
+    private final Logger logger = LoggerFactory.getLogger(UserAuthentication.class);
     private final api serverAPI;
     /**
      * 实例化用户Auth实现
