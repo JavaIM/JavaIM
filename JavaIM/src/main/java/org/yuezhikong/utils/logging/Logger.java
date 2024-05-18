@@ -39,7 +39,7 @@ public class Logger implements CustomLogger {
      * 创建 JavaIM Logger 中间层
      * @param orig_logger 原始 slf4j Logger
      */
-    Logger(org.slf4j.Logger orig_logger)
+    public Logger(org.slf4j.Logger orig_logger)
     {
         this.orig_logger = orig_logger;
     }
