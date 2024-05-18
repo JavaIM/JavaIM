@@ -47,7 +47,6 @@ public class Logger implements CustomLogger {
     @Override
     public void ChatMsg(String msg) {
         info(msg);
-        CustomLoggerRequest(msg);
     }
 
     @Override
@@ -104,7 +103,7 @@ public class Logger implements CustomLogger {
 
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
-            throwable.printStackTrace(pw);
+            if (throwable != null) throwable.printStackTrace(pw);
             CustomLoggerRequest(s,sw.toString());
             pw.close();
         }
@@ -195,7 +194,7 @@ public class Logger implements CustomLogger {
 
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
-            throwable.printStackTrace(pw);
+            if (throwable != null) throwable.printStackTrace(pw);
             CustomLoggerRequest(s,sw.toString());
             pw.close();
         }
@@ -287,7 +286,7 @@ public class Logger implements CustomLogger {
 
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
-            throwable.printStackTrace(pw);
+            if (throwable != null) throwable.printStackTrace(pw);
             CustomLoggerRequest(s,sw.toString());
             pw.close();
         }
@@ -378,7 +377,7 @@ public class Logger implements CustomLogger {
 
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
-            throwable.printStackTrace(pw);
+            if (throwable != null) throwable.printStackTrace(pw);
 
             CustomLoggerRequest(s,sw.toString());
             pw.close();
@@ -469,7 +468,7 @@ public class Logger implements CustomLogger {
 
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
-            throwable.printStackTrace(pw);
+            if (throwable != null) throwable.printStackTrace(pw);
             CustomLoggerRequest(s,sw.toString());
             pw.close();
         }

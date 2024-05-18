@@ -6,6 +6,7 @@ import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.Main;
 import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.Server.UserData.ConsoleUser;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
@@ -135,14 +136,14 @@ public final class Server implements IServer{
      */
     public void start(int ListenPort) {
         long startUnix = System.currentTimeMillis();
-        LoggerFactory.getLogger(Server.class).info("正在启动JavaIM");
+        LoggerFactory.getLogger(Main.class).info("正在启动JavaIM");
         if (Instance != null)
             throw new RuntimeException("JavaIM Server is already running!");
         Instance = this;
 
-        LoggerFactory.getLogger(Server.class).info("正在预加载插件");
+        LoggerFactory.getLogger(Main.class).info("正在预加载插件");
         getPluginManager().PreloadPluginOnDirectory(new File("./plugins"));
-        LoggerFactory.getLogger(Server.class).info("插件预加载完成");
+        LoggerFactory.getLogger(Main.class).info("插件预加载完成");
 
         logger = (CustomLogger) LoggerFactory.getLogger(Server.class);//初始化日志
 
