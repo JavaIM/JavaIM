@@ -64,9 +64,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SSLNettyServer implements NetworkServer {
@@ -91,43 +89,108 @@ public class SSLNettyServer implements NetworkServer {
         logger = LoggerFactory.getLogger(SSLNettyServer.class);// 临时启动过程中logger
 
         logger.info("正在启动网络层 JavaIM...");
-        logger.info("正在生成 X.509 SSL证书");
-        X509CertificateGenerate();
+        ForkJoinPool forkJoinPool = new ForkJoinPool();
 
-        logger.info("正在创建各线程池");
-        ThreadGroup IOThreadGroup = new ThreadGroup("JavaIM IO Thread");
-        IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-            @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(IOThreadGroup,
-                        r,"IO Thread #"+threadNumber.getAndIncrement());
+        record StartUpTaskReturn(EventLoopGroup bossGroup, EventLoopGroup workerGroup,DefaultEventLoopGroup RecvMessageThreadPool,boolean Success) {}
+        class StartUpTask extends RecursiveTask<StartUpTaskReturn>{
+            private final int mode;
+            public StartUpTask() {
+                this(0);
             }
-        });
-        EventLoopGroup bossGroup = new NioEventLoopGroup(2, new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-            @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(IOThreadGroup,
-                        r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
+
+            public StartUpTask(int mode) {
+                this.mode = mode;
             }
-        });
-        EventLoopGroup workerGroup = new NioEventLoopGroup(10,new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
             @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(IOThreadGroup,
-                        r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
+            protected StartUpTaskReturn compute() {
+                if (mode == 0)
+                {
+                    StartUpTask CACertTask = new StartUpTask(1);
+                    StartUpTask NettyThreadPoolTask = new StartUpTask(2);
+                    CACertTask.fork();
+                    NettyThreadPoolTask.fork();
+
+                    StartUpTaskReturn CACertTaskReturn = CACertTask.join();
+                    StartUpTaskReturn NettyThreadPoolTaskReturn = NettyThreadPoolTask.join();
+                    return new StartUpTaskReturn(
+                            NettyThreadPoolTaskReturn.bossGroup(),
+                            NettyThreadPoolTaskReturn.workerGroup(),
+                            NettyThreadPoolTaskReturn.RecvMessageThreadPool(),
+                            CACertTaskReturn.Success() && NettyThreadPoolTaskReturn.Success());
+                }
+                else if (mode == 1)
+                {
+                    logger.info("正在生成 X.509 SSL证书");
+                    X509CertificateGenerate();
+                    return new StartUpTaskReturn(null,null,null,true);
+                }
+                else if (mode == 2)
+                {
+                    logger.info("正在创建各线程池");
+                    ThreadGroup IOThreadGroup = new ThreadGroup("JavaIM IO Thread");
+                    IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+                        private final AtomicInteger threadNumber = new AtomicInteger(1);
+                        @Override
+                        public Thread newThread(@NotNull Runnable r) {
+                            return new Thread(IOThreadGroup,
+                                    r,"IO Thread #"+threadNumber.getAndIncrement());
+                        }
+                    });
+                    EventLoopGroup bossGroup = new NioEventLoopGroup(2, new ThreadFactory() {
+                        private final AtomicInteger threadNumber = new AtomicInteger(1);
+                        @Override
+                        public Thread newThread(@NotNull Runnable r) {
+                            return new Thread(IOThreadGroup,
+                                    r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
+                        }
+                    });
+                    EventLoopGroup workerGroup = new NioEventLoopGroup(10,new ThreadFactory() {
+                        private final AtomicInteger threadNumber = new AtomicInteger(1);
+                        @Override
+                        public Thread newThread(@NotNull Runnable r) {
+                            return new Thread(IOThreadGroup,
+                                    r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
+                        }
+                    });
+                    DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup(10,new ThreadFactory() {
+                        private final AtomicInteger threadNumber = new AtomicInteger(1);
+                        @Override
+                        public Thread newThread(@NotNull Runnable r) {
+                            return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
+                                    r,"Recv Message Thread #"+threadNumber.getAndIncrement());
+                        }
+                    });
+                    return new StartUpTaskReturn(bossGroup,workerGroup,RecvMessageThreadPool,true);
+                }
+                else {
+                    return new StartUpTaskReturn(null,null,null,false);
+                }
             }
-        });
-        DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup(10,new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-            @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
-                        r,"Recv Message Thread #"+threadNumber.getAndIncrement());
+        }
+        ForkJoinTask<StartUpTaskReturn> forkJoinTask = forkJoinPool.submit(new StartUpTask());
+        EventLoopGroup bossGroup,workerGroup;
+        DefaultEventLoopGroup RecvMessageThreadPool;
+        try {
+            StartUpTaskReturn taskReturn = forkJoinTask.get();
+            if (!taskReturn.Success())
+            {
+                logger.error("ForkJoinTask返回操作不成功!");
+                logger.error("JavaIM启动失败");
+                if (taskReturn.bossGroup() != null)
+                    taskReturn.bossGroup().shutdownGracefully();
+                if (taskReturn.workerGroup() != null)
+                    taskReturn.workerGroup().shutdownGracefully();
+                if (taskReturn.RecvMessageThreadPool() != null)
+                    taskReturn.RecvMessageThreadPool().shutdownGracefully();
+                throw new RuntimeException("Fork Join pool fatal");
             }
-        });
+            bossGroup = taskReturn.bossGroup();
+            workerGroup = taskReturn.workerGroup();
+            RecvMessageThreadPool = taskReturn.RecvMessageThreadPool();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Fork Join Pool Fatal",e);
+        }
+        forkJoinPool.shutdownNow();
 
         logger.info("正在启动Netty");
         try {
