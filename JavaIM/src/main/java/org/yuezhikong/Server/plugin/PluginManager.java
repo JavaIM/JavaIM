@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 
 @SuppressWarnings("unused")
 public interface PluginManager {
@@ -116,15 +117,17 @@ public interface PluginManager {
     /**
      * 预加载一个文件夹中的插件
      * @param Directory 文件夹
+     * @param forkJoinPool 用于加载插件的ForkJoinPool
      * @apiNote 注意，通过此方法加载，只会加载后缀为.jar的插件
      */
-    void PreloadPluginOnDirectory(@NotNull File Directory);
+    void PreloadPluginOnDirectory(@NotNull File Directory, ForkJoinPool forkJoinPool);
     /**
      * 加载一个文件夹中的插件
      * @param Directory 文件夹
+     * @param forkJoinPool 用于加载插件的ForkJoinPool
      * @apiNote 注意，通过此方法加载，只会加载后缀为.jar的插件
      */
-    void LoadPluginOnDirectory(@NotNull File Directory);
+    void LoadPluginOnDirectory(@NotNull File Directory, ForkJoinPool forkJoinPool);
 
     /**
      * 调用事件处理程序

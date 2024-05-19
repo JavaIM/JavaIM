@@ -80,7 +80,7 @@ public class SSLNettyServer implements NetworkServer {
     private boolean isRunning = false;
     private boolean run = false;
     @Override
-    public void start(int ListenPort) throws IllegalStateException {
+    public void start(int ListenPort, ForkJoinPool forkJoinPool) throws IllegalStateException {
         checks.checkArgument(ListenPort < 1 || ListenPort > 65535, "The Port is not in the range of [0,65535]!");
         if (run)
             throw new IllegalStateException("The Server is already running!");
@@ -89,7 +89,6 @@ public class SSLNettyServer implements NetworkServer {
         logger = LoggerFactory.getLogger(SSLNettyServer.class);// 临时启动过程中logger
 
         logger.info("正在启动网络层 JavaIM...");
-        ForkJoinPool forkJoinPool = new ForkJoinPool();
 
         record StartUpTaskReturn(EventLoopGroup bossGroup, EventLoopGroup workerGroup,DefaultEventLoopGroup RecvMessageThreadPool,boolean Success) {}
         class StartUpTask extends RecursiveTask<StartUpTaskReturn>{
@@ -98,7 +97,7 @@ public class SSLNettyServer implements NetworkServer {
                 this(0);
             }
 
-            public StartUpTask(int mode) {
+            private StartUpTask(int mode) {
                 this.mode = mode;
             }
             @Override
@@ -190,7 +189,6 @@ public class SSLNettyServer implements NetworkServer {
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Fork Join Pool Fatal",e);
         }
-        forkJoinPool.shutdownNow();
 
         logger.info("正在启动Netty");
         try {

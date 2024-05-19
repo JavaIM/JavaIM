@@ -26,7 +26,7 @@ import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.logging.CustomLogger;
 import org.yuezhikong.utils.CustomVar;
-import org.yuezhikong.utils.DataBase.DatabaseHelper;
+import org.yuezhikong.utils.DatabaseHelper;
 import org.yuezhikong.utils.Protocol.ChatProtocol;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.LoginProtocol;
@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -141,8 +142,10 @@ public final class Server implements IServer{
             throw new RuntimeException("JavaIM Server is already running!");
         Instance = this;
 
+        ForkJoinPool forkJoinPool = new ForkJoinPool();
+
         LoggerFactory.getLogger(Main.class).info("正在预加载插件");
-        getPluginManager().PreloadPluginOnDirectory(new File("./plugins"));
+        getPluginManager().PreloadPluginOnDirectory(new File("./plugins"), forkJoinPool);
         LoggerFactory.getLogger(Main.class).info("插件预加载完成");
 
         logger = (CustomLogger) LoggerFactory.getLogger(Server.class);//初始化日志
@@ -156,7 +159,7 @@ public final class Server implements IServer{
             logger.info("数据库启动完成");
 
             logger.info("正在加载插件");
-            getPluginManager().LoadPluginOnDirectory(new File("./plugins"));
+            getPluginManager().LoadPluginOnDirectory(new File("./plugins"), forkJoinPool);
             logger.info("插件加载完成");
 
             Thread UserCommandRequestThread = new Thread(() -> {
@@ -216,6 +219,7 @@ public final class Server implements IServer{
             UserCommandRequestThread.start();
             logger.info("用户指令处理线程启动完成");
 
+            forkJoinPool.shutdownNow();
             logger.info("JavaIM 启动完成 (耗时:{}ms)",System.currentTimeMillis() - startUnix);
             startSuccessful = true;
             getPluginManager().callEvent(new onServerStartSuccessfulEvent());
@@ -223,7 +227,7 @@ public final class Server implements IServer{
 
         Thread.currentThread().setName("Network Thread");
         networkServer = new SSLNettyServer();
-        networkServer.start(ListenPort);
+        networkServer.start(ListenPort, forkJoinPool);
     }
 
     private static Server Instance;
