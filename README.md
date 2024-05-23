@@ -10,7 +10,7 @@
 
 JavaIM是一款使用Java编写的加密通信软件。
 
-JavaIM目前通过RSA+AES算法对通信内容进行加密。
+JavaIM目前通过TLS v1.3(允许降级v1.2)对通信内容进行加密。
 
 ## 建议使用最新开发版(GitHub Action CI)自动编译 而非使用最新 release!
 
