@@ -20,6 +20,12 @@ public enum Permission {
     ADMIN,
     NORMAL,
     BAN;
+
+    /**
+     * 由权限等级转换为权限Enum
+     * @param PermissionLevel 权限等级
+     * @return 权限enum
+     */
     public static Permission ToPermission(int PermissionLevel) {
         if (PermissionLevel == 1)
             return Permission.ADMIN;
@@ -28,5 +34,26 @@ public enum Permission {
         if (PermissionLevel == -1)
             return Permission.BAN;
         return Permission.NORMAL;
+    }
+
+    @Override
+    public String toString() {
+        switch (this) {
+            case BAN -> {
+                return "永久封禁";
+            }
+
+            case ADMIN -> {
+                return "管理员";
+            }
+
+            case NORMAL -> {
+                return "普通用户";
+            }
+
+            default -> {
+                return name();
+            }
+        }
     }
 }

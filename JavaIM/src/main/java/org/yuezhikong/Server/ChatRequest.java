@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.dao.userInformationDao;
+import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.UserData.userInformation;
 import org.yuezhikong.Server.api.api;
@@ -141,6 +142,26 @@ public class ChatRequest {
                     API.SendMessageToUser(User, "QiLechan（柒楽）");
                     API.SendMessageToUser(User, "AlexLiuDev233 （阿白）");
                 }
+                case "/list" -> {
+                    List<user> onlineUserList = API.GetValidClientList(true);
+                    if (Permission.ADMIN.equals(User.getUserPermission()))
+                        onlineUserList.forEach((user) -> {
+                            if (user instanceof tcpUser)
+                                API.SendMessageToUser(User,
+                                        String.format("%s 权限：%s IP地址：%s",
+                                                user.getUserName(),
+                                                user.getUserPermission().toString(),
+                                                ((tcpUser) user).getNetworkClient().getSocketAddress()
+                                        )
+                                );
+                            else
+                                API.SendMessageToUser(User, String.format("%s 权限：%s", user.getUserName(), user.getUserPermission().toString()));
+                        });
+                    else
+                        onlineUserList.forEach((user) ->
+                                API.SendMessageToUser(User, String.format("%s 权限：%s", user.getUserName(), user.getUserPermission().toString()))
+                        );
+                }
                 case "/runGC" -> {
                     if (!User.isServer()) {
                         API.SendMessageToUser(User, "此命令只能由服务端执行！");
@@ -155,6 +176,7 @@ public class ChatRequest {
                     API.SendMessageToUser(User, "/about 查询此程序有关的信息");
                     API.SendMessageToUser(User, "/help 显示服务器帮助信息");
                     API.SendMessageToUser(User, "/tell <用户> <消息> 发送私聊");
+                    API.SendMessageToUser(User, "/list 显示在线用户列表");
                     if (Permission.ADMIN.equals(User.getUserPermission())) {
                         API.SendMessageToUser(User, "/op <用户名> 给予管理员权限");
                         API.SendMessageToUser(User, "/deop <用户名> 剥夺管理员权限");

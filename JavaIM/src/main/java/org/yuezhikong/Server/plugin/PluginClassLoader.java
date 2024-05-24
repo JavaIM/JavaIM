@@ -20,7 +20,8 @@ public class PluginClassLoader extends URLClassLoader {
             return super.loadClass(name, resolve);
         }
         catch (ClassNotFoundException ignored) {}
-        if (!check)
+
+        if (check)
             throw new ClassNotFoundException(name);
         //未在父类找到(意味着JavaIM主程序与插件本身均未找到插件，应试图前去其他插件加载)
         for (PluginData data : manager.getPluginDataList())
@@ -41,6 +42,6 @@ public class PluginClassLoader extends URLClassLoader {
      * 设置是否为其他插件正在尝试本插件
      */
     private void setOtherPluginCheckClass(boolean check) {
-        this.check =check;
+        this.check = check;
     }
 }
