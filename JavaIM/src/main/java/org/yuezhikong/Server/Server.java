@@ -192,6 +192,8 @@ public final class Server implements IServer{
                 while (true) try {
                     Scanner scanner = new Scanner(System.in);
                     String consoleInput = scanner.nextLine();
+                    if (consoleInput.isEmpty())
+                        continue;
                     //判断是指令还是消息
                     if (consoleInput.startsWith("/")) {
                         CustomVar.Command command = serverAPI.CommandFormat(consoleInput);
