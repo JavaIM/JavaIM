@@ -41,7 +41,7 @@ public class DatabaseHelper {
             if (!CodeDynamicConfig.GetSQLITEMode()) {
                 JDBCUrl = "jdbc:mysql://" + CodeDynamicConfig.GetMySQLDataBaseHost()
                         + ":" + CodeDynamicConfig.GetMySQLDataBasePort() + "/" + CodeDynamicConfig.GetMySQLDataBaseName()
-                        + "?autoReconnect=true&failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1&useSSL=false";
+                        + "?failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1";
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 connection = DriverManager.getConnection(JDBCUrl, CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
             } else {
@@ -53,14 +53,10 @@ public class DatabaseHelper {
             connection.createStatement().executeUpdate(
                     "CREATE TABLE if not exists UserData" +
                             " (" +
-                            " DatabaseProtocolVersion INT," +//Database Table协议版本
-//                            " UserMuted INT," +//是否已被禁言
-//                            " UserMuteTime BIGINT," +//用户禁言时长
                             " Permission INT," +//权限等级，目前只有三个等级，-1级：被封禁用户，0级：普通用户，1级：管理员
                             " UserName varchar(255)," +//用户名
                             " Passwd varchar(255)," +//密码
                             " salt varchar(255)," +//密码加盐加的盐
-                            //" UserLogged INT," +//用户是否已登录
                             " token varchar(255)" +//Login Token
                             " );");
             //更新数据库表
@@ -132,10 +128,7 @@ public class DatabaseHelper {
         else
         {
             //查询UserData中是否存在列
-            PreparedStatement ps = DatabaseConnection.prepareStatement("SHOW COLUMNS FROM ? LIKE ?");
-            ps.setString(1,TableName);
-            ps.setString(2,Columns);
-            return ps.executeQuery().next();
+            return DatabaseConnection.createStatement().executeQuery("SHOW COLUMNS FROM "+TableName+" LIKE '"+Columns+"';").next();
         }
         return false;
     }

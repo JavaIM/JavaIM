@@ -67,7 +67,7 @@ public final class Server implements IServer{
     /**
      * 用户处理器
      */
-    private final ChatRequest request = new ChatRequest(this);
+    private ChatRequest request;
 
     /**
      * 服务器控制台用户
@@ -87,24 +87,7 @@ public final class Server implements IServer{
     /**
      * 服务器API
      */
-    private final api serverAPI = new SingleAPI(this) {
-        @Override
-        public void SendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType) {
-            GeneralProtocol protocol = new GeneralProtocol();
-            protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
-            protocol.setProtocolName(ProtocolType);
-            protocol.setProtocolData(InputData);
-
-            String SendData = gson.toJson(protocol);
-            if (User instanceof PluginUser)
-                //如果是插件用户，则直接调用插件用户中的方法
-                ((PluginUser) User).WriteData(SendData);
-            else if (User instanceof ConsoleUser)
-                logger.info(SendData);
-            else if (User instanceof tcpUser)
-                ((tcpUser) User).getNetworkClient().send(SendData);
-        }
-    };
+    private api serverAPI;
 
     /**
      * 日志记录器
@@ -149,11 +132,54 @@ public final class Server implements IServer{
         LoggerFactory.getLogger(Main.class).info("插件预加载完成");
 
         logger = (CustomLogger) LoggerFactory.getLogger(Server.class);//初始化日志
+        serverAPI = new SingleAPI(this) {
+            @Override
+            public void SendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType) {
+                GeneralProtocol protocol = new GeneralProtocol();
+                protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
+                protocol.setProtocolName(ProtocolType);
+                protocol.setProtocolData(InputData);
+
+                String SendData = gson.toJson(protocol);
+                if (User instanceof PluginUser)
+                    //如果是插件用户，则直接调用插件用户中的方法
+                    ((PluginUser) User).WriteData(SendData);
+                else if (User instanceof ConsoleUser)
+                    logger.info(SendData);
+                else if (User instanceof tcpUser)
+                    ((tcpUser) User).getNetworkClient().send(SendData);
+            }
+        };// 初始化Server API
+        request = new ChatRequest(this);
 
         new Thread(() -> {
             logger.info("正在处理数据库");
-            //获取JDBCUrl,创建表与自动更新数据库
-            String JDBCUrl = DatabaseHelper.InitDataBase();
+            String JDBCUrl;
+            try {
+                //获取JDBCUrl,创建表与自动更新数据库
+                JDBCUrl = DatabaseHelper.InitDataBase();
+            } catch (Throwable throwable)
+            {
+                logger.error("数据库启动失败",throwable);
+                if (!networkServer.isRunning()) {
+                    synchronized (SSLNettyServer.class) {
+                        if (!networkServer.isRunning()) {
+                            try {
+                                SSLNettyServer.class.wait();
+                            } catch (InterruptedException ignored) {
+
+                            }
+                        }
+                    }
+                }
+                forkJoinPool.shutdownNow();
+                logger.error("JavaIM启动失败，因为数据库出错");
+                try {
+                    stop();
+                } catch (NullPointerException ignored) {}
+                logger.info("JavaIM服务器已经关闭");
+                return;
+            }
             //初始化Mybatis
             sqlSession = DatabaseHelper.InitMybatis(JDBCUrl);
             logger.info("数据库启动完成");
@@ -248,15 +274,15 @@ public final class Server implements IServer{
     public void stop() {
         logger.info("JavaIM服务器正在关闭...");
         users.clear();
-        sqlSession.close();
         pluginManager.callEvent(new ServerStopEvent());
         try {
             pluginManager.UnLoadAllPlugin();
-        } catch (IOException ignored) {}
+        } catch (Throwable ignored) {}
         userMessageRequestThreadPool.shutdownNow();
         System.gc();
         getNetwork().stop();
         Instance = null;
+        sqlSession.close();
         logger.info("JavaIM服务器已关闭");
     }
 
@@ -273,7 +299,7 @@ public final class Server implements IServer{
         }
         ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(user, protocol.getMessage());
         if (!getRequest().UserChatRequests(input)){
-            getLogger().ChatMsg("["+user.getUserName()+"]:"+input.getChatMessage());
+            logger.ChatMsg("["+user.getUserName()+"]:"+input.getChatMessage());
 
             ChatProtocol chatProtocol = new ChatProtocol();
             chatProtocol.setSourceUserName(user.getUserName());
@@ -444,6 +470,7 @@ public final class Server implements IServer{
         return serverAPI;
     }
 
+    @SuppressWarnings("removal")
     @Override
     public CustomLogger getLogger() {
         return logger;

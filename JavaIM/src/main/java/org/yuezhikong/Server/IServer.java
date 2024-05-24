@@ -84,7 +84,10 @@ public interface IServer {
     /**
      * 获取Logger
      * @return Logger
+     * @deprecated 请使用Slf4j获取Logger
+     * @see org.slf4j.LoggerFactory#getLogger(Class)
      */
+    @Deprecated(since="1.4", forRemoval = true)
     CustomLogger getLogger();
 
     /**

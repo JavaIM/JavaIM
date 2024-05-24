@@ -105,6 +105,7 @@ public interface PluginManager {
      * 卸载一个插件
      * @param plugin 插件信息
      * @throws IOException 无法关闭URLClassLoader
+     * @throws IllegalStateException 在PreLoad阶段调用UnLoadPlugin抛出
      */
     void UnLoadPlugin(@NotNull Plugin plugin) throws IOException;
 

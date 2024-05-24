@@ -18,6 +18,8 @@ package org.yuezhikong.Server;
 
 import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.dao.userInformationDao;
 import org.yuezhikong.Server.UserData.user;
@@ -27,11 +29,11 @@ import org.yuezhikong.Server.plugin.event.events.User.UserChatEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserCommandEvent;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Protocol.ChatProtocol;
+import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.SaveStackTrace;
+import org.yuezhikong.utils.logging.CustomLogger;
 
 import javax.security.auth.login.AccountNotFoundException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ChatRequest {
@@ -100,6 +102,8 @@ public class ChatRequest {
         return false;
     }
 
+    private final Logger logger = LoggerFactory.getLogger(ChatRequest.class);
+
     /**
      * 实际的指令处理程序
      * @param User 用户
@@ -109,32 +113,42 @@ public class ChatRequest {
     {
         final api API = instance.getServerAPI();
         try {
+            // 对于非/tell指令，将XX用户执行指令的信息发送给所有管理员
+            if (!command.Command().startsWith("/tell")) {
+                StringBuilder stringBuilder = new StringBuilder(command.Command());
+                stringBuilder.append(" ");
+                for (String arg : command.argv()) {
+                    stringBuilder.append(arg).append(" ");
+                }
+
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                String orig_Command = stringBuilder.toString();
+                logger.info(orig_Command);
+                for (user sendUser : API.GetValidClientList(true)) {
+                    if (!Permission.ADMIN.equals(sendUser.getUserPermission()))
+                        continue;
+                    API.SendMessageToUser(sendUser, String.format("%s 执行了指令: %s", User.getUserName(), orig_Command));
+                }
+            }
             //插件指令处理
             if (instance.getPluginManager().RequestPluginCommand(command,User))
-            {
                 return;
-            }
             switch (command.Command()) {
                 case "/about" -> {
                     API.SendMessageToUser(User, "JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
-                    API.SendMessageToUser(User, "主仓库位于：https://github.com/JavaIM/JavaIM");
+                    API.SendMessageToUser(User, "主仓库于：https://github.com/JavaIM/JavaIM");
                     API.SendMessageToUser(User, "主要开发者名单：");
                     API.SendMessageToUser(User, "QiLechan（柒楽）");
                     API.SendMessageToUser(User, "AlexLiuDev233 （阿白）");
                 }
-                case "/kick-all-user-and-free-memory" -> {
+                case "/runGC" -> {
                     if (!User.isServer()) {
-                        API.SendMessageToUser(User,
-                                "此命令只能由服务端执行！");
+                        API.SendMessageToUser(User, "此命令只能由服务端执行！");
                         break;
                     }
-                    API.SendMessageToAllClient("服务端正在强制清理资源，请重新登录！");
-                    List<user> users = API.GetValidClientList(false);
-                    for (user user : users) {
-                        user.UserDisconnect();
-                    }
+
                     System.gc();
-                    instance.getLogger().info("已经完成内存释放，并且踢出了所有用户");
+                    logger.info("已经完成垃圾回收");
                 }
                 case "/help" -> {
                     API.SendMessageToUser(User, "JavaIM服务器帮助");
@@ -149,15 +163,12 @@ public class ChatRequest {
                         API.SendMessageToUser(User, "/quit 安全的退出程序");
                         API.SendMessageToUser(User, "/change-password <用户名> <密码> 强制修改某用户密码");
                         API.SendMessageToUser(User, "/kick <用户名> 踢出某用户");
-                        API.SendMessageToUser(User, "/Send-UnModify-Message <消息> 发送不会被服务端修改的消息");
                     }
-                    if (User.isServer()) {
-                        API.SendMessageToUser(User, "/kick-all-user-and-free-memory 踢出所有用户，并且尽可能释放内存");
-                    }
-                    if (instance.getPluginManager().getPluginNumber() > 0)
+                    if (User.isServer())
+                        API.SendMessageToUser(User, "/runGC 手动执行垃圾回收");
+                    if (!instance.getPluginManager().getPluginCommandsDescription().isEmpty())
                         API.SendMessageToUser(User,"插件指令帮助");
-                    for (String msg : instance.getPluginManager().getPluginCommandsDescription())
-                    {
+                    for (String msg : instance.getPluginManager().getPluginCommandsDescription()) {
                         API.SendMessageToUser(User,msg);
                     }
                     if (Permission.ADMIN.equals(User.getUserPermission()))
@@ -176,18 +187,30 @@ public class ChatRequest {
                         break;
                     }
                     if (command.argv().length == 1) {
-                        try {
-                            user targetUser = API.GetUserByUserName(command.argv()[0]);
-                            if (Permission.ADMIN.equals(targetUser.getUserPermission())) {
-                                API.SendMessageToUser(User, "无法给予权限，对方已是管理员");
-                            } else {
-                                targetUser.SetUserPermission(1);
-                                API.SendMessageToUser(User, "已将" + targetUser.getUserName() + "设为管理员");
-                                API.SendMessageToUser(targetUser, User.getUserName() + "已将你设为管理员");
-                            }
-                        } catch (AccountNotFoundException e) {
-                            API.SendMessageToUser(User, "您所输入的用户不存在");
+                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                        userInformation information = mapper.getUserByName(command.argv()[0]);
+                        if (information == null) {
+                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                            return;
                         }
+                        if (information.getPermission() != 1)
+                            API.SendMessageToUser(User, "已将" + information.getUserName() + "设为服务器管理员");
+                        else {
+                            API.SendMessageToUser(User, "无法设置，对方已是管理员");
+                            break;
+                        }
+
+                        information.setPermission(1);
+                        mapper.updateUser(information);
+
+                        user targetUser;
+                        try {
+                            targetUser = API.GetUserByUserName(command.argv()[0]);
+                        } catch (AccountNotFoundException e) {
+                            break;
+                        }
+                        API.SendMessageToUser(targetUser, "您已被设为服务器管理员");
+                        targetUser.SetUserPermission(1);
                     } else {
                         API.SendMessageToUser(User, "语法错误，正确的语法为：/op <用户名>");
                     }
@@ -198,17 +221,30 @@ public class ChatRequest {
                         break;
                     }
                     if (command.argv().length == 1) {
-                        try {
-                            user targetUser = API.GetUserByUserName(command.argv()[0]);
-                            if (Permission.ADMIN.equals(targetUser.getUserPermission())) {
-                                targetUser.SetUserPermission(0);
-                                API.SendMessageToUser(User, "已剥夺" + targetUser.getUserName() + "的管理员权限");
-                            } else {
-                                API.SendMessageToUser(User, "无法剥夺权限，对方不是管理员");
-                            }
-                        } catch (AccountNotFoundException e) {
-                            API.SendMessageToUser(User, "您所输入的用户不存在");
+                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                        userInformation information = mapper.getUserByName(command.argv()[0]);
+                        if (information == null) {
+                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                            return;
                         }
+                        if (information.getPermission() == 1)
+                            API.SendMessageToUser(User, "已夺去" + information.getUserName() + "的管理员权限");
+                        else {
+                            API.SendMessageToUser(User, "无法夺去权限，对方不是管理员");
+                            break;
+                        }
+
+                        information.setPermission(0);
+                        mapper.updateUser(information);
+
+                        user targetUser;
+                        try {
+                            targetUser = API.GetUserByUserName(command.argv()[0]);
+                        } catch (AccountNotFoundException e) {
+                            break;
+                        }
+                        API.SendMessageToUser(targetUser, "您已被夺去管理员权限");
+                        targetUser.SetUserPermission(0);
                     } else {
                         API.SendMessageToUser(User, "语法错误，正确的语法为：/deop <用户名>");
                     }
@@ -219,18 +255,23 @@ public class ChatRequest {
                         break;
                     }
                     if (command.argv().length == 1) {
-                        try {
-                            user targetUser = API.GetUserByUserName(command.argv()[0]);
-                            if (Permission.BAN.equals(targetUser.getUserPermission())) {
-                                API.SendMessageToUser(User, "无法封禁，对方已被封禁");
-                            } else {
-                                targetUser.SetUserPermission(-1);
-                                targetUser.UserDisconnect();
-                                API.SendMessageToUser(User, "已将" + targetUser.getUserName() + "封禁");
-                            }
-                        } catch (AccountNotFoundException e) {
-                            API.SendMessageToUser(User, "您所输入的用户不存在");
+                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                        userInformation information = mapper.getUserByName(command.argv()[0]);
+                        if (information == null) {
+                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                            return;
                         }
+                        information.setPermission(-1);
+                        mapper.updateUser(information);
+
+                        user kickUser;
+                        try {
+                            kickUser = API.GetUserByUserName(command.argv()[0]);
+                        } catch (AccountNotFoundException e) {
+                            break;
+                        }
+                        API.SendMessageToUser(kickUser, "您已被封禁");
+                        kickUser.UserDisconnect();
                     } else {
                         API.SendMessageToUser(User, "语法错误，正确的语法为：/ban <用户名>");
                     }
@@ -243,6 +284,10 @@ public class ChatRequest {
                     if (command.argv().length == 1) {
                         userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
                         userInformation information = mapper.getUserByName(command.argv()[0]);
+                        if (information == null) {
+                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                            return;
+                        }
                         information.setPermission(0);
                         mapper.updateUser(information);
                     } else {
@@ -273,16 +318,14 @@ public class ChatRequest {
                         API.SendMessageToUser(User, "请输入/change-password force " + argv+ "来确认此操作");//向用户发送提示
                     } else if (command.argv().length == 3) {
                         if ("force".equals(command.argv()[0])) {
-                            try {
-                                API.ChangeUserPassword(
-                                        API.GetUserByUserName(
-                                                command.argv()[1]
-                                        ),
-                                        command.argv()[2]);//根据用户名获取用户，并强制修改密码
-                            } catch (AccountNotFoundException e) {
-                                API.SendMessageToUser(User, "无法找到用户：" + command.argv()[1]);
+                            userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                            userInformation information = mapper.getUserByName(command.argv()[1]);
+                            if (information == null) {
+                                API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                                 return;
                             }
+                            information.setPasswd(SHA256.sha256(command.argv()[2]));
+                            mapper.updateUser(information);
                             API.SendMessageToUser(User, "操作成功完成。");
                         } else {
                             API.SendMessageToUser(User, "语法错误，正确的语法为：/change-password <用户名> <密码>");
@@ -312,30 +355,6 @@ public class ChatRequest {
                         API.SendMessageToUser(User, "语法错误，正确的语法为：/kick <用户名>");
                     }
                 }
-                case "/Send-UnModify-Message" -> {
-                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                        API.SendMessageToUser(User, "你没有权限这样做");
-                        break;
-                    }
-                    if (command.argv().length == 0)
-                    {
-                        API.SendMessageToUser(User, "语法错误，正确的语法为：/Send-UnModify-Message <消息>");
-                        break;
-                    }
-                    StringBuilder stringBuilder = new StringBuilder();
-                    for (String arg : command.argv())
-                    {
-                        stringBuilder.append(arg).append(" ");
-                        if (!stringBuilder.isEmpty())
-                        {
-                            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
-                        }
-                    }
-
-                    String arg = stringBuilder.toString();
-                    API.SendMessageToAllClient(arg);
-                    instance.getLogger().ChatMsg(arg);
-                }
                 case "/tell" -> {
                     if (command.argv().length >= 2) {
                         StringBuilder stringBuilder = new StringBuilder();
@@ -356,7 +375,7 @@ public class ChatRequest {
 
                         if (command.argv()[0].equals("Server"))//当私聊目标为后台时
                         {
-                            instance.getLogger().ChatMsg("["+User.getUserName()+"]:"+ChatMessage);
+                            ((CustomLogger) logger).ChatMsg("["+User.getUserName()+"]:"+ChatMessage);
                             API.SendMessageToUser(User, "你对" + command.argv()[0] + "发送了私聊：" + ChatMessage);
                             break;
                         }

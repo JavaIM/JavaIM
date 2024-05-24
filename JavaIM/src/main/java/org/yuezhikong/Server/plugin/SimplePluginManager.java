@@ -29,6 +29,7 @@ import org.yuezhikong.Server.plugin.event.Listener;
 import org.yuezhikong.Server.plugin.event.events.Event;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.SaveStackTrace;
+import org.yuezhikong.utils.checks;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SimplePluginManager implements PluginManager{
@@ -214,6 +214,7 @@ public class SimplePluginManager implements PluginManager{
 
     @Override
     public void UnLoadPlugin(@NotNull Plugin plugin) throws IOException {
+        checks.checkState(!LoadStage, "Server PreLoad Stage can not Unload Plugin, you can try load in ONLOAD METHOD");
         PluginData pluginData = plugin.getPluginData();
         LoggerFactory.getLogger(SimplePluginManager.class).info("正在卸载插件"+pluginData.getStaticData().PluginName()+
                 "v"+pluginData.getStaticData().PluginVersion()+
@@ -307,6 +308,7 @@ public class SimplePluginManager implements PluginManager{
             return null;
     }
 
+    private boolean LoadStage = false;
     @Override
     public void PreloadPluginOnDirectory(@NotNull File Directory, ForkJoinPool forkJoinPool) {
         if (!Directory.exists() && !(Directory.mkdir()))
@@ -386,6 +388,7 @@ public class SimplePluginManager implements PluginManager{
 
     @Override
     public void LoadPluginOnDirectory(@NotNull File Directory, ForkJoinPool forkJoinPool) {
+        LoadStage = true;
         if (!Directory.exists() && !(Directory.mkdir()))
             throw new RuntimeException("创建文件夹失败");
 
