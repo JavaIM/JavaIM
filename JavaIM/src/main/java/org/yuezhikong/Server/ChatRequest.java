@@ -124,11 +124,12 @@ public class ChatRequest {
 
                 stringBuilder.deleteCharAt(stringBuilder.length() - 1);
                 String orig_Command = stringBuilder.toString();
-                logger.info(orig_Command);
+                String tipMessage = String.format("%s 执行了指令: %s", User.getUserName(), orig_Command);
+                logger.info(tipMessage);
                 for (user sendUser : API.GetValidClientList(true)) {
                     if (!Permission.ADMIN.equals(sendUser.getUserPermission()))
                         continue;
-                    API.SendMessageToUser(sendUser, String.format("%s 执行了指令: %s", User.getUserName(), orig_Command));
+                    API.SendMessageToUser(sendUser, tipMessage);
                 }
             }
             //插件指令处理
