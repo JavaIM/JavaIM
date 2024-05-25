@@ -2,6 +2,8 @@ package org.yuezhikong.Server.UserData;
 
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
 import org.yuezhikong.Server.UserData.dao.userInformationDao;
@@ -10,6 +12,8 @@ import org.yuezhikong.Server.plugin.event.events.User.auth.UserLoginEvent;
 public abstract class JavaUser implements user{
     private userInformation userInformation;
     private IUserAuthentication authentication;
+    private static final Logger logger = LoggerFactory.getLogger(JavaUser.class);
+
     @Override
     public String getUserName() {
         return (authentication == null) ? "" : authentication.getUserName();
@@ -38,7 +42,7 @@ public abstract class JavaUser implements user{
         userInformation information = getUserInformation();
         information.setPermission(permissionLevel);
         setUserInformation(information);
-        ServerTools.getServerInstanceOrThrow().getLogger().info(String.format("用户：%s的权限发生更新，新权限等级：%s", getUserName(), permissionLevel));
+        logger.info(String.format("用户：%s的权限发生更新，新权限等级：%s", getUserName(), permissionLevel));
         return this;
     }
 

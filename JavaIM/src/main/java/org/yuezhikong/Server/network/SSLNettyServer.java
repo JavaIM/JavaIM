@@ -33,6 +33,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
@@ -71,7 +72,7 @@ public class SSLNettyServer implements NetworkServer {
     private final List<NetworkClient> clientList = new ArrayList<>();
     private PrivateKey ServerSSLPrivateKey;
     private X509Certificate ServerSSLCertificate;
-    private Logger logger;
+    private static Logger logger;
 
 
 
@@ -80,114 +81,70 @@ public class SSLNettyServer implements NetworkServer {
     private boolean isRunning = false;
     private boolean run = false;
     @Override
-    public void start(int ListenPort, ForkJoinPool forkJoinPool) throws IllegalStateException {
-        checks.checkArgument(ListenPort < 1 || ListenPort > 65535, "The Port is not in the range of [0,65535]!");
+    public void start(@Range(from = 1, to = 65535) int ListenPort, ExecutorService StartUpThreadPool) throws IllegalStateException {
         if (run)
             throw new IllegalStateException("The Server is already running!");
         run = true;
 
-        logger = LoggerFactory.getLogger(SSLNettyServer.class);// 临时启动过程中logger
+        logger = LoggerFactory.getLogger(SSLNettyServer.class);// Netty Server Logger
 
         logger.info("正在启动网络层 JavaIM...");
 
-        record StartUpTaskReturn(EventLoopGroup bossGroup, EventLoopGroup workerGroup,DefaultEventLoopGroup RecvMessageThreadPool,boolean Success) {}
-        class StartUpTask extends RecursiveTask<StartUpTaskReturn>{
-            private final int mode;
-            public StartUpTask() {
-                this(0);
-            }
+        Future<?> CACertTask = StartUpThreadPool.submit(() -> {
+            logger.info("正在生成 X.509 SSL证书");
+            X509CertificateGenerate();
+        });
 
-            private StartUpTask(int mode) {
-                this.mode = mode;
-            }
-            @Override
-            protected StartUpTaskReturn compute() {
-                if (mode == 0)
-                {
-                    StartUpTask CACertTask = new StartUpTask(1);
-                    StartUpTask NettyThreadPoolTask = new StartUpTask(2);
-                    CACertTask.fork();
-                    NettyThreadPoolTask.fork();
 
-                    StartUpTaskReturn CACertTaskReturn = CACertTask.join();
-                    StartUpTaskReturn NettyThreadPoolTaskReturn = NettyThreadPoolTask.join();
-                    return new StartUpTaskReturn(
-                            NettyThreadPoolTaskReturn.bossGroup(),
-                            NettyThreadPoolTaskReturn.workerGroup(),
-                            NettyThreadPoolTaskReturn.RecvMessageThreadPool(),
-                            CACertTaskReturn.Success() && NettyThreadPoolTaskReturn.Success());
+        record NettyThreadPoolTaskReturn(EventLoopGroup bossGroup, EventLoopGroup workerGroup,DefaultEventLoopGroup RecvMessageThreadPool) {}
+        Future<?> NettyThreadPoolTask = StartUpThreadPool.submit(() -> {
+            logger.info("正在创建各线程池");
+            ThreadGroup IOThreadGroup = new ThreadGroup("JavaIM IO Thread");
+            IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
+                @Override
+                public Thread newThread(@NotNull Runnable r) {
+                    return new Thread(IOThreadGroup,
+                            r,"IO Thread #"+threadNumber.getAndIncrement());
                 }
-                else if (mode == 1)
-                {
-                    logger.info("正在生成 X.509 SSL证书");
-                    X509CertificateGenerate();
-                    return new StartUpTaskReturn(null,null,null,true);
+            });
+            EventLoopGroup bossGroup = new NioEventLoopGroup(2, new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
+                @Override
+                public Thread newThread(@NotNull Runnable r) {
+                    return new Thread(IOThreadGroup,
+                            r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
                 }
-                else if (mode == 2)
-                {
-                    logger.info("正在创建各线程池");
-                    ThreadGroup IOThreadGroup = new ThreadGroup("JavaIM IO Thread");
-                    IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
-                        private final AtomicInteger threadNumber = new AtomicInteger(1);
-                        @Override
-                        public Thread newThread(@NotNull Runnable r) {
-                            return new Thread(IOThreadGroup,
-                                    r,"IO Thread #"+threadNumber.getAndIncrement());
-                        }
-                    });
-                    EventLoopGroup bossGroup = new NioEventLoopGroup(2, new ThreadFactory() {
-                        private final AtomicInteger threadNumber = new AtomicInteger(1);
-                        @Override
-                        public Thread newThread(@NotNull Runnable r) {
-                            return new Thread(IOThreadGroup,
-                                    r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
-                        }
-                    });
-                    EventLoopGroup workerGroup = new NioEventLoopGroup(10,new ThreadFactory() {
-                        private final AtomicInteger threadNumber = new AtomicInteger(1);
-                        @Override
-                        public Thread newThread(@NotNull Runnable r) {
-                            return new Thread(IOThreadGroup,
-                                    r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
-                        }
-                    });
-                    DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup(10,new ThreadFactory() {
-                        private final AtomicInteger threadNumber = new AtomicInteger(1);
-                        @Override
-                        public Thread newThread(@NotNull Runnable r) {
-                            return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
-                                    r,"Recv Message Thread #"+threadNumber.getAndIncrement());
-                        }
-                    });
-                    return new StartUpTaskReturn(bossGroup,workerGroup,RecvMessageThreadPool,true);
+            });
+            EventLoopGroup workerGroup = new NioEventLoopGroup(10,new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
+                @Override
+                public Thread newThread(@NotNull Runnable r) {
+                    return new Thread(IOThreadGroup,
+                            r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
                 }
-                else {
-                    return new StartUpTaskReturn(null,null,null,false);
+            });
+            DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup(10,new ThreadFactory() {
+                private final AtomicInteger threadNumber = new AtomicInteger(1);
+                @Override
+                public Thread newThread(@NotNull Runnable r) {
+                    return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
+                            r,"Recv Message Thread #"+threadNumber.getAndIncrement());
                 }
-            }
-        }
-        ForkJoinTask<StartUpTaskReturn> forkJoinTask = forkJoinPool.submit(new StartUpTask());
+            });
+            return new NettyThreadPoolTaskReturn(bossGroup, workerGroup, RecvMessageThreadPool);
+        });
+
         EventLoopGroup bossGroup,workerGroup;
         DefaultEventLoopGroup RecvMessageThreadPool;
         try {
-            StartUpTaskReturn taskReturn = forkJoinTask.get();
-            if (!taskReturn.Success())
-            {
-                logger.error("ForkJoinTask返回操作不成功!");
-                logger.error("JavaIM启动失败");
-                if (taskReturn.bossGroup() != null)
-                    taskReturn.bossGroup().shutdownGracefully();
-                if (taskReturn.workerGroup() != null)
-                    taskReturn.workerGroup().shutdownGracefully();
-                if (taskReturn.RecvMessageThreadPool() != null)
-                    taskReturn.RecvMessageThreadPool().shutdownGracefully();
-                throw new RuntimeException("Fork Join pool fatal");
-            }
+            CACertTask.get();
+            NettyThreadPoolTaskReturn taskReturn = (NettyThreadPoolTaskReturn) NettyThreadPoolTask.get();
             bossGroup = taskReturn.bossGroup();
             workerGroup = taskReturn.workerGroup();
             RecvMessageThreadPool = taskReturn.RecvMessageThreadPool();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Fork Join Pool Fatal",e);
+            throw new RuntimeException("Thread Pool Fatal",e);
         }
 
         logger.info("正在启动Netty");
@@ -430,6 +387,20 @@ public class SSLNettyServer implements NetworkServer {
         private final Gson gson = new Gson();
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
+            logger.info("检测到新客户端连接...");
+            logger.info("此客户端IP地址："+ctx.channel().remoteAddress());
+            if (!ServerTools.getServerInstance().isServerCompleateStart()) {
+                SystemProtocol systemProtocol = new SystemProtocol();
+                systemProtocol.setType("Error");
+                systemProtocol.setMessage("Server is not start completely");
+
+                GeneralProtocol protocol = new GeneralProtocol();
+                protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
+                protocol.setProtocolName("SystemProtocol");
+                protocol.setProtocolData(gson.toJson(systemProtocol));
+                ctx.writeAndFlush(gson.toJson(protocol));
+                return;
+            }
             NettyUser nettyUser = new NettyUser();
             if (!ServerTools.getServerInstanceOrThrow().RegisterUser(nettyUser))
             {
@@ -440,17 +411,17 @@ public class SSLNettyServer implements NetworkServer {
             nettyUser.setNetworkClient(client);
             clientNetworkClientPair.put(ctx.channel(),client);
             clientList.add(client);
-            logger.info("检测到新客户端连接...");
-            logger.info("此客户端IP地址："+ctx.channel().remoteAddress());
         }
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
+            logger.info("检测到客户端离线...");
+            logger.info("此客户端IP地址："+ctx.channel().remoteAddress());
             NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
+            if (thisClient == null)
+                return;
             ServerTools.getServerInstanceOrThrow().UnRegisterUser(thisClient.getUser());
             clientList.remove(thisClient);
-            logger.info("检测到客户端离线...");
-            logger.info("此客户端IP地址："+thisClient.getSocketAddress());
         }
 
         @Override
@@ -468,7 +439,7 @@ public class SSLNettyServer implements NetworkServer {
 
                     GeneralProtocol protocol = new GeneralProtocol();
                     protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
-                    protocol.setProtocolName("NormalProtocol");
+                    protocol.setProtocolName("SystemProtocol");
                     protocol.setProtocolData(gson.toJson(systemProtocol));
                     ctx.writeAndFlush(gson.toJson(protocol));
                     return;
@@ -486,7 +457,7 @@ public class SSLNettyServer implements NetworkServer {
 
                 GeneralProtocol protocol = new GeneralProtocol();
                 protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
-                protocol.setProtocolName("NormalProtocol");
+                protocol.setProtocolName("SystemProtocol");
                 protocol.setProtocolData(gson.toJson(systemProtocol));
                 ctx.writeAndFlush(gson.toJson(protocol));
             } finally {
@@ -570,7 +541,7 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public user onUserLogin(String UserName) {
-            ServerTools.getServerInstanceOrThrow().getLogger().info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
+            logger.info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
             return super.onUserLogin(UserName);
         }
 

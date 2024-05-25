@@ -26,9 +26,7 @@ import org.yuezhikong.utils.logging.CustomLogger;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-/**
- * 此类被设计为仅供插件跨版本调用使用，请最好不要新增实现
- */
+
 public interface IServer {
 
     /**

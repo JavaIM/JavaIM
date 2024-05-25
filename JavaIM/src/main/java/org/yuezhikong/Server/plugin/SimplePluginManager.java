@@ -37,9 +37,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SimplePluginManager implements PluginManager{
@@ -141,13 +139,7 @@ public class SimplePluginManager implements PluginManager{
         }
         else if (plugin.get() == null)//未加载
         {
-            try {
-                PreLoadPlugin(PluginFile);
-            } catch (RuntimeException ignored)
-            {
-                return;
-            }
-            LoadPlugin(PluginFile);
+            throw new RuntimeException("This file is not preLoaded!");
         }
     }
 
@@ -310,7 +302,7 @@ public class SimplePluginManager implements PluginManager{
 
     private boolean LoadStage = false;
     @Override
-    public void PreloadPluginOnDirectory(@NotNull File Directory, ForkJoinPool forkJoinPool) {
+    public void PreloadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool) {
         if (!Directory.exists() && !(Directory.mkdir()))
             throw new RuntimeException("创建文件夹失败");
 
@@ -324,70 +316,42 @@ public class SimplePluginManager implements PluginManager{
         List<File> fileList = Objects.requireNonNull(GetPluginFileList(Directory));
         if (fileList.isEmpty())
             return;
-        class PluginLoadTask extends RecursiveAction {
-            private final boolean dispatcher;
-            private final List<File> pluginFiles;
-            private final File LoadPluginFile;
-
-            public PluginLoadTask(List<File> fileList)
-            {
-                dispatcher = true;
-                pluginFiles = fileList;
-                LoadPluginFile = null;
-            }
-
-            private PluginLoadTask(File tryToLoadPluginFile)
-            {
-                dispatcher = false;
-                pluginFiles = null;
-                LoadPluginFile = tryToLoadPluginFile;
-            }
-            @Override
-            protected void compute() {
-                if (dispatcher) {
-                    // 任务调度器
-                    assert pluginFiles != null;// 调度器中，文件列表不应当为空
-                    List<PluginLoadTask> loadTasks = new ArrayList<>();
-                    for (File loadPluginFile : pluginFiles) {
-                        PluginLoadTask loadTask = new PluginLoadTask(loadPluginFile);
-                        loadTask.fork();
-                        loadTasks.add(loadTask);
-                    }
-                    for (PluginLoadTask loadTask : loadTasks) {
-                        loadTask.join();
-                    }
-                } else {
-                    // 任务处理器
-                    assert LoadPluginFile != null;// 处理器中，要处理的文件不应当为空
-                    try {
-                        PreLoadPlugin(LoadPluginFile);
-                    }
-                    catch (Throwable t)
-                    {
-                        SaveStackTrace.saveStackTrace(t);
-                        if (t instanceof ClassCastException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，未实现Plugin接口", LoadPluginFile.getName());
-                        else if (t instanceof IOException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，出现IO错误", LoadPluginFile.getName());
-                        else if (t instanceof NoSuchMethodException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，无参构造器不存在", LoadPluginFile.getName());
-                        else if (t instanceof InvocationTargetException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件构造器出现内部错误", LoadPluginFile.getName());
-                        else if (t instanceof InstantiationException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，主类是抽象方法或接口", LoadPluginFile.getName());
-                        else if (t instanceof IllegalAccessException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，没有权限访问无参构造器", LoadPluginFile.getName());
-                        else if (t instanceof ClassNotFoundException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件指定的主类不存在", LoadPluginFile.getName());
-                    }
+        List<Future<?>> loadTasksFuture = new ArrayList<>();
+        for (File loadPluginFile : fileList) {
+            loadTasksFuture.add(StartUpThreadPool.submit(() -> {
+                try {
+                    PreLoadPlugin(loadPluginFile);
                 }
+                catch (Throwable t)
+                {
+                    if (t instanceof ClassCastException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，未实现Plugin接口", loadPluginFile.getName());
+                    else if (t instanceof IOException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，出现IO错误", loadPluginFile.getName());
+                    else if (t instanceof NoSuchMethodException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，无参构造器不存在", loadPluginFile.getName());
+                    else if (t instanceof InvocationTargetException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件构造器出现内部错误", loadPluginFile.getName());
+                    else if (t instanceof InstantiationException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，主类是抽象方法或接口", loadPluginFile.getName());
+                    else if (t instanceof IllegalAccessException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，没有权限访问无参构造器", loadPluginFile.getName());
+                    else if (t instanceof ClassNotFoundException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件指定的主类不存在", loadPluginFile.getName());
+                }
+            }));
+        }
+        for (Future<?> loadTaskFuture : loadTasksFuture) {
+            try {
+                loadTaskFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException("Thread Pool Fatal",e);
             }
         }
-        forkJoinPool.submit(new PluginLoadTask(fileList)).join();
     }
 
     @Override
-    public void LoadPluginOnDirectory(@NotNull File Directory, ForkJoinPool forkJoinPool) {
+    public void LoadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool) {
         LoadStage = true;
         if (!Directory.exists() && !(Directory.mkdir()))
             throw new RuntimeException("创建文件夹失败");
@@ -402,66 +366,39 @@ public class SimplePluginManager implements PluginManager{
         List<File> fileList = Objects.requireNonNull(GetPluginFileList(Directory));
         if (fileList.isEmpty())
             return;
-        class PluginLoadTask extends RecursiveAction {
-            private final boolean dispatcher;
-            private final List<File> pluginFiles;
-            private final File LoadPluginFile;
-
-            public PluginLoadTask(List<File> fileList)
-            {
-                dispatcher = true;
-                pluginFiles = fileList;
-                LoadPluginFile = null;
-            }
-
-            private PluginLoadTask(File tryToLoadPluginFile)
-            {
-                dispatcher = false;
-                pluginFiles = null;
-                LoadPluginFile = tryToLoadPluginFile;
-            }
-            @Override
-            protected void compute() {
-                if (dispatcher) {
-                    // 任务调度器
-                    assert pluginFiles != null;// 调度器中，文件列表不应当为空
-                    List<PluginLoadTask> loadTasks = new ArrayList<>();
-                    for (File loadPluginFile : pluginFiles) {
-                        PluginLoadTask loadTask = new PluginLoadTask(loadPluginFile);
-                        loadTask.fork();
-                        loadTasks.add(loadTask);
-                    }
-                    for (PluginLoadTask loadTask : loadTasks) {
-                        loadTask.join();
-                    }
-                } else {
-                    // 任务处理器
-                    assert LoadPluginFile != null;// 处理器中，要处理的文件不应当为空
-                    try {
-                        LoadPlugin(LoadPluginFile);
-                    }
-                    catch (Throwable t)
-                    {
-                        SaveStackTrace.saveStackTrace(t);
-                        if (t instanceof ClassCastException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，未实现Plugin接口", LoadPluginFile.getName());
-                        else if (t instanceof IOException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，出现IO错误", LoadPluginFile.getName());
-                        else if (t instanceof NoSuchMethodException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，无参构造器不存在", LoadPluginFile.getName());
-                        else if (t instanceof InvocationTargetException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件构造器出现内部错误", LoadPluginFile.getName());
-                        else if (t instanceof InstantiationException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，主类是抽象方法或接口", LoadPluginFile.getName());
-                        else if (t instanceof IllegalAccessException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，没有权限访问无参构造器", LoadPluginFile.getName());
-                        else if (t instanceof ClassNotFoundException)
-                            LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件指定的主类不存在", LoadPluginFile.getName());
-                    }
+        List<Future<?>> loadTasksFuture = new ArrayList<>();
+        for (File loadPluginFile : fileList) {
+            loadTasksFuture.add(StartUpThreadPool.submit(() -> {
+                try {
+                    LoadPlugin(loadPluginFile);
                 }
+                catch (Throwable t)
+                {
+                    SaveStackTrace.saveStackTrace(t);
+                    if (t instanceof ClassCastException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，未实现Plugin接口", loadPluginFile.getName());
+                    else if (t instanceof IOException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，出现IO错误", loadPluginFile.getName());
+                    else if (t instanceof NoSuchMethodException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，无参构造器不存在", loadPluginFile.getName());
+                    else if (t instanceof InvocationTargetException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件构造器出现内部错误", loadPluginFile.getName());
+                    else if (t instanceof InstantiationException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，主类是抽象方法或接口", loadPluginFile.getName());
+                    else if (t instanceof IllegalAccessException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，没有权限访问无参构造器", loadPluginFile.getName());
+                    else if (t instanceof ClassNotFoundException)
+                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件指定的主类不存在", loadPluginFile.getName());
+                }
+            }));
+        }
+        for (Future<?> loadTaskFuture : loadTasksFuture) {
+            try {
+                loadTaskFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException("Thread Pool Fatal",e);
             }
         }
-        forkJoinPool.submit(new PluginLoadTask(fileList)).join();
     }
 
     @Override

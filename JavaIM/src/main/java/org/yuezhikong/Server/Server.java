@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Main;
@@ -20,7 +21,7 @@ import org.yuezhikong.Server.plugin.SimplePluginManager;
 import org.yuezhikong.Server.plugin.event.events.Server.ServerChatEvent;
 import org.yuezhikong.Server.plugin.event.events.Server.ServerCommandEvent;
 import org.yuezhikong.Server.plugin.event.events.Server.ServerStopEvent;
-import org.yuezhikong.Server.plugin.event.events.Server.onServerStartSuccessfulEvent;
+import org.yuezhikong.Server.plugin.event.events.Server.ServerStartSuccessfulEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserAddEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
@@ -34,12 +35,8 @@ import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -118,17 +115,23 @@ public final class Server implements IServer{
      * 启动JavaIM服务端
      * @param ListenPort 监听的端口
      */
-    public void start(int ListenPort) {
+    public void start(@Range(from = 1, to = 65535) int ListenPort) {
         long startUnix = System.currentTimeMillis();
         LoggerFactory.getLogger(Main.class).info("正在启动JavaIM");
         if (Instance != null)
             throw new RuntimeException("JavaIM Server is already running!");
         Instance = this;
 
-        ForkJoinPool forkJoinPool = new ForkJoinPool();
+        ExecutorService StartUpThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(0);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(r,"StartUp Thread #"+threadNumber.getAndIncrement());
+            }
+        });
 
         LoggerFactory.getLogger(Main.class).info("正在预加载插件");
-        getPluginManager().PreloadPluginOnDirectory(new File("./plugins"), forkJoinPool);
+        getPluginManager().PreloadPluginOnDirectory(new File("./plugins"), StartUpThreadPool);
         LoggerFactory.getLogger(Main.class).info("插件预加载完成");
 
         logger = (CustomLogger) LoggerFactory.getLogger(Server.class);//初始化日志
@@ -152,41 +155,46 @@ public final class Server implements IServer{
         };// 初始化Server API
         request = new ChatRequest(this);
 
+        networkServer = new SSLNettyServer();
         new Thread(() -> {
-            logger.info("正在处理数据库");
-            String JDBCUrl;
-            try {
-                //获取JDBCUrl,创建表与自动更新数据库
-                JDBCUrl = DatabaseHelper.InitDataBase();
-            } catch (Throwable throwable)
-            {
-                logger.error("数据库启动失败",throwable);
-                if (!networkServer.isRunning()) {
-                    synchronized (SSLNettyServer.class) {
-                        if (!networkServer.isRunning()) {
-                            try {
-                                SSLNettyServer.class.wait();
-                            } catch (InterruptedException ignored) {
+            Future<?> DatabaseStartTask = StartUpThreadPool.submit(() -> {
+                logger.info("正在处理数据库");
+                String JDBCUrl;
+                try {
+                    //获取JDBCUrl,创建表与自动更新数据库
+                    JDBCUrl = DatabaseHelper.InitDataBase();
+                } catch (Throwable throwable)
+                {
+                    logger.error("数据库启动失败",throwable);
+                    if (!networkServer.isRunning()) {
+                        synchronized (SSLNettyServer.class) {
+                            if (!networkServer.isRunning()) {
+                                try {
+                                    SSLNettyServer.class.wait();
+                                } catch (InterruptedException ignored) {
 
+                                }
                             }
                         }
                     }
+                    StartUpThreadPool.shutdownNow();
+                    logger.error("JavaIM启动失败，因为数据库出错");
+                    try {
+                        stop();
+                    } catch (NullPointerException ignored) {}
+                    logger.info("JavaIM服务器已经关闭");
+                    return;
                 }
-                forkJoinPool.shutdownNow();
-                logger.error("JavaIM启动失败，因为数据库出错");
-                try {
-                    stop();
-                } catch (NullPointerException ignored) {}
-                logger.info("JavaIM服务器已经关闭");
-                return;
-            }
-            //初始化Mybatis
-            sqlSession = DatabaseHelper.InitMybatis(JDBCUrl);
-            logger.info("数据库启动完成");
+                //初始化Mybatis
+                sqlSession = DatabaseHelper.InitMybatis(JDBCUrl);
+                logger.info("数据库启动完成");
+            });
 
-            logger.info("正在加载插件");
-            getPluginManager().LoadPluginOnDirectory(new File("./plugins"), forkJoinPool);
-            logger.info("插件加载完成");
+            Future<?> PluginLoadTask = StartUpThreadPool.submit(() -> {
+                logger.info("正在加载插件");
+                getPluginManager().LoadPluginOnDirectory(new File("./plugins"), StartUpThreadPool);
+                logger.info("插件加载完成");
+            });
 
             Thread UserCommandRequestThread = new Thread(() -> {
                 while (true) try {
@@ -231,6 +239,8 @@ public final class Server implements IServer{
                     SaveStackTrace.saveStackTrace(throwable);
                 }
             },"User Command Thread");
+
+            logger.info("正在等待网络层启动完成");
             if (!networkServer.isRunning()) {
                 synchronized (SSLNettyServer.class) {
                     if (!networkServer.isRunning()) {
@@ -243,19 +253,27 @@ public final class Server implements IServer{
                 }
             }
 
+            try {
+                logger.info("正在等待插件启动完成");
+                PluginLoadTask.get();
+                logger.info("正在等待数据库启动完成");
+                DatabaseStartTask.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException("Thread Pool Fatal",e);
+            }
+
             logger.info("正在启动用户指令处理线程");
             UserCommandRequestThread.start();
             logger.info("用户指令处理线程启动完成");
 
-            forkJoinPool.shutdownNow();
             logger.info("JavaIM 启动完成 (耗时:{}ms)",System.currentTimeMillis() - startUnix);
             startSuccessful = true;
-            getPluginManager().callEvent(new onServerStartSuccessfulEvent());
+            StartUpThreadPool.shutdownNow();
+            getPluginManager().callEvent(new ServerStartSuccessfulEvent());
         }, "Server Thread").start();
 
         Thread.currentThread().setName("Network Thread");
-        networkServer = new SSLNettyServer();
-        networkServer.start(ListenPort, forkJoinPool);
+        networkServer.start(ListenPort, StartUpThreadPool);
     }
 
     private static Server Instance;

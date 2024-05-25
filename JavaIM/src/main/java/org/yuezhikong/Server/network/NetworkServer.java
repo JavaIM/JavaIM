@@ -1,10 +1,10 @@
 package org.yuezhikong.Server.network;
 
+import org.jetbrains.annotations.Range;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * 定义了一个标准JavaIM网络服务器接口
@@ -44,11 +44,11 @@ public interface NetworkServer {
     /**
      * 启动服务器
      * @param ListenPort 监听端口
-     * @param forkJoinPool 用于启动网络层的ForkJoinPool
+     * @param StartUpThreadPool 用于启动网络层的线程池
      * @throws IllegalStateException 服务器已经启动
      * @apiNote 堵塞函数
      */
-    void start(int ListenPort, ForkJoinPool forkJoinPool) throws IllegalStateException;
+    void start(@Range(from = 1, to = 65535) int ListenPort, ExecutorService StartUpThreadPool) throws IllegalStateException;
 
     /**
      * 获取在线客户端列表

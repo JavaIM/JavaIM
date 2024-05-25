@@ -30,7 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings("unused")
 public interface PluginManager {
@@ -118,17 +118,17 @@ public interface PluginManager {
     /**
      * 预加载一个文件夹中的插件
      * @param Directory 文件夹
-     * @param forkJoinPool 用于加载插件的ForkJoinPool
+     * @param StartUpThreadPool 用于加载插件的线程池
      * @apiNote 注意，通过此方法加载，只会加载后缀为.jar的插件
      */
-    void PreloadPluginOnDirectory(@NotNull File Directory, ForkJoinPool forkJoinPool);
+    void PreloadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool);
     /**
      * 加载一个文件夹中的插件
      * @param Directory 文件夹
-     * @param forkJoinPool 用于加载插件的ForkJoinPool
+     * @param StartUpThreadPool 用于加载插件的线程池
      * @apiNote 注意，通过此方法加载，只会加载后缀为.jar的插件
      */
-    void LoadPluginOnDirectory(@NotNull File Directory, ForkJoinPool forkJoinPool);
+    void LoadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool);
 
     /**
      * 调用事件处理程序

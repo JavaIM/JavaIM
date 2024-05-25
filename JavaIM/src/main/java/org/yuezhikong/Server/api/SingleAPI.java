@@ -20,6 +20,8 @@ import com.google.gson.Gson;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.dao.userInformationDao;
@@ -35,6 +37,7 @@ import java.util.List;
 
 public abstract class SingleAPI implements api{
     private final IServer ServerInstance;
+    private final Logger logger = LoggerFactory.getLogger(SingleAPI.class);
 
     /**
      * 初始化服务端API
@@ -74,7 +77,7 @@ public abstract class SingleAPI implements api{
     {
         if (user.isServer())
         {
-            ServerInstance.getLogger().info(inputMessage);
+            logger.info(inputMessage);
             return;
         }
         String[] inputs = inputMessage.replaceAll("\r","").split("\n");
