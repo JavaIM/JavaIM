@@ -169,7 +169,7 @@ public class SSLNettyServer implements NetworkServer {
                                 throw new RuntimeException("SSL Context Generate Failed!",e);
                             }
                             pipeline.addLast(new LoggingHandler(LogLevel.DEBUG));
-                            pipeline.addLast(new LineBasedFrameDecoder(1024));
+                            pipeline.addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE));
                             pipeline.addLast(new StringDecoder(StandardCharsets.UTF_8));//IO
                             pipeline.addLast(new StringEncoder(StandardCharsets.UTF_8));
                             pipeline.addLast(new MessageToMessageEncoder<CharSequence>() {
