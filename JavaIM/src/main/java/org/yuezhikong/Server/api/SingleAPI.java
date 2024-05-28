@@ -153,9 +153,8 @@ public abstract class SingleAPI implements api{
 
     @Override
     public void ChangeUserPassword(user User, String password) {
-        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-        userInformation information = mapper.getUserByName(User.getUserName());
+        userInformation information = User.getUserInformation();
         information.setPasswd(SHA256.sha256(password+information.getSalt()));
-        mapper.updateUser(information);
+        User.setUserInformation(information);
     }
 }

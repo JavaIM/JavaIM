@@ -80,7 +80,7 @@ public final class UserAuthentication implements IUserAuthentication{
         {
             SqlSession sqlSession = ServerTools.getServerInstanceOrThrow().getSqlSession();
             userInformationDao mapper = sqlSession.getMapper(userInformationDao.class);
-            userInformation information = mapper.getUserByToken(Token);
+            userInformation information = mapper.getUser(null,Token,null);
             if (information != null)
             {
                 UserName = information.getUserName();
@@ -160,7 +160,7 @@ public final class UserAuthentication implements IUserAuthentication{
         do {
             //寻找一个安全的，不重复的token
             token = UUID.randomUUID().toString();
-            tempInformation = mapper.getUserByToken(token);
+            tempInformation = mapper.getUser(null,token,null);
         } while (tempInformation != null);
         information.setToken(token);
         User.setUserInformation(information);
@@ -227,7 +227,7 @@ public final class UserAuthentication implements IUserAuthentication{
         {
             SqlSession sqlSession = ServerTools.getServerInstance().getSqlSession();
             userInformationDao mapper = sqlSession.getMapper(userInformationDao.class);
-            userInformation userInformation = mapper.getUserByName(UserName);
+            userInformation userInformation = mapper.getUser(UserName,null,null);
             if (userInformation != null)
             {
                 //登录代码
@@ -259,7 +259,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 do {
                     //寻找一个安全的盐
                     salt = UUID.randomUUID().toString();
-                    tempInformation = mapper.getUserBySalt(salt);
+                    tempInformation = mapper.getUser(null,null,salt);
                 } while (tempInformation != null);
                 //密码加盐并保存
                 String sha256 = SHA256.sha256(Password + salt);

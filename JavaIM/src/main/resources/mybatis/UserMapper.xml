@@ -8,6 +8,20 @@
     <select id="getUserList" resultType="org.yuezhikong.Server.UserData.userInformation">
         select * from UserData
     </select>
+    <select id="getUser" resultType="org.yuezhikong.Server.UserData.userInformation">
+        select * from UserData
+        <where>
+            <if test="userName != null">
+                and UserName = #{userName}
+            </if>
+            <if test="token != null">
+                and token = #{token}
+            </if>
+            <if test="salt != null">
+                and salt = #{salt}
+            </if>
+        </where>
+    </select>
 
     <select id="getUserByName" parameterType="String" resultType="org.yuezhikong.Server.UserData.userInformation">
         select * from UserData where UserName = #{userName}

@@ -211,7 +211,7 @@ public class ChatRequest {
                     }
                     if (command.argv().length == 1) {
                         userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                        userInformation information = mapper.getUserByName(command.argv()[0]);
+                        userInformation information = mapper.getUser(command.argv()[0],null,null);
                         if (information == null) {
                             API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                             return;
@@ -245,7 +245,7 @@ public class ChatRequest {
                     }
                     if (command.argv().length == 1) {
                         userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                        userInformation information = mapper.getUserByName(command.argv()[0]);
+                        userInformation information = mapper.getUser(command.argv()[0],null,null);
                         if (information == null) {
                             API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                             return;
@@ -279,7 +279,7 @@ public class ChatRequest {
                     }
                     if (command.argv().length == 1) {
                         userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                        userInformation information = mapper.getUserByName(command.argv()[0]);
+                        userInformation information = mapper.getUser(command.argv()[0],null,null);
                         if (information == null) {
                             API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                             return;
@@ -306,7 +306,7 @@ public class ChatRequest {
                     }
                     if (command.argv().length == 1) {
                         userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                        userInformation information = mapper.getUserByName(command.argv()[0]);
+                        userInformation information = mapper.getUser(command.argv()[0],null,null);
                         if (information == null) {
                             API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                             return;
@@ -342,7 +342,7 @@ public class ChatRequest {
                     } else if (command.argv().length == 3) {
                         if ("force".equals(command.argv()[0])) {
                             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                            userInformation information = mapper.getUserByName(command.argv()[1]);
+                            userInformation information = mapper.getUser(command.argv()[1],null,null);
                             if (information == null) {
                                 API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                                 return;
