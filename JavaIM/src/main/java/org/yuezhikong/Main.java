@@ -45,7 +45,6 @@ public class Main {
         {
             @Override
             public void println(@Nullable String x) {
-                return;
             }
         });
         System.setErr(new PrintStream(System.err)
@@ -287,6 +286,7 @@ public class Main {
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
+    @SuppressWarnings("removal")
     public static void main(String[] args) {
         new Notice();
         // 初始化BouncyCastle，设置为JCE Provider
@@ -301,6 +301,7 @@ public class Main {
             CreateServerProperties();
         }
         // 命令行参数处理
+
         ConsoleCommandRequest.Request(args);
         // 启动JavaIM启动逻辑
         ConsoleMain();

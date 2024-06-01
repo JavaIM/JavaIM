@@ -22,7 +22,8 @@ public class ConsoleCommandRequest {
      * @param args 命令行参数
      * @deprecated 等待重写
      */
-    @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated(forRemoval = true, since = "1.4")
     public static void Request(String[] args)
     {
 
