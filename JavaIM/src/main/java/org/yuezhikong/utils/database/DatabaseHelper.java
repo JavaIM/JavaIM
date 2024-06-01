@@ -14,7 +14,7 @@
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.yuezhikong.utils;
+package org.yuezhikong.utils.database;
 
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
@@ -22,6 +22,8 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.utils.SaveStackTrace;
+import org.yuezhikong.utils.checks;
 
 import java.io.IOException;
 import java.sql.*;
@@ -41,7 +43,7 @@ public class DatabaseHelper {
             if (!CodeDynamicConfig.GetSQLITEMode()) {
                 JDBCUrl = "jdbc:mysql://" + CodeDynamicConfig.GetMySQLDataBaseHost()
                         + ":" + CodeDynamicConfig.GetMySQLDataBasePort() + "/" + CodeDynamicConfig.GetMySQLDataBaseName()
-                        + "?failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1";
+                        + "?failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1&autoReconnect=true";
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 connection = DriverManager.getConnection(JDBCUrl, CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
             } else {
@@ -53,11 +55,20 @@ public class DatabaseHelper {
             connection.createStatement().executeUpdate(
                     "CREATE TABLE if not exists UserData" +
                             " (" +
-                            " Permission INT," +//权限等级，目前只有三个等级，-1级：被封禁用户，0级：普通用户，1级：管理员
-                            " UserName varchar(255)," +//用户名
-                            " Passwd varchar(255)," +//密码
-                            " salt varchar(255)," +//密码加盐加的盐
-                            " token varchar(255)" +//Login Token
+                            " userId varchar(255),"+        //用户ID
+                            " avatarFileId varchar(255),"+   //头像对应的文件ID
+                            " Permission INT," +            //权限等级，目前只有三个等级，-1级：被封禁用户，0级：普通用户，1级：管理员
+                            " UserName varchar(255)," +     //用户名
+                            " Passwd varchar(255)," +       //密码
+                            " salt varchar(255)," +         //密码加盐加的盐
+                            " token varchar(255)" +         //Login Token
+                            " );");
+            connection.createStatement().executeUpdate(
+                    "CREATE TABLE if not exists FileOwner" +
+                            " (" +
+                            " userId varchar(255),"+    //用户ID
+                            " ownFile varchar(255)," +   //拥有的文件的ID
+                            " origFileName varchar(255)"+ //原始文件名
                             " );");
             //更新数据库表
             UpdateDatabase(connection);
@@ -142,6 +153,11 @@ public class DatabaseHelper {
         if (!CheckColumnsExist("token","UserData",DatabaseConnection)) {
             //不存在时，添加”token“列
             DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN token VARCHAR(255) NOT NULL DEFAULT '';");
+        }
+
+        if (!CheckColumnsExist("userId","UserData",DatabaseConnection)) {
+            //不存在是，添加“userId”列
+            DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN userId VARCHAR(255) NOT NULL DEFAULT '';");
         }
     }
 }

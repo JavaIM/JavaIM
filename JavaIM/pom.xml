@@ -20,13 +20,6 @@
             <version>2.16.1</version>
         </dependency>
 
-        <!-- Base64 -->
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.17.0</version>
-        </dependency>
-
         <!-- 日志 -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

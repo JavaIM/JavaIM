@@ -2,12 +2,13 @@ package org.yuezhikong.Server.UserData.Authentication;
 
 import com.google.gson.Gson;
 import org.apache.ibatis.session.SqlSession;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Permission;
-import org.yuezhikong.Server.UserData.dao.userInformationDao;
+import org.yuezhikong.utils.database.dao.userInformationDao;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.UserData.userInformation;
 import org.yuezhikong.Server.api.api;
@@ -80,7 +81,7 @@ public final class UserAuthentication implements IUserAuthentication{
         {
             SqlSession sqlSession = ServerTools.getServerInstanceOrThrow().getSqlSession();
             userInformationDao mapper = sqlSession.getMapper(userInformationDao.class);
-            userInformation information = mapper.getUser(null,Token,null);
+            userInformation information = mapper.getUser(null,null,Token,null);
             if (information != null)
             {
                 UserName = information.getUserName();
@@ -95,6 +96,10 @@ public final class UserAuthentication implements IUserAuthentication{
                     serverAPI.SendJsonToClient(User,json, "SystemProtocol");
                     return false;
                 } catch (AccountNotFoundException ignored) {}
+
+                //检查更新
+                CheckDatabaseUpgrade(mapper,information);
+
                 //插件处理
                 PreLoginEvent event = new PreLoginEvent(UserName,true);
                 pluginManager.callEvent(event);
@@ -160,7 +165,7 @@ public final class UserAuthentication implements IUserAuthentication{
         do {
             //寻找一个安全的，不重复的token
             token = UUID.randomUUID().toString();
-            tempInformation = mapper.getUser(null,token,null);
+            tempInformation = mapper.getUser(null,null,token,null);
         } while (tempInformation != null);
         information.setToken(token);
         User.setUserInformation(information);
@@ -227,7 +232,7 @@ public final class UserAuthentication implements IUserAuthentication{
         {
             SqlSession sqlSession = ServerTools.getServerInstance().getSqlSession();
             userInformationDao mapper = sqlSession.getMapper(userInformationDao.class);
-            userInformation userInformation = mapper.getUser(UserName,null,null);
+            userInformation userInformation = mapper.getUser(null,UserName,null,null);
             if (userInformation != null)
             {
                 //登录代码
@@ -238,6 +243,8 @@ public final class UserAuthentication implements IUserAuthentication{
                 sha256 = SHA256.sha256(Password + salt);
                 if (userInformation.getPasswd().equals(sha256))
                 {
+                    // 检查数据库更新
+                    CheckDatabaseUpgrade(mapper,userInformation);
                     return PostUserNameAndPasswordLogin(UserName,userInformation);
                 }
                 else
@@ -259,7 +266,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 do {
                     //寻找一个安全的盐
                     salt = UUID.randomUUID().toString();
-                    tempInformation = mapper.getUser(null,null,salt);
+                    tempInformation = mapper.getUser(null,null,null,salt);
                 } while (tempInformation != null);
                 //密码加盐并保存
                 String sha256 = SHA256.sha256(Password + salt);
@@ -268,9 +275,11 @@ public final class UserAuthentication implements IUserAuthentication{
                 userInformation.setPermission(0);
                 userInformation.setSalt(salt);
                 userInformation.setToken("");
+                userInformation.setUserId("");
                 userInformation.setUserName(UserName);
 
                 mapper.addUser(userInformation);
+                CheckDatabaseUpgrade(mapper,userInformation);
                 return PostUserNameAndPasswordLogin(UserName,userInformation);
             }
         } catch (Throwable t) {
@@ -282,6 +291,25 @@ public final class UserAuthentication implements IUserAuthentication{
             serverAPI.SendJsonToClient(User,json, "SystemProtocol");
             return false;
         }
+    }
+
+    /**
+     * 检查数据库更新
+     * @param mapper            dao层操作方法
+     * @param userInformation   用户信息
+     */
+    private void CheckDatabaseUpgrade(@NotNull userInformationDao mapper, @NotNull userInformation userInformation) {
+        if (userInformation.getUserId() == null || userInformation.getUserId().isEmpty()) {// 如果没有分配用户ID
+            String randomUUID = null;
+            do {
+                String tmpUUID = UUID.randomUUID().toString();
+                if (mapper.getUser(tmpUUID,null,null,null) != null)
+                    continue;
+                randomUUID = tmpUUID;
+            } while (randomUUID == null);
+            userInformation.setUserId(randomUUID);
+        }
+        mapper.updateUser(userInformation);
     }
 
     @Override

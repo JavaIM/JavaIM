@@ -23,8 +23,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.IServer;
-import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.Server.UserData.dao.userInformationDao;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.UserData.userInformation;
 import org.yuezhikong.utils.CustomVar;
@@ -156,5 +154,15 @@ public abstract class SingleAPI implements api{
         userInformation information = User.getUserInformation();
         information.setPasswd(SHA256.sha256(password+information.getSalt()));
         User.setUserInformation(information);
+    }
+
+    @Override
+    public @NotNull user GetUserByUserId(String userId) throws AccountNotFoundException {
+        for (user User : GetValidClientList(true)) {
+            if (User.getUserInformation().getUserId().equals(userId)) {
+                return User;
+            }
+        }
+        throw new AccountNotFoundException("This userId not Found");
     }
 }

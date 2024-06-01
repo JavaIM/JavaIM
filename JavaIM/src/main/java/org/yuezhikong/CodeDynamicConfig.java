@@ -21,7 +21,7 @@ import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
-    private static final int ProtocolVersion = 10;
+    private static final int ProtocolVersion = 11;
     //本程序版本：
     private static final String Version = "InDev";
 

@@ -3,7 +3,7 @@
     "TargetUserName": "",
     "Type": ""
   },
-  "TransferProtocolBody": {
+  "TransferProtocolBody": [{
     "Data": ""
-  }
+  }]
 }

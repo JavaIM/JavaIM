@@ -21,7 +21,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.UserData.Permission;
-import org.yuezhikong.Server.UserData.dao.userInformationDao;
+import org.yuezhikong.Server.UserData.userUploadFile;
+import org.yuezhikong.utils.database.dao.userInformationDao;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.UserData.userInformation;
@@ -32,9 +33,11 @@ import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Protocol.ChatProtocol;
 import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.SaveStackTrace;
+import org.yuezhikong.utils.database.dao.userUploadFileDao;
 import org.yuezhikong.utils.logging.CustomLogger;
 
 import javax.security.auth.login.AccountNotFoundException;
+import java.io.File;
 import java.util.List;
 
 public class ChatRequest {
@@ -186,9 +189,12 @@ public class ChatRequest {
                         API.SendMessageToUser(User, "/quit 安全的退出程序");
                         API.SendMessageToUser(User, "/change-password <用户名> <密码> 强制修改某用户密码");
                         API.SendMessageToUser(User, "/kick <用户名> 踢出某用户");
+                        API.SendMessageToUser(User, "/getUploadFiles 获取上传的文件列表");
                     }
-                    if (User.isServer())
+                    if (User.isServer()) {
                         API.SendMessageToUser(User, "/runGC 手动执行垃圾回收");
+                        API.SendMessageToUser(User, "/deleteFileByFileId <文件Id> 根据文件Id删除上传的文件");
+                    }
                     if (!instance.getPluginManager().getPluginCommandsDescription().isEmpty())
                         API.SendMessageToUser(User,"插件指令帮助");
                     for (String msg : instance.getPluginManager().getPluginCommandsDescription()) {
@@ -202,180 +208,6 @@ public class ChatRequest {
                         instance.getPluginManager().getPluginDataList().forEach(
                                 pluginData ->  API.SendMessageToUser(User,pluginData.getStaticData().PluginName()+" ")
                         );
-                    }
-                }
-                case "/op" -> {
-                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                        API.SendMessageToUser(User, "你没有权限这样做");
-                        break;
-                    }
-                    if (command.argv().length == 1) {
-                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                        userInformation information = mapper.getUser(command.argv()[0],null,null);
-                        if (information == null) {
-                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
-                            return;
-                        }
-                        if (information.getPermission() != 1)
-                            API.SendMessageToUser(User, "已将" + information.getUserName() + "设为服务器管理员");
-                        else {
-                            API.SendMessageToUser(User, "无法设置，对方已是管理员");
-                            break;
-                        }
-
-                        information.setPermission(1);
-                        mapper.updateUser(information);
-
-                        user targetUser;
-                        try {
-                            targetUser = API.GetUserByUserName(command.argv()[0]);
-                        } catch (AccountNotFoundException e) {
-                            break;
-                        }
-                        API.SendMessageToUser(targetUser, "您已被设为服务器管理员");
-                        targetUser.SetUserPermission(1);
-                    } else {
-                        API.SendMessageToUser(User, "语法错误，正确的语法为：/op <用户名>");
-                    }
-                }
-                case "/deop" -> {
-                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                        API.SendMessageToUser(User, "你没有权限这样做");
-                        break;
-                    }
-                    if (command.argv().length == 1) {
-                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                        userInformation information = mapper.getUser(command.argv()[0],null,null);
-                        if (information == null) {
-                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
-                            return;
-                        }
-                        if (information.getPermission() == 1)
-                            API.SendMessageToUser(User, "已夺去" + information.getUserName() + "的管理员权限");
-                        else {
-                            API.SendMessageToUser(User, "无法夺去权限，对方不是管理员");
-                            break;
-                        }
-
-                        information.setPermission(0);
-                        mapper.updateUser(information);
-
-                        user targetUser;
-                        try {
-                            targetUser = API.GetUserByUserName(command.argv()[0]);
-                        } catch (AccountNotFoundException e) {
-                            break;
-                        }
-                        API.SendMessageToUser(targetUser, "您已被夺去管理员权限");
-                        targetUser.SetUserPermission(0);
-                    } else {
-                        API.SendMessageToUser(User, "语法错误，正确的语法为：/deop <用户名>");
-                    }
-                }
-                case "/ban" -> {
-                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                        API.SendMessageToUser(User, "你没有权限这样做");
-                        break;
-                    }
-                    if (command.argv().length == 1) {
-                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                        userInformation information = mapper.getUser(command.argv()[0],null,null);
-                        if (information == null) {
-                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
-                            return;
-                        }
-                        information.setPermission(-1);
-                        mapper.updateUser(information);
-
-                        user kickUser;
-                        try {
-                            kickUser = API.GetUserByUserName(command.argv()[0]);
-                        } catch (AccountNotFoundException e) {
-                            break;
-                        }
-                        API.SendMessageToUser(kickUser, "您已被封禁");
-                        kickUser.UserDisconnect();
-                    } else {
-                        API.SendMessageToUser(User, "语法错误，正确的语法为：/ban <用户名>");
-                    }
-                }
-                case "/unban" -> {
-                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                        API.SendMessageToUser(User, "你没有权限这样做");
-                        break;
-                    }
-                    if (command.argv().length == 1) {
-                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                        userInformation information = mapper.getUser(command.argv()[0],null,null);
-                        if (information == null) {
-                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
-                            return;
-                        }
-                        information.setPermission(0);
-                        mapper.updateUser(information);
-                    } else {
-                        API.SendMessageToUser(User, "语法错误，正确的语法为：/unban <用户名>");
-                    }
-                }
-                case "/quit" -> {
-                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                        API.SendMessageToUser(User, "你没有权限这样做");
-                        break;
-                    }
-                    instance.getServerAPI().SendMessageToAllClient("服务器已关闭");
-                    for (user requestUser : API.GetValidClientList(false)) {
-                        requestUser.UserDisconnect();
-                    }
-                    instance.stop();
-                }
-                case "/change-password" -> {
-                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                        API.SendMessageToUser(User, "你没有权限这样做");
-                        break;
-                    }
-                    if (command.argv().length == 2) {
-                        StringBuilder argv = new StringBuilder();//使用StringBuilder而非String，效率更高，string拼接效率较慢
-                        for (String arg : command.argv()) {
-                            argv.append(arg).append(" ");//将每个arg均append到argv中
-                        }
-                        API.SendMessageToUser(User, "请输入/change-password force " + argv+ "来确认此操作");//向用户发送提示
-                    } else if (command.argv().length == 3) {
-                        if ("force".equals(command.argv()[0])) {
-                            userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-                            userInformation information = mapper.getUser(command.argv()[1],null,null);
-                            if (information == null) {
-                                API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
-                                return;
-                            }
-                            information.setPasswd(SHA256.sha256(command.argv()[2]));
-                            mapper.updateUser(information);
-                            API.SendMessageToUser(User, "操作成功完成。");
-                        } else {
-                            API.SendMessageToUser(User, "语法错误，正确的语法为：/change-password <用户名> <密码>");
-                        }
-                    } else {
-                        API.SendMessageToUser(User, "语法错误，正确的语法为：/change-password <用户名> <密码>");
-                    }
-                }
-                case "/kick" -> {
-                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                        API.SendMessageToUser(User, "你没有权限这样做");
-                        break;
-                    }
-                    if (command.argv().length == 1) {
-                        user kickUser;
-                        try {
-                            kickUser = API.GetUserByUserName(command.argv()[0]);
-                        } catch (AccountNotFoundException e) {
-                            API.SendMessageToUser(User, "此用户不存在");
-                            break;
-                        }
-                        API.SendMessageToUser(kickUser, "您已被踢出此服务器");
-                        String UserName = kickUser.getUserName();
-                        kickUser.UserDisconnect();
-                        API.SendMessageToUser(User, "已成功踢出用户：" + UserName);
-                    } else {
-                        API.SendMessageToUser(User, "语法错误，正确的语法为：/kick <用户名>");
                     }
                 }
                 case "/tell" -> {
@@ -414,6 +246,236 @@ public class ChatRequest {
                     } else {
                         API.SendMessageToUser(User, "语法错误，正确的语法为：/tell <用户> <消息>");
                     }
+                }
+                case "/op" -> {
+                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+                    if (command.argv().length == 1) {
+                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                        userInformation information = mapper.getUser(null,command.argv()[0],null,null);
+                        if (information == null) {
+                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                            return;
+                        }
+                        if (information.getPermission() != 1)
+                            API.SendMessageToUser(User, "已将" + information.getUserName() + "设为服务器管理员");
+                        else {
+                            API.SendMessageToUser(User, "无法设置，对方已是管理员");
+                            break;
+                        }
+
+                        information.setPermission(1);
+                        mapper.updateUser(information);
+
+                        user targetUser;
+                        try {
+                            targetUser = API.GetUserByUserName(command.argv()[0]);
+                        } catch (AccountNotFoundException e) {
+                            break;
+                        }
+                        API.SendMessageToUser(targetUser, "您已被设为服务器管理员");
+                        targetUser.SetUserPermission(1);
+                    } else {
+                        API.SendMessageToUser(User, "语法错误，正确的语法为：/op <用户名>");
+                    }
+                }
+                case "/deop" -> {
+                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+                    if (command.argv().length == 1) {
+                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                        userInformation information = mapper.getUser(null,command.argv()[0],null,null);
+                        if (information == null) {
+                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                            return;
+                        }
+                        if (information.getPermission() == 1)
+                            API.SendMessageToUser(User, "已夺去" + information.getUserName() + "的管理员权限");
+                        else {
+                            API.SendMessageToUser(User, "无法夺去权限，对方不是管理员");
+                            break;
+                        }
+
+                        information.setPermission(0);
+                        mapper.updateUser(information);
+
+                        user targetUser;
+                        try {
+                            targetUser = API.GetUserByUserName(command.argv()[0]);
+                        } catch (AccountNotFoundException e) {
+                            break;
+                        }
+                        API.SendMessageToUser(targetUser, "您已被夺去管理员权限");
+                        targetUser.SetUserPermission(0);
+                    } else {
+                        API.SendMessageToUser(User, "语法错误，正确的语法为：/deop <用户名>");
+                    }
+                }
+                case "/ban" -> {
+                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+                    if (command.argv().length == 1) {
+                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                        userInformation information = mapper.getUser(null,command.argv()[0],null,null);
+                        if (information == null) {
+                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                            return;
+                        }
+                        information.setPermission(-1);
+                        mapper.updateUser(information);
+
+                        user kickUser;
+                        try {
+                            kickUser = API.GetUserByUserName(command.argv()[0]);
+                        } catch (AccountNotFoundException e) {
+                            break;
+                        }
+                        API.SendMessageToUser(kickUser, "您已被封禁");
+                        kickUser.UserDisconnect();
+                    } else {
+                        API.SendMessageToUser(User, "语法错误，正确的语法为：/ban <用户名>");
+                    }
+                }
+                case "/unban" -> {
+                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+                    if (command.argv().length == 1) {
+                        userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                        userInformation information = mapper.getUser(null,command.argv()[0],null,null);
+                        if (information == null) {
+                            API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                            return;
+                        }
+                        information.setPermission(0);
+                        mapper.updateUser(information);
+                    } else {
+                        API.SendMessageToUser(User, "语法错误，正确的语法为：/unban <用户名>");
+                    }
+                }
+                case "/quit" -> {
+                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+                    instance.getServerAPI().SendMessageToAllClient("服务器已关闭");
+                    for (user requestUser : API.GetValidClientList(false)) {
+                        requestUser.UserDisconnect();
+                    }
+                    instance.stop();
+                }
+                case "/change-password" -> {
+                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+                    if (command.argv().length == 2) {
+                        StringBuilder argv = new StringBuilder();//使用StringBuilder而非String，效率更高，string拼接效率较慢
+                        for (String arg : command.argv()) {
+                            argv.append(arg).append(" ");//将每个arg均append到argv中
+                        }
+                        API.SendMessageToUser(User, "请输入/change-password force " + argv+ "来确认此操作");//向用户发送提示
+                    } else if (command.argv().length == 3) {
+                        if ("force".equals(command.argv()[0])) {
+                            userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
+                            userInformation information = mapper.getUser(null,command.argv()[1],null,null);
+                            if (information == null) {
+                                API.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                                return;
+                            }
+                            information.setPasswd(SHA256.sha256(command.argv()[2]));
+                            mapper.updateUser(information);
+                            API.SendMessageToUser(User, "操作成功完成。");
+                        } else {
+                            API.SendMessageToUser(User, "语法错误，正确的语法为：/change-password <用户名> <密码>");
+                        }
+                    } else {
+                        API.SendMessageToUser(User, "语法错误，正确的语法为：/change-password <用户名> <密码>");
+                    }
+                }
+                case "/kick" -> {
+                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+                    if (command.argv().length == 1) {
+                        user kickUser;
+                        try {
+                            kickUser = API.GetUserByUserName(command.argv()[0]);
+                        } catch (AccountNotFoundException e) {
+                            API.SendMessageToUser(User, "此用户不存在");
+                            break;
+                        }
+                        API.SendMessageToUser(kickUser, "您已被踢出此服务器");
+                        String UserName = kickUser.getUserName();
+                        kickUser.UserDisconnect();
+                        API.SendMessageToUser(User, "已成功踢出用户：" + UserName);
+                    } else {
+                        API.SendMessageToUser(User, "语法错误，正确的语法为：/kick <用户名>");
+                    }
+                }
+                case "/getUploadFiles" -> {
+                    if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+
+                    userUploadFileDao mapper = instance.getSqlSession().getMapper(userUploadFileDao.class);
+                    List<userUploadFile> uploadFiles = mapper.getUploadFiles();
+                    if (uploadFiles == null || uploadFiles.isEmpty()) {
+                        API.SendMessageToUser(User,"没有上传的文件");
+                        return;
+                    }
+                    uploadFiles.forEach((uploadFile) -> {
+                        try {
+                            API.SendMessageToUser(User, String.format("文件Id: %s, 用户Id: %s(用户名：%s)，文件名：%s",
+                                    uploadFile.getOwnFile(),
+                                    uploadFile.getUserId(),
+                                    API.GetUserByUserId(uploadFile.getUserId()).getUserName(),
+                                    uploadFile.getOrigFileName()));
+                        } catch (AccountNotFoundException e) {
+                            API.SendMessageToUser(User, String.format("文件Id: %s, 用户Id: %s，文件名：%s",
+                                    uploadFile.getOwnFile(),
+                                    uploadFile.getUserId(),
+                                    uploadFile.getOrigFileName()));
+                        }
+                    });
+                }
+                case "/deleteFileByFileId" -> {
+                    if (!User.isServer()) {
+                        API.SendMessageToUser(User, "你没有权限这样做");
+                        break;
+                    }
+                    if (command.argv().length != 1) {
+                        API.SendMessageToUser(User, "语法错误，正确的语法为：/deleteFileByFileId <文件Id>");
+                        return;
+                    }
+
+                    userUploadFileDao mapper = instance.getSqlSession().getMapper(userUploadFileDao.class);
+                    userUploadFile uploadFile = mapper.getUploadFileByFileId(command.argv()[0]);
+                    if (uploadFile == null) {
+                        API.SendMessageToUser(User,"文件不存在");
+                        return;
+                    }
+
+                    File file = new File("./uploadFiles",uploadFile.getOwnFile());
+                    if (!file.delete()) {
+                        API.SendMessageToUser(User,"出现错误，访问被拒绝或不存在");
+                        return;
+                    }
+
+                    if (!mapper.deleteFile(uploadFile)) {
+                        API.SendMessageToUser(User,"出现错误，访问被拒绝或不存在");
+                        return;
+                    }
+                    API.SendMessageToUser(User, "操作成功完成。");
                 }
                 default -> API.SendMessageToUser(User, "未知的命令！请输入/help查看帮助！");
             }

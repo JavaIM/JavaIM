@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--namespace=绑定一个对应的Dao/Mapper接口-->
-<mapper namespace="org.yuezhikong.Server.UserData.dao.userInformationDao">
+<mapper namespace="org.yuezhikong.utils.database.dao.userInformationDao">
     <!--select查询语句-->
     <select id="getUserList" resultType="org.yuezhikong.Server.UserData.userInformation">
         select * from UserData
@@ -11,6 +11,9 @@
     <select id="getUser" resultType="org.yuezhikong.Server.UserData.userInformation">
         select * from UserData
         <where>
+            <if test="userId != null">
+                and userId = #{userId}
+            </if>
             <if test="userName != null">
                 and UserName = #{userName}
             </if>
@@ -36,10 +39,10 @@
     </select>
 
     <insert id="addUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
-        INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`,`token`) VALUES (#{Permission}, #{UserName}, #{Passwd}, #{salt}, #{token});
+        INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`,`token`,`userId`) VALUES (#{Permission}, #{UserName}, #{Passwd}, #{salt}, #{token}, #{userId});
     </insert>
 
-    <insert id="updateUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
-        UPDATE UserData SET `Permission`=#{Permission}, `Passwd`=#{Passwd}, `salt`=#{salt}, `token`=#{token} where UserName = #{UserName}
-    </insert>
+    <update id="updateUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
+        UPDATE UserData SET `Permission`=#{Permission}, `Passwd`=#{Passwd}, `salt`=#{salt}, `token`=#{token}, `userId`=#{userId} where UserName = #{UserName}
+    </update>
 </mapper>

@@ -16,5 +16,6 @@
     </environments>
     <mappers>
         <mapper resource="mybatis/UserMapper.xml"/>
+        <mapper resource="mybatis/UploadFileMapper.xml"/>
     </mappers>
 </configuration>

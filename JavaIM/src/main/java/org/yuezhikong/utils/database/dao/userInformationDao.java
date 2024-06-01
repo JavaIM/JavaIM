@@ -1,4 +1,4 @@
-package org.yuezhikong.Server.UserData.dao;
+package org.yuezhikong.utils.database.dao;
 
 import org.apache.ibatis.annotations.Param;
 import org.jetbrains.annotations.Nullable;
@@ -16,14 +16,20 @@ public interface userInformationDao {
 
     /**
      * 获取用户
-     * @param userName 用户名
-     * @param token Token
-     * @param salt Salt
-     * @return 用户数据库信息实体类
+     *
+     * @param userId    用户Id
+     * @param userName  用户名
+     * @param token     Token
+     * @param salt      Salt
+     * @return  用户数据库信息实体类
      * @apiNote 只需要有一个条件即可查询,无需全部满足
      */
     @Nullable
-    userInformation getUser(@Nullable @Param("userName") String userName, @Nullable @Param("token") String token, @Nullable @Param("salt") String salt);
+    userInformation getUser(@Nullable @Param("userId") String userId,
+                            @Nullable @Param("userName") String userName,
+                            @Nullable @Param("token") String token,
+                            @Nullable @Param("salt") String salt
+    );
 
     /**
      * 根据用户名从数据库中获取用户

@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
-import org.yuezhikong.Server.UserData.dao.userInformationDao;
+import org.yuezhikong.utils.database.dao.userInformationDao;
 import org.yuezhikong.Server.plugin.event.events.User.auth.UserLoginEvent;
 
 public abstract class JavaUser implements user{

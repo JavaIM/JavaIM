@@ -6,15 +6,21 @@ public class userInformation {
     private String Passwd;
     private String salt;
     private String token;
+    private String userId;
 
     public userInformation() {}
-    public userInformation(int Permission, String UserName, String Passwd, String salt, String token)
+    public userInformation(String userId, int Permission, String UserName, String Passwd, String salt, String token)
     {
+        this.userId = userId;
         this.Permission = Permission;
         this.UserName = UserName;
         this.Passwd = Passwd;
         this.salt = salt;
         this.token = token;
+    }
+
+    public String getUserId() {
+        return userId;
     }
 
     public int getPermission() {
@@ -52,6 +58,11 @@ public class userInformation {
     public void setToken(String token) {
         this.token = token;
     }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
 
     public void setUserName(String userName) {
         UserName = userName;

@@ -17,7 +17,6 @@ import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.util.ReferenceCountUtil;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -61,10 +60,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -226,7 +222,7 @@ public class SSLNettyServer implements NetworkServer {
             // 根据规范将privateKey写入到文件
             byte[] privateKeyEncode = privateKey.getEncoded();
             String privateKeyContent =
-                    Base64.encodeBase64String(privateKeyEncode);
+                    Base64.getEncoder().encodeToString(privateKeyEncode);
             try {
                 FileUtils.writeStringToFile(new File("./ServerEncryption/private.key"), privateKeyContent, StandardCharsets.UTF_8);
             } catch (IOException e) {
@@ -256,7 +252,7 @@ public class SSLNettyServer implements NetworkServer {
                 byte[] certificateEncode = certificate.getEncoded();
                 String certificateContent =
                         "-----BEGIN CERTIFICATE-----\n"+
-                                lf(Base64.encodeBase64String(certificateEncode),64)+
+                                lf(Base64.getEncoder().encodeToString(certificateEncode),64)+
                                 "-----END CERTIFICATE-----";
                 FileUtils.writeStringToFile(new File("./ServerEncryption/cert.crt"), certificateContent, StandardCharsets.UTF_8);
             } catch (IOException e) {
@@ -278,8 +274,8 @@ public class SSLNettyServer implements NetworkServer {
             caCert = new JcaX509CertificateHolder((X509Certificate) factory.generateCertificate(stream)).toASN1Structure();
             caPrivateKey = KeyFactory.getInstance("RSA").generatePrivate(
                     new PKCS8EncodedKeySpec(
-                            Base64.decodeBase64(
-                                    FileUtils.readFileToString(new File("./ServerEncryption/private.key"),StandardCharsets.UTF_8)
+                            Base64.getDecoder().decode(
+                                    FileUtils.readFileToString(new File("./ServerEncryption/private.key"),StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8)
                             )
                     )
             );
@@ -388,7 +384,7 @@ public class SSLNettyServer implements NetworkServer {
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             logger.info("检测到新客户端连接...");
-            logger.info("此客户端IP地址："+ctx.channel().remoteAddress());
+            logger.info("此客户端IP地址：{}",ctx.channel().remoteAddress());
             if (!ServerTools.getServerInstance().isServerCompleateStart()) {
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("Error");
@@ -416,7 +412,7 @@ public class SSLNettyServer implements NetworkServer {
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             logger.info("检测到客户端离线...");
-            logger.info("此客户端IP地址："+ctx.channel().remoteAddress());
+            logger.info("此客户端IP地址：{}",ctx.channel().remoteAddress());
             NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
             if (thisClient == null)
                 return;
@@ -448,7 +444,7 @@ public class SSLNettyServer implements NetworkServer {
                 ServerTools.getServerInstanceOrThrow().onReceiveMessage(thisClient, Msg);
             } catch (Throwable throwable) {
                 logger.warn(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
-                logger.warn("错误为："+throwable.getMessage());
+                logger.warn("错误为：",throwable);
                 SaveStackTrace.saveStackTrace(throwable);
 
                 SystemProtocol systemProtocol = new SystemProtocol();

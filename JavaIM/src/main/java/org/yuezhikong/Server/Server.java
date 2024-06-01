@@ -2,6 +2,7 @@ package org.yuezhikong.Server;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import org.apache.commons.io.FileUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
@@ -10,8 +11,10 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Main;
 import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.Server.UserData.ConsoleUser;
+import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.UserData.userUploadFile;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
@@ -25,16 +28,18 @@ import org.yuezhikong.Server.plugin.event.events.Server.ServerStartSuccessfulEve
 import org.yuezhikong.Server.plugin.event.events.User.UserAddEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
+import org.yuezhikong.utils.Protocol.*;
+import org.yuezhikong.utils.database.dao.userUploadFileDao;
 import org.yuezhikong.utils.logging.CustomLogger;
 import org.yuezhikong.utils.CustomVar;
-import org.yuezhikong.utils.DatabaseHelper;
-import org.yuezhikong.utils.Protocol.ChatProtocol;
-import org.yuezhikong.utils.Protocol.GeneralProtocol;
-import org.yuezhikong.utils.Protocol.LoginProtocol;
-import org.yuezhikong.utils.Protocol.SystemProtocol;
+import org.yuezhikong.utils.database.DatabaseHelper;
 import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -229,9 +234,8 @@ public final class Server implements IServer{
                         chatProtocol.setSourceUserName("Server");
                         chatProtocol.setMessage(consoleInput);
                         String SendProtocolData = gson.toJson(chatProtocol);
-                        serverAPI.GetValidClientList(true).forEach((user) -> {
-                            serverAPI.SendJsonToClient(user,SendProtocolData,"ChatProtocol");
-                        });
+                        serverAPI.GetValidClientList(true).forEach((user) ->
+                                serverAPI.SendJsonToClient(user,SendProtocolData,"ChatProtocol"));
                     }
                 } catch (Throwable throwable) {
                     logger.error("JavaIM User Command Thread 出现异常");
@@ -325,9 +329,8 @@ public final class Server implements IServer{
             chatProtocol.setSourceUserName(user.getUserName());
             chatProtocol.setMessage(input.getChatMessage());
             String SendProtocolData = gson.toJson(chatProtocol);
-            serverAPI.GetValidClientList(true).forEach((forEachUser) -> {
-                serverAPI.SendJsonToClient(forEachUser,SendProtocolData,"ChatProtocol");
-            });
+            serverAPI.GetValidClientList(true).forEach((forEachUser) ->
+                    serverAPI.SendJsonToClient(forEachUser,SendProtocolData,"ChatProtocol"));
         }
     }
 
@@ -339,13 +342,236 @@ public final class Server implements IServer{
      */
     private void HandleSystemProtocol(final SystemProtocol protocol, final tcpUser user)
     {
+        class utils {
+
+            /**
+             * 发送文件
+             * @param fileId    文件Id
+             * @param user      用户
+             * @param serverApi 服务端API
+             * @param gson      Gson
+             * @param fileName  文件名
+             */
+            public static void sendFile(String fileId, tcpUser user, api serverApi, Gson gson, String fileName) {
+                File file = new File("./uploadFiles",fileId);
+                String content;
+                try {
+                    content = Base64.getEncoder().encodeToString(FileUtils.readFileToByteArray(file));
+                } catch (IOException e) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverApi.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                TransferProtocol transferProtocol = new TransferProtocol();
+                transferProtocol.setTransferProtocolHead(new TransferProtocol.TransferProtocolHeadBean());
+                transferProtocol.getTransferProtocolHead().setTargetUserName("");
+                transferProtocol.getTransferProtocolHead().setType("download");
+                transferProtocol.setTransferProtocolBody(new ArrayList<>());
+
+                TransferProtocol.TransferProtocolBodyBean fileNameBean = new TransferProtocol.TransferProtocolBodyBean();
+                fileNameBean.setData(fileName);
+                TransferProtocol.TransferProtocolBodyBean fileContentBean = new TransferProtocol.TransferProtocolBodyBean();
+                fileContentBean.setData(content);
+
+                transferProtocol.getTransferProtocolBody().add(fileNameBean);
+                transferProtocol.getTransferProtocolBody().add(fileContentBean);
+
+                serverApi.SendJsonToClient(user,gson.toJson(transferProtocol),"TransferProtocol");
+            }
+
+            /**
+             * 根据用户名获取文件
+             *
+             * @param sqlSession SQL会话
+             * @param user       用户
+             */
+            public static List<userUploadFile> getFileByUserId(SqlSession sqlSession, tcpUser user) {
+                userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
+                return mapper.getUploadFilesByUserId(user.getUserInformation().getUserId());
+            }
+        }
         switch (protocol.getType()){
             case "ChangePassword" -> {
-                if (!user.isUserLogged()){
+                if (!user.isUserLogged()) {
                     getServerAPI().SendMessageToUser(user,"请先登录");
                     return;
                 }
                 getServerAPI().ChangeUserPassword(user, protocol.getMessage());
+            }
+            case "DownloadOwnFileByFileName" -> {
+                if (!user.isUserLogged()) {
+                    getServerAPI().SendMessageToUser(user,"请先登录");
+                    return;
+                }
+                List<userUploadFile> uploadFiles = utils.getFileByUserId(sqlSession,user);
+                if (uploadFiles == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                String FileId = null;
+                for (userUploadFile uploadFile : uploadFiles) {
+                    if (uploadFile.getOrigFileName().equals(protocol.getMessage())) {
+                        FileId = uploadFile.getOwnFile();
+                        break;
+                    }
+                }
+                if (FileId == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                utils.sendFile(FileId,user,serverAPI,gson,protocol.getMessage());
+            }
+            case "DownloadFileByFileId" -> {
+                if (!user.isUserLogged()) {
+                    getServerAPI().SendMessageToUser(user,"请先登录");
+                    return;
+                }
+                userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
+                userUploadFile uploadFile = mapper.getUploadFileByFileId(protocol.getMessage());
+                if (uploadFile == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+                utils.sendFile(uploadFile.getOwnFile(),user,serverAPI,gson,uploadFile.getOrigFileName());
+            }
+            case "DeleteUploadFileByFileId" -> {
+                if (!user.isUserLogged()) {
+                    getServerAPI().SendMessageToUser(user,"请先登录");
+                    return;
+                }
+                userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
+                userUploadFile uploadFile = mapper.getUploadFileByFileId(protocol.getMessage());
+                if (uploadFile == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                // 如果操作者不是文件拥有者，且操作者不是管理员，则禁止操作
+                if (!user.getUserInformation().getUserId().equals(uploadFile.getUserId()) && !Permission.ADMIN.equals(user.getUserPermission())) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("Permission denied");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                File file = new File("./uploadFiles",uploadFile.getOwnFile());
+                if (!file.delete()) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("Permission denied by platform");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                if (!mapper.deleteFile(uploadFile)) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("Permission denied by platform");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+                serverAPI.SendMessageToUser(user, "操作成功完成。");
+            }
+
+            case "GetFileIdByFileName" -> {
+                if (!user.isUserLogged()) {
+                    getServerAPI().SendMessageToUser(user,"请先登录");
+                    return;
+                }
+                userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
+                List<userUploadFile> uploadFiles = mapper.getUploadFilesByUserId(user.getUserInformation().getUserId());
+                if (uploadFiles == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+                userUploadFile uploadFile = null;
+                for (userUploadFile userUploadFile : uploadFiles) {
+                    if (userUploadFile.getOrigFileName().equals(protocol.getMessage())) {
+                        uploadFile = userUploadFile;
+                        break;
+                    }
+                }
+                if (uploadFile == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                String FileId = uploadFile.getOwnFile();
+                SystemProtocol systemProtocol = new SystemProtocol();
+                systemProtocol.setType("GetFileIdByFileNameResult");
+                systemProtocol.setMessage(FileId);
+                serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+            }
+            case "GetFileNameByFileId" -> {
+                if (!user.isUserLogged()) {
+                    getServerAPI().SendMessageToUser(user,"请先登录");
+                    return;
+                }
+                userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
+                userUploadFile uploadFile = mapper.getUploadFileByFileId(protocol.getMessage());
+                if (uploadFile == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+                String FileName = uploadFile.getOrigFileName();
+                SystemProtocol systemProtocol = new SystemProtocol();
+                systemProtocol.setType("GetFileNameByFileIdResult");
+                systemProtocol.setMessage(FileName);
+                serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+            }
+            case "GetUploadFileList" -> {
+                if (!user.isUserLogged()) {
+                    getServerAPI().SendMessageToUser(user,"请先登录");
+                    return;
+                }
+                List<userUploadFile> uploadFiles = utils.getFileByUserId(sqlSession,user);
+                if (uploadFiles == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                TransferProtocol transferProtocol = new TransferProtocol();
+                transferProtocol.setTransferProtocolHead(new TransferProtocol.TransferProtocolHeadBean());
+                transferProtocol.getTransferProtocolHead().setTargetUserName("");
+                transferProtocol.getTransferProtocolHead().setType("fileList");
+                transferProtocol.setTransferProtocolBody(new ArrayList<>());
+
+                uploadFiles.forEach((file -> {
+                    TransferProtocol.TransferProtocolBodyBean bodyBean = new TransferProtocol.TransferProtocolBodyBean();
+                    bodyBean.setData(file.getOrigFileName());
+                    transferProtocol.getTransferProtocolBody().add(bodyBean);
+                }));
+                serverAPI.SendJsonToClient(user,gson.toJson(transferProtocol),"TransferProtocol");
             }
             case "Login","Error","DisplayMessage" -> {
                 SystemProtocol systemProtocol = new SystemProtocol();
@@ -355,6 +581,88 @@ public final class Server implements IServer{
             }
             default -> getServerAPI().SendMessageToUser(user, "暂不支持此消息类型");
         }
+    }
+
+    /**
+     * 处理转发协议
+     *
+     * @param protocol  协议
+     * @param user      用户
+     */
+    private void HandleTransferProtocol(final TransferProtocol protocol, final tcpUser user) {
+        if (!user.isUserLogged()) {
+            getServerAPI().SendMessageToUser(user, "请先登录");
+            return;
+        }
+        if (protocol.getTransferProtocolHead() == null || protocol.getTransferProtocolBody() == null) {
+            SystemProtocol systemProtocol = new SystemProtocol();
+            systemProtocol.setType("Error");
+            systemProtocol.setMessage("Invalid Packet");
+            serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+            return;
+        }
+        if (!"upload".equals(protocol.getTransferProtocolHead().getType())) {
+            serverAPI.SendMessageToUser(user,"正在开发中");
+            return;
+        }
+
+        List<TransferProtocol.TransferProtocolBodyBean> data = protocol.getTransferProtocolBody();
+        if (data.size() != 2 || data.get(0).getData() == null || data.get(1).getData() == null) {
+            SystemProtocol systemProtocol = new SystemProtocol();
+            systemProtocol.setType("Error");
+            systemProtocol.setMessage("Invalid Packet");
+            serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+            return;
+        }
+        String fileName = data.get(0).getData();
+
+        userUploadFileDao uploadFileDao = sqlSession.getMapper(userUploadFileDao.class);
+        List<userUploadFile> uploadFiles = uploadFileDao.getUploadFilesByUserId(user.getUserInformation().getUserId());
+        if (uploadFiles != null)
+            for (userUploadFile uploadFile : uploadFiles) {
+                if (uploadFile.getOrigFileName().equals(fileName)) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Already Exists");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+            }
+
+        byte[] fileContent;
+        try {
+            fileContent = Base64.getDecoder().decode(data.get(1).getData().getBytes(StandardCharsets.UTF_8));
+        } catch (IllegalArgumentException e) {
+            SystemProtocol systemProtocol = new SystemProtocol();
+            systemProtocol.setType("Error");
+            systemProtocol.setMessage("Invalid Packet");
+            serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+            return;
+        }
+
+        String fileId;
+        do {
+            fileId = UUID.randomUUID().toString();
+            userUploadFile uploadFile = uploadFileDao.getUploadFileByFileId(fileId);
+            if (uploadFile == null) {
+                break;
+            }
+        } while (true);
+        uploadFileDao.addFile(new userUploadFile(user.getUserInformation().getUserId(),fileId,fileName));
+
+        File uploadFileDirectory = new File("./uploadFiles");
+        File uploadFile = new File(uploadFileDirectory,fileId);
+        try {
+            try {
+                Files.createDirectory(uploadFileDirectory.toPath());
+            } catch (FileAlreadyExistsException ignored) {}
+            Files.createFile(uploadFile.toPath());
+
+            FileUtils.writeByteArrayToFile(uploadFile,fileContent);
+        } catch (IOException e) {
+            throw new RuntimeException("write File Failed",e);
+        }
+        serverAPI.SendMessageToUser(user, "操作成功完成。");
     }
 
     /**
@@ -372,6 +680,13 @@ public final class Server implements IServer{
             protocol.setMessage("Already Logged");
             String json = new Gson().toJson(protocol);
             serverAPI.SendJsonToClient(user,json, "SystemProtocol");
+            return;
+        }
+        if (loginProtocol.getLoginPacketHead() == null || loginProtocol.getLoginPacketBody() == null) {
+            SystemProtocol systemProtocol = new SystemProtocol();
+            systemProtocol.setType("Error");
+            systemProtocol.setMessage("Invalid Packet");
+            serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
             return;
         }
         if ("token".equals(loginProtocol.getLoginPacketHead().getType()))
@@ -416,12 +731,11 @@ public final class Server implements IServer{
             serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
             return;
         }
-        if (protocol.getProtocolVersion() != CodeDynamicConfig.getProtocolVersion())
-        {
+        if (protocol.getProtocolVersion() != CodeDynamicConfig.getProtocolVersion()) {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Protocol version not support");
-            serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+            serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             return;
         }
 
@@ -430,7 +744,7 @@ public final class Server implements IServer{
             case "SystemProtocol" -> HandleSystemProtocol(gson.fromJson(protocol.getProtocolData(), SystemProtocol.class),user);
             case "LoginProtocol" -> HandleLoginProtocol(gson.fromJson(protocol.getProtocolData(),LoginProtocol.class),user);
             case "ChatProtocol" -> HandleChatProtocol(gson.fromJson(protocol.getProtocolData(),ChatProtocol.class),user);
-            case "TransferProtocol" -> getServerAPI().SendMessageToUser(user,"正在开发中...请稍后");
+            case "TransferProtocol" -> HandleTransferProtocol(gson.fromJson(protocol.getProtocolData(), TransferProtocol.class),user);
             default -> getServerAPI().SendMessageToUser(user,"暂不支持此协议");
         }
     }

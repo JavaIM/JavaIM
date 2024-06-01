@@ -35,6 +35,7 @@ import static org.yuezhikong.CodeDynamicConfig.getVersion;
 
 public class Main {
     static {
+        System.out.println("正在初始化JavaIM...");
         // 初始化Slf4j Service Provider
         System.setProperty(LoggerFactory.PROVIDER_PROPERTY_KEY,"org.yuezhikong.utils.logging.SLF4JServiceProvider");
         // 暂时禁止sysOut与sysErr

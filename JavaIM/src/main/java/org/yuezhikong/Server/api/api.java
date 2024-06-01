@@ -84,4 +84,13 @@ public interface api {
      * @param ProtocolType 协议类型
      */
     void SendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType);
+
+    /**
+     * 根据用户Id获取用户
+     *
+     * @param userId    用户Id
+     * @return 用户
+     * @throws AccountNotFoundException 根据Id找不到用户
+     */
+    @NotNull user GetUserByUserId(String userId) throws AccountNotFoundException;
 }

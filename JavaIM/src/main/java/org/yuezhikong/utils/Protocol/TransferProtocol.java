@@ -1,14 +1,16 @@
 package org.yuezhikong.utils.Protocol;
 
+import java.util.List;
+
 public class TransferProtocol {
 
     /**
      * TransferProtocolHead : {"TargetUserName":"","Type":""}
-     * TransferProtocolBody : {"Data":""}
+     * TransferProtocolBody : [{"Data":""}]
      */
 
     private TransferProtocolHeadBean TransferProtocolHead;
-    private TransferProtocolBodyBean TransferProtocolBody;
+    private List<TransferProtocolBodyBean> TransferProtocolBody;
 
     public TransferProtocolHeadBean getTransferProtocolHead() {
         return TransferProtocolHead;
@@ -18,11 +20,11 @@ public class TransferProtocol {
         this.TransferProtocolHead = TransferProtocolHead;
     }
 
-    public TransferProtocolBodyBean getTransferProtocolBody() {
+    public List<TransferProtocolBodyBean> getTransferProtocolBody() {
         return TransferProtocolBody;
     }
 
-    public void setTransferProtocolBody(TransferProtocolBodyBean TransferProtocolBody) {
+    public void setTransferProtocolBody(List<TransferProtocolBodyBean> TransferProtocolBody) {
         this.TransferProtocolBody = TransferProtocolBody;
     }
 
