@@ -61,7 +61,8 @@ public class DatabaseHelper {
                             " UserName varchar(255)," +     //用户名
                             " Passwd varchar(255)," +       //密码
                             " salt varchar(255)," +         //密码加盐加的盐
-                            " token varchar(255)" +         //Login Token
+                            " token varchar(255)," +         //Login Token
+                            " avatar varchar(255)" +         //头像Id
                             " );");
             connection.createStatement().executeUpdate(
                     "CREATE TABLE if not exists FileOwner" +
@@ -150,14 +151,16 @@ public class DatabaseHelper {
      * @throws SQLException SQL出错
      */
     public static void UpdateDatabase(@NotNull Connection DatabaseConnection) throws SQLException {
-        if (!CheckColumnsExist("token","UserData",DatabaseConnection)) {
+        if (!CheckColumnsExist("token","UserData",DatabaseConnection))
             //不存在时，添加”token“列
             DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN token VARCHAR(255) NOT NULL DEFAULT '';");
-        }
 
-        if (!CheckColumnsExist("userId","UserData",DatabaseConnection)) {
-            //不存在是，添加“userId”列
+        if (!CheckColumnsExist("avatar","UserData",DatabaseConnection))
+            //不存在时，添加“avatar”列
+            DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN avatar VARCHAR(255) NOT NULL DEFAULT '';");
+
+        if (!CheckColumnsExist("userId","UserData",DatabaseConnection))
+            //不存在时，添加“userId”列
             DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN userId VARCHAR(255) NOT NULL DEFAULT '';");
-        }
     }
 }

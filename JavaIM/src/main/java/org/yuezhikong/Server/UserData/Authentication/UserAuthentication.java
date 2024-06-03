@@ -276,6 +276,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 userInformation.setSalt(salt);
                 userInformation.setToken("");
                 userInformation.setUserId("");
+                userInformation.setAvatar("");
                 userInformation.setUserName(UserName);
 
                 mapper.addUser(userInformation);
@@ -309,6 +310,10 @@ public final class UserAuthentication implements IUserAuthentication{
             } while (randomUUID == null);
             userInformation.setUserId(randomUUID);
         }
+
+        // 如果是null，就给他更新到空文本
+        if (userInformation.getAvatar() == null)
+            userInformation.setAvatar("");
         mapper.updateUser(userInformation);
     }
 

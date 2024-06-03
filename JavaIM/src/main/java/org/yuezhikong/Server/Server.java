@@ -9,12 +9,9 @@ import org.jetbrains.annotations.Range;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Main;
+import org.yuezhikong.Server.UserData.*;
 import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
-import org.yuezhikong.Server.UserData.ConsoleUser;
-import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
-import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.UserData.userUploadFile;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
@@ -29,6 +26,7 @@ import org.yuezhikong.Server.plugin.event.events.User.UserAddEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.utils.Protocol.*;
+import org.yuezhikong.utils.database.dao.userInformationDao;
 import org.yuezhikong.utils.database.dao.userUploadFileDao;
 import org.yuezhikong.utils.logging.CustomLogger;
 import org.yuezhikong.utils.CustomVar;
@@ -490,7 +488,6 @@ public final class Server implements IServer{
                 }
                 serverAPI.SendMessageToUser(user, "操作成功完成。");
             }
-
             case "GetFileIdByFileName" -> {
                 if (!user.isUserLogged()) {
                     getServerAPI().SendMessageToUser(user,"请先登录");
@@ -572,6 +569,44 @@ public final class Server implements IServer{
                     transferProtocol.getTransferProtocolBody().add(bodyBean);
                 }));
                 serverAPI.SendJsonToClient(user,gson.toJson(transferProtocol),"TransferProtocol");
+            }
+            case "SetAvatarId" -> {
+                if (!user.isUserLogged()) {
+                    getServerAPI().SendMessageToUser(user,"请先登录");
+                    return;
+                }
+                // 检测是否存在
+                userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
+                userUploadFile uploadFile = mapper.getUploadFileByFileId(protocol.getMessage());
+                if (uploadFile == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("File Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+                // 如果存在，设置
+                user.getUserInformation().setAvatar(protocol.getMessage());
+            }
+            case "GetAvatarIdByUserName" -> {
+                if (!user.isUserLogged()) {
+                    getServerAPI().SendMessageToUser(user,"请先登录");
+                    return;
+                }
+                userInformationDao informationDao = sqlSession.getMapper(userInformationDao.class);
+                userInformation information = informationDao.getUser(null,protocol.getMessage(),null,null);
+                if (information == null) {
+                    SystemProtocol systemProtocol = new SystemProtocol();
+                    systemProtocol.setType("Error");
+                    systemProtocol.setMessage("User Not Found");
+                    serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
+                    return;
+                }
+
+                SystemProtocol systemProtocol = new SystemProtocol();
+                systemProtocol.setType("GetAvatarIdByUserNameResult");
+                systemProtocol.setMessage(information.getAvatar());
+                serverAPI.SendJsonToClient(user,gson.toJson(systemProtocol),"SystemProtocol");
             }
             case "Login","Error","DisplayMessage" -> {
                 SystemProtocol systemProtocol = new SystemProtocol();

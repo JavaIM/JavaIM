@@ -7,6 +7,7 @@ public class userInformation {
     private String salt;
     private String token;
     private String userId;
+    private String avatar;
 
     public userInformation() {}
     public userInformation(String userId, int Permission, String UserName, String Passwd, String salt, String token)
@@ -43,6 +44,10 @@ public class userInformation {
         return token;
     }
 
+    public String getAvatar() {
+        return avatar;
+    }
+
     public void setPasswd(String passwd) {
         Passwd = passwd;
     }
@@ -66,5 +71,9 @@ public class userInformation {
 
     public void setUserName(String userName) {
         UserName = userName;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 }
