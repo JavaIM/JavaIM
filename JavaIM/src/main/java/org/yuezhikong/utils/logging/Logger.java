@@ -16,496 +16,295 @@
  */
 package org.yuezhikong.utils.logging;
 
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.slf4j.Marker;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-public class Logger implements CustomLogger {
-
-    private final org.slf4j.Logger orig_logger;
+public abstract class Logger implements CustomLogger {
 
     /**
      * 自定义Logger处理
      * @param format 格式化
      * @param params 请求参数
      */
-    protected void CustomLoggerRequest(String format, Object ... params)
-    {
-        // TODO 为即将到来的Web管理面板以及插件预留的方法
-    }
-
-    /**
-     * 创建 JavaIM Logger 中间层
-     * @param orig_logger 原始 slf4j Logger
-     */
-    public Logger(org.slf4j.Logger orig_logger)
-    {
-        this.orig_logger = orig_logger;
-    }
+    // 为插件等预留的方法
+    protected abstract void CustomLoggerRequest(String format, Object ... params);
 
     @Override
-    public void ChatMsg(String msg) {
-        info(msg);
+    @MustBeInvokedByOverriders
+    public void trace(String msg) {
+        CustomLoggerRequest(msg);
     }
-
     @Override
-    public String getName() {
-        return "JavaIM Logger (Backend:"+orig_logger.getName()+")";
+    @MustBeInvokedByOverriders
+    public void trace(String format, Object arg) {
+        CustomLoggerRequest(format,arg);
     }
-
     @Override
-    public boolean isTraceEnabled() {
-        return orig_logger.isTraceEnabled();
+    @MustBeInvokedByOverriders
+    public void trace(String format, Object arg1, Object arg2) {
+        CustomLoggerRequest(format,arg1,arg2);
     }
-
     @Override
-    public void trace(String s) {
-        if (isTraceEnabled())
-        {
-            orig_logger.trace(s);
-            CustomLoggerRequest(s);
-        }
+    @MustBeInvokedByOverriders
+    public void trace(String format, Object... arguments) {
+        CustomLoggerRequest(format,arguments);
     }
-
     @Override
-    public void trace(String s, Object o) {
-        if (isTraceEnabled())
-        {
-            orig_logger.trace(s,o);
-            CustomLoggerRequest(s,o);
-        }
+    @MustBeInvokedByOverriders
+    public void trace(String msg, Throwable t) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        t.printStackTrace(pw);
+        CustomLoggerRequest(msg,sw.toString());
     }
-
     @Override
-    public void trace(String s, Object o, Object o1) {
-        if (isTraceEnabled())
-        {
-            orig_logger.trace(s,o,o1);
-            CustomLoggerRequest(s,o,o1);
-        }
+    @MustBeInvokedByOverriders
+    public void trace(Marker marker, String msg) {
+        CustomLoggerRequest(msg);
     }
-
     @Override
-    public void trace(String s, Object... objects) {
-        if (isTraceEnabled())
-        {
-            orig_logger.trace(s,objects);
-            CustomLoggerRequest(s,objects);
-        }
+    @MustBeInvokedByOverriders
+    public void trace(Marker marker, String format, Object arg1, Object arg2) {
+        CustomLoggerRequest(format,arg1,arg2);
     }
-
     @Override
-    public void trace(String s, Throwable throwable) {
-        if (isTraceEnabled())
-        {
-            orig_logger.trace(s,throwable);
-
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            if (throwable != null) throwable.printStackTrace(pw);
-            CustomLoggerRequest(s,sw.toString());
-            pw.close();
-        }
+    @MustBeInvokedByOverriders
+    public void trace(Marker marker, String format, Object arg) {
+        CustomLoggerRequest(format,arg);
     }
-
     @Override
-    public boolean isTraceEnabled(Marker marker) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        return orig_logger.isTraceEnabled(marker);
+    @MustBeInvokedByOverriders
+    public void trace(Marker marker, String format, Object... argArray) {
+        CustomLoggerRequest(format,argArray);
     }
-
     @Override
-    public void trace(Marker marker, String s) {
-        orig_logger.trace(marker,s);
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
+    @MustBeInvokedByOverriders
+    public void trace(Marker marker, String msg, Throwable t) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        t.printStackTrace(pw);
+        CustomLoggerRequest(msg,sw.toString());
     }
-
     @Override
-    public void trace(Marker marker, String s, Object o) {
-        orig_logger.trace(marker,s,o);
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-    }
-
-    @Override
-    public void trace(Marker marker, String s, Object o, Object o1) {
-        orig_logger.trace(marker,s,o,o1);
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-    }
-
-    @Override
-    public void trace(Marker marker, String s, Object... objects) {
-        orig_logger.trace(marker,s,objects);
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-    }
-
-    @Override
-    public void trace(Marker marker, String s, Throwable throwable) {
-        orig_logger.trace(marker,s, throwable);
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-    }
-
-    @Override
-    public boolean isDebugEnabled() {
-        return orig_logger.isDebugEnabled();
-    }
-
-    @Override
-    public void debug(String s) {
-        if (isDebugEnabled())
-        {
-            orig_logger.debug(s);
-            CustomLoggerRequest(s);
-        }
-    }
-
-    @Override
-    public void debug(String s, Object o) {
-        if (isDebugEnabled())
-        {
-            orig_logger.debug(s,o);
-            CustomLoggerRequest(s,o);
-        }
-    }
-
-    @Override
+    @MustBeInvokedByOverriders
     public void debug(String s, Object o, Object o1) {
-        if (isDebugEnabled())
-        {
-            orig_logger.debug(s,o,o1);
-            CustomLoggerRequest(s,o,o1);
-        }
+        CustomLoggerRequest(s,o,o1);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void debug(String s, Object... objects) {
-        if (isDebugEnabled())
-        {
-            orig_logger.debug(s,objects);
-            CustomLoggerRequest(s,objects);
-        }
+        CustomLoggerRequest(s, objects);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void debug(String s, Throwable throwable) {
-        if (isDebugEnabled())
-        {
-            orig_logger.debug(s,throwable);
-
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            if (throwable != null) throwable.printStackTrace(pw);
-            CustomLoggerRequest(s,sw.toString());
-            pw.close();
-        }
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        CustomLoggerRequest(s, sw.toString());
     }
-
     @Override
-    public boolean isDebugEnabled(Marker marker) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        return orig_logger.isDebugEnabled(marker);
-    }
-
-    @Override
+    @MustBeInvokedByOverriders
     public void debug(Marker marker, String s) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.debug(marker,s);
-
+        CustomLoggerRequest(s);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Object o) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.debug(marker,s,o);
+        CustomLoggerRequest(s,o);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Object o, Object o1) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.debug(marker,s,o,o1);
+        CustomLoggerRequest(s,o1);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Object... objects) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.debug(marker,s,objects);
+        CustomLoggerRequest(s,objects);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Throwable throwable) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.debug(marker,s,throwable);
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        CustomLoggerRequest(s,sw.toString());
     }
-
     @Override
-    public boolean isInfoEnabled() {
-        return orig_logger.isInfoEnabled();
-    }
-
-    @Override
+    @MustBeInvokedByOverriders
     public void info(String s) {
-        if (isInfoEnabled())
-        {
-            orig_logger.info(s);
-            CustomLoggerRequest(s);
-        }
+        CustomLoggerRequest(s);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void info(String s, Object o) {
-        if (isInfoEnabled())
-        {
-            orig_logger.info(s,o);
-            CustomLoggerRequest(s,o);
-        }
+        CustomLoggerRequest(s,o);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void info(String s, Object o, Object o1) {
-        if (isInfoEnabled())
-        {
-            orig_logger.info(s,o,o1);
-            CustomLoggerRequest(s,o,o1);
-        }
+        CustomLoggerRequest(s,o,o1);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void info(String s, Object... objects) {
-        if (isInfoEnabled())
-        {
-            orig_logger.info(s,objects);
-            CustomLoggerRequest(s,objects);
-        }
+        CustomLoggerRequest(s,objects);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void info(String s, Throwable throwable) {
-        if (isInfoEnabled())
-        {
-            orig_logger.info(s,throwable);
-
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            if (throwable != null) throwable.printStackTrace(pw);
-            CustomLoggerRequest(s,sw.toString());
-            pw.close();
-        }
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        CustomLoggerRequest(s,sw.toString());
     }
-
     @Override
-    public boolean isInfoEnabled(Marker marker) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        return orig_logger.isInfoEnabled(marker);
-    }
-
-    @Override
+    @MustBeInvokedByOverriders
     public void info(Marker marker, String s) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.info(marker,s);
+        CustomLoggerRequest(s);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Object o) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.info(marker,s,o);
+        CustomLoggerRequest(s,o);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Object o, Object o1) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.info(marker,s,o,o1);
+        CustomLoggerRequest(s,o,o1);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Object... objects) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.info(marker,s,objects);
+        CustomLoggerRequest(s,objects);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Throwable throwable) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.info(marker,s,throwable);
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        CustomLoggerRequest(s,sw.toString());
     }
-
     @Override
-    public boolean isWarnEnabled() {
-        return orig_logger.isWarnEnabled();
-    }
-
-    @Override
+    @MustBeInvokedByOverriders
     public void warn(String s) {
-        if (isWarnEnabled())
-        {
-            orig_logger.warn(s);
-            CustomLoggerRequest(s);
-        }
+        CustomLoggerRequest(s);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void warn(String s, Object o) {
-        if (isWarnEnabled())
-        {
-            orig_logger.warn(s,o);
-            CustomLoggerRequest(s,o);
-        }
+        CustomLoggerRequest(s,o);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void warn(String s, Object... objects) {
-        if (isWarnEnabled())
-        {
-            orig_logger.warn(s,objects);
-            CustomLoggerRequest(s,objects);
-        }
+        CustomLoggerRequest(s,objects);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void warn(String s, Object o, Object o1) {
-        if (isWarnEnabled())
-        {
-            orig_logger.warn(s,o,o1);
-            CustomLoggerRequest(s,o,o1);
-        }
+        CustomLoggerRequest(s,o,o1);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void warn(String s, Throwable throwable) {
-        if (isWarnEnabled())
-        {
-            orig_logger.warn(s,throwable);
-
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            if (throwable != null) throwable.printStackTrace(pw);
-
-            CustomLoggerRequest(s,sw.toString());
-            pw.close();
-        }
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        CustomLoggerRequest(s,sw.toString());
     }
-
     @Override
-    public boolean isWarnEnabled(Marker marker) {
-        return orig_logger.isWarnEnabled(marker);
-    }
-
-    @Override
+    @MustBeInvokedByOverriders
     public void warn(Marker marker, String s) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.warn(marker,s);
+        CustomLoggerRequest(s);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Object o) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.warn(marker,s,o);
+        CustomLoggerRequest(s,o);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Object o, Object o1) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.warn(marker,s,o,o1);
+        CustomLoggerRequest(s,o,o1);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Object... objects) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.warn(marker,s,objects);
+        CustomLoggerRequest(s,objects);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Throwable throwable) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.warn(marker,s,throwable);
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        CustomLoggerRequest(s,sw.toString());
     }
-
     @Override
-    public boolean isErrorEnabled() {
-        return orig_logger.isErrorEnabled();
-    }
-
-    @Override
+    @MustBeInvokedByOverriders
     public void error(String s) {
-        if (isErrorEnabled())
-        {
-            orig_logger.error(s);
-            CustomLoggerRequest(s);
-        }
+        CustomLoggerRequest(s);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void error(String s, Object o) {
-        if (isErrorEnabled())
-        {
-            orig_logger.error(s,o);
-            CustomLoggerRequest(s,o);
-        }
+        CustomLoggerRequest(s,o);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void error(String s, Object o, Object o1) {
-        if (isErrorEnabled())
-        {
-            orig_logger.error(s,o,o1);
-            CustomLoggerRequest(s,o,o1);
-        }
+        CustomLoggerRequest(s,o,o1);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void error(String s, Object... objects) {
-        if (isErrorEnabled())
-        {
-            orig_logger.error(s,objects);
-            CustomLoggerRequest(s,objects);
-        }
+        CustomLoggerRequest(s,objects);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void error(String s, Throwable throwable) {
-        if (isErrorEnabled())
-        {
-            orig_logger.error(s,throwable);
-
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            if (throwable != null) throwable.printStackTrace(pw);
-            CustomLoggerRequest(s,sw.toString());
-            pw.close();
-        }
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        CustomLoggerRequest(s,sw.toString());
     }
-
     @Override
-    public boolean isErrorEnabled(Marker marker) {
-        return orig_logger.isErrorEnabled(marker);
-    }
-
-    @Override
+    @MustBeInvokedByOverriders
     public void error(Marker marker, String s) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.error(marker,s);
+        CustomLoggerRequest(s);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Object o) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.error(marker,s,o);
+        CustomLoggerRequest(s,o);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Object o, Object o1) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.error(marker,s,o,o1);
+        CustomLoggerRequest(s,o,o1);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Object... objects) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.error(marker,s,objects);
+        CustomLoggerRequest(s,objects);
     }
-
     @Override
+    @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Throwable throwable) {
-        warn("请注意，调用 Marker 将不会打印到 Web 管理面板!");
-        orig_logger.error(marker,s,throwable);
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        CustomLoggerRequest(s,sw.toString());
+    }
+    @Override
+    @MustBeInvokedByOverriders
+    public void ChatMsg(String msg) {
+        CustomLoggerRequest(msg);
     }
 }

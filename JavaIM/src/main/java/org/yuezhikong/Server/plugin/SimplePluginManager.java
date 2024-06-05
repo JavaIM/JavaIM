@@ -30,6 +30,7 @@ import org.yuezhikong.Server.plugin.event.events.Event;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
+import org.yuezhikong.utils.logging.PluginLoggingBridge;
 
 import java.io.File;
 import java.io.IOException;
@@ -215,6 +216,9 @@ public class SimplePluginManager implements PluginManager{
         {
             RemoveEventListener(listener,plugin);
         }
+        try {
+            PluginLoggingBridge.RemoveLogger(plugin);
+        } catch (IllegalStateException ignored) {}
         pluginData.getStaticData().plugin().onUnload();
         pluginList.remove(plugin);
         pluginDataList.remove(pluginData);

@@ -62,7 +62,7 @@ public final class Server implements IServer{
     /**
      * 用户列表
      */
-    private final List<user> users = new ArrayList<>();
+    private final List<user> users = new CopyOnWriteArrayList<>();
 
     /**
      * 用户处理器

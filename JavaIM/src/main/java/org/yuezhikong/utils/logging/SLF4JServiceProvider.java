@@ -6,9 +6,6 @@ import org.apache.logging.slf4j.Log4jMarkerFactory;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.IMarkerFactory;
 import org.slf4j.Logger;
-import org.yuezhikong.Server.IServer;
-import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.Server.plugin.event.events.Server.CreateProvidedLoggerEvent;
 
 /**
  * <p>用于接管 SLF4J Logger日志的Service Provider</p>
@@ -38,16 +35,7 @@ public class SLF4JServiceProvider extends org.apache.logging.slf4j.SLF4JServiceP
 
         @Override
         protected Logger newLogger(String name, LoggerContext context) {
-            Logger orig_logger = super.newLogger(name, context);
-            IServer JavaIMInstance = ServerTools.getServerInstance();
-            Logger newLogger = new org.yuezhikong.utils.logging.Logger(orig_logger);
-            if (JavaIMInstance != null)
-            {
-                CreateProvidedLoggerEvent providedLoggerEvent = new CreateProvidedLoggerEvent(newLogger);
-                JavaIMInstance.getPluginManager().callEvent(providedLoggerEvent);
-                newLogger = providedLoggerEvent.getLogger();
-            }
-            return newLogger;
+            return new JavaIMLogger(super.newLogger(name, context));
         }
     }
 }
