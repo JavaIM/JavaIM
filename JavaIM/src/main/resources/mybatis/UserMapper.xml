@@ -39,7 +39,7 @@
     </select>
 
     <insert id="addUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
-        INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`,`token`,`userId`,"avatar") VALUES (#{Permission}, #{UserName}, #{Passwd}, #{salt}, #{token}, #{userId}, #{avatar});
+        INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`,`token`,`userId`,`avatar`) VALUES (#{Permission}, #{UserName}, #{Passwd}, #{salt}, #{token}, #{userId}, #{avatar});
     </insert>
 
     <update id="updateUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
