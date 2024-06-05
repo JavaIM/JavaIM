@@ -119,7 +119,7 @@ public class SimplePluginManager implements PluginManager{
     }
 
     @Override
-    public void LoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException, UnsupportedOperationException {
+    public void LoadPlugin(@NotNull File PluginFile) {
         AtomicReference<Plugin> plugin = new AtomicReference<>();
         pluginDataList.forEach(pluginData -> {
            if (pluginData.getStaticData().PluginMainFile().getAbsolutePath().equals(PluginFile.getAbsolutePath()))
@@ -375,24 +375,8 @@ public class SimplePluginManager implements PluginManager{
             loadTasksFuture.add(StartUpThreadPool.submit(() -> {
                 try {
                     LoadPlugin(loadPluginFile);
-                }
-                catch (Throwable t)
-                {
-                    SaveStackTrace.saveStackTrace(t);
-                    if (t instanceof ClassCastException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，未实现Plugin接口", loadPluginFile.getName());
-                    else if (t instanceof IOException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，出现IO错误", loadPluginFile.getName());
-                    else if (t instanceof NoSuchMethodException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，无参构造器不存在", loadPluginFile.getName());
-                    else if (t instanceof InvocationTargetException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件构造器出现内部错误", loadPluginFile.getName());
-                    else if (t instanceof InstantiationException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，主类是抽象方法或接口", loadPluginFile.getName());
-                    else if (t instanceof IllegalAccessException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，没有权限访问无参构造器", loadPluginFile.getName());
-                    else if (t instanceof ClassNotFoundException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件指定的主类不存在", loadPluginFile.getName());
+                } catch (Throwable e) {
+
                 }
             }));
         }

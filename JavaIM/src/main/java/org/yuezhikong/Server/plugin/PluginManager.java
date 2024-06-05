@@ -52,16 +52,8 @@ public interface PluginManager {
     /**
      * 加载一个插件
      * @param PluginFile 这个插件的文件
-     * @throws IOException Input/Output出现错误
-     * @throws ClassNotFoundException 插件指定的主类不存在
-     * @throws NoSuchMethodException 找不到无参数构造器
-     * @throws InvocationTargetException 插件构造器抛出了一个异常
-     * @throws InstantiationException 插件主类是一个抽象类或接口
-     * @throws IllegalAccessException 没有权限访问构造器
-     * @throws ClassCastException 插件主类未实现Plugin接口
-     * @throws UnsupportedOperationException 此插件不允许在此时间节点加载
      */
-    void LoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException, UnsupportedOperationException;
+    void LoadPlugin(@NotNull File PluginFile);
 
     /**
      * 注册一个新的命令
