@@ -16,51 +16,44 @@
  */
 package org.yuezhikong;
 
+import lombok.Getter;
+
 import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
+    @Getter
     private static final int ProtocolVersion = 11;
     //本程序版本：
+    @Getter
     private static final String Version = "InDev";
 
     //服务器名
-    public static String ServerName = LoadServerProperties().getProperty("Server-Name","A JavaIM Server");
+    @Getter
+    private final static String ServerName = LoadServerProperties().getProperty("Server-Name","A JavaIM Server");
     //是否使用SQLITE
-    public static boolean Use_SQLITE_Mode = Boolean.parseBoolean(LoadServerProperties().getProperty("Use_SQLITE_Mode"));
+    @Getter
+    private final static boolean Use_SQLITE_Mode = Boolean.parseBoolean(LoadServerProperties().getProperty("Use_SQLITE_Mode"));
     //MySQL数据库地址
-    public static String MySQLDataBaseHost = LoadServerProperties().getProperty("MySQLDataBaseHost");
+    @Getter
+    private final static String MySQLDataBaseHost = LoadServerProperties().getProperty("MySQLDataBaseHost");
     //MySQL数据库端口
-    public static String MySQLDataBasePort = LoadServerProperties().getProperty("MySQLDataBasePort");
+    @Getter
+    private final static String MySQLDataBasePort = LoadServerProperties().getProperty("MySQLDataBasePort");
     //MySQL数据库名称
-    public static String MySQLDataBaseName = LoadServerProperties().getProperty("MySQLDataBaseName");
+    @Getter
+    private final static String MySQLDataBaseName = LoadServerProperties().getProperty("MySQLDataBaseName");
     //MySQL数据库用户
-    public static String MySQLDataBaseUser = LoadServerProperties().getProperty("MySQLDataBaseUser");
+    @Getter
+    private final static String MySQLDataBaseUser = LoadServerProperties().getProperty("MySQLDataBaseUser");
     //MySQL数据库密码
-    public static String MySQLDataBasePasswd = LoadServerProperties().getProperty("MySQLDataBasePasswd");
+    @Getter
+    private final static String MySQLDataBasePasswd = LoadServerProperties().getProperty("MySQLDataBasePasswd");
 
-    public static boolean GetSQLITEMode() { return Use_SQLITE_Mode; }
-
-    public static String GetMySQLDataBaseHost() { return MySQLDataBaseHost; }
-    public static String GetMySQLDataBasePort() { return MySQLDataBasePort; }
-    public static String GetMySQLDataBaseName() { return MySQLDataBaseName; }
-    public static String GetMySQLDataBaseUser() { return MySQLDataBaseUser; }
-    public static String GetMySQLDataBasePasswd() { return MySQLDataBasePasswd; }
-
-    public static String getVersion() {
-        return Version;
-    }
-
-    public static int getProtocolVersion() {
-        return ProtocolVersion;
-    }
 
     /**
      * Static Config不得被实例化
      */
-    private CodeDynamicConfig()
-    {
-
-    }
+    private CodeDynamicConfig() {}
 }

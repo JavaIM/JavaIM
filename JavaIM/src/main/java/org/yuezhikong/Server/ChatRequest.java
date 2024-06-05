@@ -17,9 +17,10 @@
 package org.yuezhikong.Server;
 
 import com.google.gson.Gson;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.UserData.Permission;
 import org.yuezhikong.Server.UserData.userUploadFile;
 import org.yuezhikong.utils.database.dao.userInformationDao;
@@ -32,7 +33,6 @@ import org.yuezhikong.Server.plugin.event.events.User.UserCommandEvent;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Protocol.ChatProtocol;
 import org.yuezhikong.utils.SHA256;
-import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.database.dao.userUploadFileDao;
 import org.yuezhikong.utils.logging.CustomLogger;
 
@@ -40,28 +40,14 @@ import javax.security.auth.login.AccountNotFoundException;
 import java.io.File;
 import java.util.List;
 
+@Slf4j
 public class ChatRequest {
+    @AllArgsConstructor
+    @Data
     public static class ChatRequestInput
     {
         private final user User;
         private String ChatMessage;
-
-        public ChatRequestInput(@NotNull user User, @NotNull String ChatMessage)
-        {
-            this.User = User;
-            setChatMessage(ChatMessage);
-        }
-        public void setChatMessage(String chatMessage) {
-            ChatMessage = chatMessage;
-        }
-
-        public String getChatMessage() {
-            return ChatMessage;
-        }
-
-        public user getUser() {
-            return User;
-        }
     }
 
     /**
@@ -106,8 +92,6 @@ public class ChatRequest {
         return false;
     }
 
-    private final Logger logger = LoggerFactory.getLogger(ChatRequest.class);
-
     /**
      * 实际的指令处理程序
      * @param User 用户
@@ -128,7 +112,7 @@ public class ChatRequest {
                 stringBuilder.deleteCharAt(stringBuilder.length() - 1);
                 String orig_Command = stringBuilder.toString();
                 String tipMessage = String.format("%s 执行了指令: %s", User.getUserName(), orig_Command);
-                logger.info(tipMessage);
+                log.info(tipMessage);
                 for (user sendUser : API.GetValidClientList(true)) {
                     if (!Permission.ADMIN.equals(sendUser.getUserPermission()))
                         continue;
@@ -173,7 +157,7 @@ public class ChatRequest {
                     }
 
                     System.gc();
-                    logger.info("已经完成垃圾回收");
+                    log.info("已经完成垃圾回收");
                 }
                 case "/help" -> {
                     API.SendMessageToUser(User, "JavaIM服务器帮助");
@@ -230,7 +214,7 @@ public class ChatRequest {
 
                         if (command.argv()[0].equals("Server"))//当私聊目标为后台时
                         {
-                            ((CustomLogger) logger).ChatMsg("["+User.getUserName()+"]:"+ChatMessage);
+                            ((CustomLogger) log).ChatMsg("["+User.getUserName()+"]:"+ChatMessage);
                             API.SendMessageToUser(User, "你对" + command.argv()[0] + "发送了私聊：" + ChatMessage);
                             break;
                         }
@@ -481,7 +465,7 @@ public class ChatRequest {
             }
         } catch (Throwable throwable)
         {
-            SaveStackTrace.saveStackTrace(throwable);
+            log.error("出现错误!",throwable);
             API.SendMessageToUser(User,"在执行此命令的过程中出现了意外的错误");
         }
     }

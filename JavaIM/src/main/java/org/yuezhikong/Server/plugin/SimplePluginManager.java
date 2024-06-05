@@ -16,9 +16,9 @@
  */
 package org.yuezhikong.Server.plugin;
 
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.Plugin.Plugin;
@@ -28,7 +28,6 @@ import org.yuezhikong.Server.plugin.event.EventHandler;
 import org.yuezhikong.Server.plugin.event.Listener;
 import org.yuezhikong.Server.plugin.event.events.Event;
 import org.yuezhikong.utils.CustomVar;
-import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
 import org.yuezhikong.utils.logging.PluginLoggingBridge;
 
@@ -41,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 public class SimplePluginManager implements PluginManager{
     
     private final IServer serverInstance;
@@ -66,16 +66,16 @@ public class SimplePluginManager implements PluginManager{
             final String Author = properties.getProperty("Plugin-Author");
             if (Name == null || Version == null || Author == null)
             {
-                LoggerFactory.getLogger(SimplePluginManager.class).error("文件："+PluginFile.getName()+"加载失败，插件清单文件错误");
+                log.error("文件：{} 加载失败，插件清单文件错误",PluginFile.getName());
                 return;
             }
-            LoggerFactory.getLogger(SimplePluginManager.class).info("正在加载插件 " + Name);
+            log.info("正在加载插件 {}", Name);
             for (Plugin plugin : pluginList)
             {
                 PluginData data = plugin.getPluginData();
                 if (Name.equals(data.getStaticData().PluginName()))
                 {
-                    LoggerFactory.getLogger(SimplePluginManager.class).info("无法加载插件 " + Name+" 因为已安装了同名插件");
+                    log.info("无法加载插件 {} 因为已安装了同名插件", Name);
                     return;
                 }
             }
@@ -91,7 +91,7 @@ public class SimplePluginManager implements PluginManager{
             //设定PluginData
             plugin.setPluginData(pluginData);
             if (plugin.getPluginData() == null) {
-                LoggerFactory.getLogger(SimplePluginManager.class).info("无法加载插件 " + Name+ " 因为他的getPluginData方法返回null");
+                log.info("无法加载插件 {} 因为他的getPluginData方法返回null", Name);
                 return;
             }
             //调用插件的onPreload方法
@@ -99,12 +99,12 @@ public class SimplePluginManager implements PluginManager{
             //保存插件到插件列表
             pluginList.add(plugin);
             pluginDataList.add(pluginData);
-            LoggerFactory.getLogger(SimplePluginManager.class).info("插件 " + Name + "预加载成功");
+            log.info("插件 {} 预加载成功", Name);
         }
         catch (Throwable e)
         {
-            LoggerFactory.getLogger(SimplePluginManager.class).error("插件加载失败："+PluginFile.getName());
-            SaveStackTrace.saveStackTrace(e);
+            log.error("出现错误!",e);
+            log.error("插件加载失败：{}", PluginFile.getName());
             try {
                 classLoader.close();
             } catch (IOException ignored) {}
@@ -209,9 +209,7 @@ public class SimplePluginManager implements PluginManager{
     public void UnLoadPlugin(@NotNull Plugin plugin) throws IOException {
         checks.checkState(!LoadStage, "Server PreLoad Stage can not Unload Plugin, you can try load in ONLOAD METHOD");
         PluginData pluginData = plugin.getPluginData();
-        LoggerFactory.getLogger(SimplePluginManager.class).info("正在卸载插件"+pluginData.getStaticData().PluginName()+
-                "v"+pluginData.getStaticData().PluginVersion()+
-                " by"+pluginData.getStaticData().PluginAuthor());
+        log.info("正在卸载插件 {} v{} by{}", pluginData.getStaticData().PluginName(), pluginData.getStaticData().PluginVersion(), pluginData.getStaticData().PluginAuthor());
         for (Listener listener : plugin.getPluginData().getEventListener())
         {
             RemoveEventListener(listener,plugin);
@@ -226,14 +224,10 @@ public class SimplePluginManager implements PluginManager{
             pluginData.getStaticData().PluginClassLoader().close();
         } catch (IOException e)
         {
-            LoggerFactory.getLogger(SimplePluginManager.class).info("无法卸载插件"+pluginData.getStaticData().PluginName()+
-                    "v"+pluginData.getStaticData().PluginVersion()+
-                    " by"+pluginData.getStaticData().PluginAuthor());
+            log.info("无法卸载插件 {} v{} by{}", pluginData.getStaticData().PluginName(), pluginData.getStaticData().PluginVersion(), pluginData.getStaticData().PluginAuthor());
             throw e;
         }
-        LoggerFactory.getLogger(SimplePluginManager.class).info("已卸载插件"+pluginData.getStaticData().PluginName()+
-                "v"+pluginData.getStaticData().PluginVersion()+
-                " by"+pluginData.getStaticData().PluginAuthor());
+        log.info("已卸载插件 {}v {} by{}", pluginData.getStaticData().PluginName(), pluginData.getStaticData().PluginVersion(), pluginData.getStaticData().PluginAuthor());
     }
 
     @Override
@@ -242,9 +236,7 @@ public class SimplePluginManager implements PluginManager{
         List<Data> DataList = new ArrayList<>();
         for (PluginData pluginData : pluginDataList)
         {
-            LoggerFactory.getLogger(SimplePluginManager.class).info("正在卸载插件"+pluginData.getStaticData().PluginName()+
-                    "v"+pluginData.getStaticData().PluginVersion()+
-                    " by"+pluginData.getStaticData().PluginAuthor());
+            log.info("正在卸载插件 {} v{} by {}", pluginData.getStaticData().PluginName(), pluginData.getStaticData().PluginVersion(), pluginData.getStaticData().PluginAuthor());
             for (Listener listener : pluginData.getEventListener())
             {
                 RemoveEventListener(listener,pluginData.getStaticData().plugin());
@@ -263,15 +255,11 @@ public class SimplePluginManager implements PluginManager{
                 data.classLoader().close();
             } catch (IOException e)
             {
-                LoggerFactory.getLogger(SimplePluginManager.class).info("无法卸载插件"+data.Name()+
-                        "v"+data.Version()+
-                        " by"+data.Author());
+                log.info("无法卸载插件 {} v{} by{}", data.Name(), data.Version(), data.Author());
                 DataList.clear();
                 throw e;
             }
-            LoggerFactory.getLogger(SimplePluginManager.class).info("已卸载插件"+data.Name()+
-                    "v"+data.Version()+
-                    " by"+data.Author());
+            log.info("已卸载插件 {} v{} by{}", data.Name(), data.Version(), data.Author());
         }
         DataList.clear();
     }
@@ -329,19 +317,21 @@ public class SimplePluginManager implements PluginManager{
                 catch (Throwable t)
                 {
                     if (t instanceof ClassCastException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，未实现Plugin接口", loadPluginFile.getName());
+                        log.error("文件：{} 加载失败，未实现Plugin接口", loadPluginFile.getName());
                     else if (t instanceof IOException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，出现IO错误", loadPluginFile.getName());
+                        log.error("文件：{} 加载失败，出现IO错误", loadPluginFile.getName());
                     else if (t instanceof NoSuchMethodException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，无参构造器不存在", loadPluginFile.getName());
+                        log.error("文件：{} 加载失败，无参构造器不存在", loadPluginFile.getName());
                     else if (t instanceof InvocationTargetException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件构造器出现内部错误", loadPluginFile.getName());
+                        log.error("文件：{} 加载失败，插件构造器出现内部错误", loadPluginFile.getName());
                     else if (t instanceof InstantiationException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，主类是抽象方法或接口", loadPluginFile.getName());
+                        log.error("文件：{} 加载失败，主类是抽象方法或接口", loadPluginFile.getName());
                     else if (t instanceof IllegalAccessException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，没有权限访问无参构造器", loadPluginFile.getName());
+                        log.error("文件：{} 加载失败，没有权限访问无参构造器", loadPluginFile.getName());
                     else if (t instanceof ClassNotFoundException)
-                        LoggerFactory.getLogger(SimplePluginManager.class).error("文件：{} 加载失败，插件指定的主类不存在", loadPluginFile.getName());
+                        log.error("文件：{} 加载失败，插件指定的主类不存在", loadPluginFile.getName());
+                    else
+                        log.error("文件：{} 加载失败，出现未知错误", loadPluginFile.getName());
                 }
             }));
         }
@@ -375,9 +365,7 @@ public class SimplePluginManager implements PluginManager{
             loadTasksFuture.add(StartUpThreadPool.submit(() -> {
                 try {
                     LoadPlugin(loadPluginFile);
-                } catch (Throwable e) {
-
-                }
+                } catch (Throwable ignored) {}
             }));
         }
         for (Future<?> loadTaskFuture : loadTasksFuture) {
@@ -427,17 +415,10 @@ public class SimplePluginManager implements PluginManager{
             try {
                 methodData.method().invoke(methodData.listener(), event);
             } catch (IllegalAccessException e) {
-                LoggerFactory.getLogger(SimplePluginManager.class).error("没有权限访问 插件 "+methodData.pluginData().getStaticData().PluginName()+
-                        "v"+methodData.pluginData().getStaticData().PluginVersion()+
-                        " by "+methodData.pluginData().getStaticData().PluginAuthor()+
-                        "的事件处理程序");
+                log.error("没有权限访问 插件 {}v{} by {}的事件处理程序", methodData.pluginData().getStaticData().PluginName(), methodData.pluginData().getStaticData().PluginVersion(), methodData.pluginData().getStaticData().PluginAuthor());
             } catch (InvocationTargetException e) {
-
-                SaveStackTrace.saveStackTrace(e);
-                LoggerFactory.getLogger(SimplePluginManager.class).error("插件 "+methodData.pluginData().getStaticData().PluginName()+
-                        "v"+methodData.pluginData().getStaticData().PluginVersion()+
-                        " by "+methodData.pluginData().getStaticData().PluginAuthor()+
-                        "的事件处理程序出现内部错误");
+                log.error("出现错误!",e);
+                log.error("插件 {}v{} by {}的事件处理程序出现内部错误", methodData.pluginData().getStaticData().PluginName(), methodData.pluginData().getStaticData().PluginVersion(), methodData.pluginData().getStaticData().PluginAuthor());
             }
         }
     }

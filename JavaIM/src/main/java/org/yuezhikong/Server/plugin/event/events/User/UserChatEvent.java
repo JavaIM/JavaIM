@@ -1,5 +1,6 @@
 package org.yuezhikong.Server.plugin.event.events.User;
 
+import lombok.Getter;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.event.Cancellable;
 import org.yuezhikong.Server.plugin.event.events.Event;
@@ -8,7 +9,9 @@ import org.yuezhikong.Server.plugin.event.events.Event;
  * 用户聊天事件
  */
 public class UserChatEvent implements Event, Cancellable {
+    @Getter
     private final user UserData;
+    @Getter
     private final String ChatMessage;
     public UserChatEvent(user UserData, String ChatMessage)
     {
@@ -25,13 +28,5 @@ public class UserChatEvent implements Event, Cancellable {
     @Override
     public void setCancelled(boolean cancelled) {
         cancel = cancelled;
-    }
-
-    public user getUserData() {
-        return UserData;
-    }
-
-    public String getChatMessage() {
-        return ChatMessage;
     }
 }

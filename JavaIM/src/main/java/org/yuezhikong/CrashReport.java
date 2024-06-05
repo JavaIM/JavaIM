@@ -1,10 +1,10 @@
 package org.yuezhikong;
 
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 
+@Slf4j
 public class CrashReport implements Thread.UncaughtExceptionHandler {
 
     private static volatile CrashReport Instance;
@@ -52,7 +53,7 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
         String StackTraceOfThrowable;
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
         try {
-            SaveStackTrace.saveStackTrace(e);
+            log.error("出现错误!",e);
 
             StringWriter writer = new StringWriter();
             PrintWriter printWriter = new PrintWriter(writer);
@@ -97,7 +98,7 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
             }));
             System.exit(1);
         } catch (IOException ex) {
-            SaveStackTrace.saveStackTrace(ex);
+            log.error("出现错误!",ex);
         }
     }
     private static void writeStringToFileChannelNoAutoAddLineBreak(FileChannel channel, String writeData) throws IOException{

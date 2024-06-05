@@ -1,10 +1,9 @@
 package org.yuezhikong.Server.UserData.Authentication;
 
 import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Permission;
@@ -16,13 +15,13 @@ import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
-import org.yuezhikong.utils.SaveStackTrace;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 public final class UserAuthentication implements IUserAuthentication{
 
     //用户数据区
@@ -35,8 +34,6 @@ public final class UserAuthentication implements IUserAuthentication{
     private final Object LoginRecallLock = new Object();
 
     private final PluginManager pluginManager;
-
-    private final Logger logger = LoggerFactory.getLogger(UserAuthentication.class);
     private final api serverAPI;
     /**
      * 实例化用户Auth实现
@@ -68,8 +65,7 @@ public final class UserAuthentication implements IUserAuthentication{
             return true;
         } catch (Throwable throwable)
         {
-            SaveStackTrace.saveStackTrace(throwable);
-            logger.error("用户登录流程出错，出现异常，详情请查看日志文件");
+            log.error("用户登录流程出错，出现异常",throwable);
             serverAPI.SendMessageToUser(User,"执行登录时出现内部错误，当前Unix时间："+System.currentTimeMillis()+"请联系服务器管理员");
             return false;
         }
@@ -103,7 +99,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 //插件处理
                 PreLoginEvent event = new PreLoginEvent(UserName,true);
                 pluginManager.callEvent(event);
-                if (event.isCancel())
+                if (event.isCancelled())
                 {
                     //插件要求禁止登录，所以直接关闭连接
                     SystemProtocol protocol = new SystemProtocol();
@@ -140,7 +136,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 return false;
             }
         } catch (Throwable t) {
-            SaveStackTrace.saveStackTrace(t);
+            log.error("出现错误!",t);
             SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
@@ -173,7 +169,7 @@ public final class UserAuthentication implements IUserAuthentication{
         //插件处理
         PreLoginEvent event = new PreLoginEvent(UserName,false);
         pluginManager.callEvent(event);
-        if (event.isCancel())
+        if (event.isCancelled())
         {
             //插件要求禁止登录，所以直接关闭连接
             SystemProtocol protocol = new SystemProtocol();
@@ -284,7 +280,7 @@ public final class UserAuthentication implements IUserAuthentication{
                 return PostUserNameAndPasswordLogin(UserName,userInformation);
             }
         } catch (Throwable t) {
-            SaveStackTrace.saveStackTrace(t);
+            log.error("出现错误!",t);
             SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
@@ -335,8 +331,7 @@ public final class UserAuthentication implements IUserAuthentication{
             return true;
         } catch (Throwable throwable)
         {
-            SaveStackTrace.saveStackTrace(throwable);
-            logger.error("用户登录流程出错，出现异常，详情请查看日志文件");
+            log.error("用户登录流程出错，出现异常",throwable);
             serverAPI.SendMessageToUser(User,"执行登录时出现内部错误，当前Unix时间："+System.currentTimeMillis()+"请联系服务器管理员");
             return false;
         }

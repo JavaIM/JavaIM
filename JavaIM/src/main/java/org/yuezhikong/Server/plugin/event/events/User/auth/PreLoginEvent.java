@@ -16,38 +16,29 @@
  */
 package org.yuezhikong.Server.plugin.event.events.User.auth;
 
+import lombok.Getter;
+import org.yuezhikong.Server.plugin.event.Cancellable;
 import org.yuezhikong.Server.plugin.event.events.Event;
 
 /**
  * 用户尝试登录事件
  */
-public class PreLoginEvent implements Event {
+public class PreLoginEvent implements Event, Cancellable {
     private boolean Cancel = false;
+    @Getter
     private final String UserName;
+    @Getter
     private final boolean TokenLogin;
 
-    /**
-     * 是否已经阻止了登录
-     * @return 是/否
-     */
-    public boolean isCancel() {
+
+    @Override
+    public boolean isCancelled() {
         return Cancel;
     }
 
-    /**
-     * 获取用户名
-     * @return 用户名
-     */
-    public String getUserName() {
-        return UserName;
-    }
-
-    /**
-     * 设置是否阻止登录
-     * @param cancel 阻止/不阻止
-     */
-    public void setCancel(boolean cancel) {
-        Cancel = cancel;
+    @Override
+    public void setCancelled(boolean cancelled) {
+        Cancel = cancelled;
     }
 
     public PreLoginEvent(String UserName,boolean TokenLogin)
@@ -56,11 +47,4 @@ public class PreLoginEvent implements Event {
         this.TokenLogin = TokenLogin;
     }
 
-    /**
-     * 是否通过token进行免密登录
-     * @return 是/否
-     */
-    public boolean isTokenLogin() {
-        return TokenLogin;
-    }
 }

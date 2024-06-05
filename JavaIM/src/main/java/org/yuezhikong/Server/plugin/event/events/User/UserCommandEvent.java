@@ -1,5 +1,6 @@
 package org.yuezhikong.Server.plugin.event.events.User;
 
+import lombok.Getter;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.event.Cancellable;
 import org.yuezhikong.Server.plugin.event.events.Event;
@@ -10,7 +11,9 @@ import org.yuezhikong.utils.CustomVar;
  */
 public class UserCommandEvent implements Event, Cancellable {
     private boolean cancel = false;
+    @Getter
     private final user UserData;
+    @Getter
     private final CustomVar.Command Command;
     public UserCommandEvent(user UserData, CustomVar.Command Command)
     {
@@ -26,13 +29,5 @@ public class UserCommandEvent implements Event, Cancellable {
     @Override
     public boolean isCancelled() {
         return cancel;
-    }
-
-    public user getUserData() {
-        return UserData;
-    }
-
-    public CustomVar.Command getCommand() {
-        return Command;
     }
 }

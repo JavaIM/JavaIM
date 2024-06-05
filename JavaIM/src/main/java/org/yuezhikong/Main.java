@@ -24,16 +24,14 @@ import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Notice;
-import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
 import java.io.PrintStream;
 import java.security.Security;
 import java.util.Scanner;
 
-import static org.yuezhikong.CodeDynamicConfig.getVersion;
-
 public class Main {
+    private static final Logger log;
     static {
         System.out.println("正在初始化JavaIM...");
         // 初始化Slf4j Service Provider
@@ -54,12 +52,11 @@ public class Main {
             }
         });
         // 初始化 STDOUT Logger
-        logger = LoggerFactory.getLogger(Main.class);
+        log = LoggerFactory.getLogger(Main.class);
         // 恢复sysOut与sysErr
         System.setOut(out);
         System.setErr(err);
     }
-    private static final Logger logger;
 
     public static void CreateServerProperties(){
         ConfigFileManager prop = new ConfigFileManager();
@@ -75,193 +72,193 @@ public class Main {
         {
             @Override
             public void print(boolean b) {
-                logger.info("[STDOUT] {}", b);
+                log.info("[STDOUT] {}", b);
             }
 
             @Override
             public void print(char c) {
-                logger.info("[STDOUT] {}", c);
+                log.info("[STDOUT] {}", c);
             }
 
             @Override
             public void print(int i) {
-                logger.info("[STDOUT] {}", i);
+                log.info("[STDOUT] {}", i);
             }
 
             @Override
             public void print(long l) {
-                logger.info("[STDOUT] {}", l);
+                log.info("[STDOUT] {}", l);
             }
 
             @Override
             public void print(float f) {
-                logger.info("[STDOUT] {}", f);
+                log.info("[STDOUT] {}", f);
             }
 
             @Override
             public void print(double d) {
-                logger.info("[STDOUT] {}", d);
+                log.info("[STDOUT] {}", d);
             }
 
             @Override
             public void print(char @NotNull [] s) {
-                logger.info("[STDOUT] {}", new String(s));
+                log.info("[STDOUT] {}", new String(s));
             }
 
             @Override
             public void print(@Nullable String s) {
-                logger.info("[STDOUT] {}", s);
+                log.info("[STDOUT] {}", s);
             }
 
             @Override
             public void print(@Nullable Object obj) {
-                logger.info("[STDOUT] {}", obj);
+                log.info("[STDOUT] {}", obj);
             }
             @Override
             public void println(boolean b) {
-                logger.info("[STDOUT] {}", b);
+                log.info("[STDOUT] {}", b);
             }
 
             @Override
             public void println(char c) {
-                logger.info("[STDOUT] {}", c);
+                log.info("[STDOUT] {}", c);
             }
 
             @Override
             public void println(int i) {
-                logger.info("[STDOUT] {}", i);
+                log.info("[STDOUT] {}", i);
             }
 
             @Override
             public void println(long l) {
-                logger.info("[STDOUT] {}", l);
+                log.info("[STDOUT] {}", l);
             }
 
             @Override
             public void println(float f) {
-                logger.info("[STDOUT] {}", f);
+                log.info("[STDOUT] {}", f);
             }
 
             @Override
             public void println(double d) {
-                logger.info("[STDOUT] {}", d);
+                log.info("[STDOUT] {}", d);
             }
 
             @Override
             public void println(char @NotNull [] s) {
-                logger.info("[STDOUT] {}", new String(s));
+                log.info("[STDOUT] {}", new String(s));
             }
 
             @Override
             public void println(@Nullable String s) {
-                logger.info("[STDOUT] {}", s);
+                log.info("[STDOUT] {}", s);
             }
 
             @Override
             public void println(@Nullable Object obj) {
-                logger.info("[STDOUT] {}", obj);
+                log.info("[STDOUT] {}", obj);
             }
         });
         System.setErr(new PrintStream(System.err)
         {
             @Override
             public void print(boolean b) {
-                logger.error("[STDERR] {}", b);
+                log.error("[STDERR] {}", b);
             }
 
             @Override
             public void print(char c) {
-                logger.error("[STDERR] {}", c);
+                log.error("[STDERR] {}", c);
             }
 
             @Override
             public void print(int i) {
-                logger.error("[STDERR] {}", i);
+                log.error("[STDERR] {}", i);
             }
 
             @Override
             public void print(long l) {
-                logger.error("[STDERR] {}", l);
+                log.error("[STDERR] {}", l);
             }
 
             @Override
             public void print(float f) {
-                logger.error("[STDERR] {}", f);
+                log.error("[STDERR] {}", f);
             }
 
             @Override
             public void print(double d) {
-                logger.error("[STDERR] {}", d);
+                log.error("[STDERR] {}", d);
             }
 
             @Override
             public void print(char @NotNull [] s) {
-                logger.error("[STDERR] {}", new String(s));
+                log.error("[STDERR] {}", new String(s));
             }
 
             @Override
             public void print(@Nullable String s) {
-                logger.error("[STDERR] {}", s);
+                log.error("[STDERR] {}", s);
             }
 
             @Override
             public void print(@Nullable Object obj) {
-                logger.error("[STDERR] {}", obj);
+                log.error("[STDERR] {}", obj);
             }
             @Override
             public void println(boolean b) {
-                logger.error("[STDERR] {}", b);
+                log.error("[STDERR] {}", b);
             }
 
             @Override
             public void println(char c) {
-                logger.error("[STDERR] {}", c);
+                log.error("[STDERR] {}", c);
             }
 
             @Override
             public void println(int i) {
-                logger.error("[STDERR] {}", i);
+                log.error("[STDERR] {}", i);
             }
 
             @Override
             public void println(long l) {
-                logger.error("[STDERR] {}", l);
+                log.error("[STDERR] {}", l);
             }
 
             @Override
             public void println(float f) {
-                logger.error("[STDERR] {}", f);
+                log.error("[STDERR] {}", f);
             }
 
             @Override
             public void println(double d) {
-                logger.error("[STDERR] {}", d);
+                log.error("[STDERR] {}", d);
             }
 
             @Override
             public void println(char @NotNull [] s) {
-                logger.error("[STDERR] {}", new String(s));
+                log.error("[STDERR] {}", new String(s));
             }
 
             @Override
             public void println(@Nullable String s) {
-                logger.error("[STDERR] {}", s);
+                log.error("[STDERR] {}", s);
             }
 
             @Override
             public void println(@Nullable Object obj) {
-                logger.error("[STDERR] {}", obj);
+                log.error("[STDERR] {}", obj);
             }
         });
 
     }
     public static void ConsoleMain()
     {
-        logger.info("欢迎来到JavaIM！版本："+getVersion());
-        logger.info("正在启动服务端...");
+        log.info("欢迎来到JavaIM！版本：{}", CodeDynamicConfig.getVersion());
+        log.info("正在启动服务端...");
 
         Scanner scanner = new Scanner(System.in);
-        logger.info("请输入绑定的端口");
+        log.info("请输入绑定的端口");
         int ServerPort = scanner.nextInt();
         ThreadGroup ServerGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ServerGroup");
         try {
@@ -279,7 +276,7 @@ public class Main {
                 }
             }.start2().join();
         } catch (InterruptedException e) {
-            SaveStackTrace.saveStackTrace(e);
+            log.error("出现错误!",e);
         }
         System.exit(0);
     }
@@ -297,7 +294,7 @@ public class Main {
         Thread.currentThread().setUncaughtExceptionHandler(CrashReport.getCrashReport());
         // 服务端配置文件初始化
         if (!(new File("server.properties").exists())){
-            logger.info("目录下没有检测到服务端配置文件，正在创建");
+            log.info("目录下没有检测到服务端配置文件，正在创建");
             CreateServerProperties();
         }
         // 命令行参数处理

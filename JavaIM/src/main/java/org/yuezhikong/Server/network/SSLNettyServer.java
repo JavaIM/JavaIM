@@ -17,6 +17,7 @@ import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.util.ReferenceCountUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -33,8 +34,6 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.JavaUser;
@@ -42,7 +41,6 @@ import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
-import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
 
 import javax.net.ssl.SSLException;
@@ -64,14 +62,11 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Slf4j
 public class SSLNettyServer implements NetworkServer {
     private final List<NetworkClient> clientList = new ArrayList<>();
     private PrivateKey ServerSSLPrivateKey;
     private X509Certificate ServerSSLCertificate;
-    private static Logger logger;
-
-
-
     private ChannelFuture future;
 
     private boolean isRunning = false;
@@ -81,20 +76,17 @@ public class SSLNettyServer implements NetworkServer {
         if (run)
             throw new IllegalStateException("The Server is already running!");
         run = true;
-
-        logger = LoggerFactory.getLogger(SSLNettyServer.class);// Netty Server Logger
-
-        logger.info("正在启动网络层 JavaIM...");
+        log.info("正在启动网络层 JavaIM...");
 
         Future<?> CACertTask = StartUpThreadPool.submit(() -> {
-            logger.info("正在生成 X.509 SSL证书");
+            log.info("正在生成 X.509 SSL证书");
             X509CertificateGenerate();
         });
 
 
         record NettyThreadPoolTaskReturn(EventLoopGroup bossGroup, EventLoopGroup workerGroup,DefaultEventLoopGroup RecvMessageThreadPool) {}
         Future<?> NettyThreadPoolTask = StartUpThreadPool.submit(() -> {
-            logger.info("正在创建各线程池");
+            log.info("正在创建各线程池");
             ThreadGroup IOThreadGroup = new ThreadGroup("JavaIM IO Thread");
             IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
                 private final AtomicInteger threadNumber = new AtomicInteger(1);
@@ -143,7 +135,7 @@ public class SSLNettyServer implements NetworkServer {
             throw new RuntimeException("Thread Pool Fatal",e);
         }
 
-        logger.info("正在启动Netty");
+        log.info("正在启动Netty");
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossGroup, workerGroup)
@@ -179,14 +171,14 @@ public class SSLNettyServer implements NetworkServer {
                     });
 
             future = bootstrap.bind(ListenPort).sync();
-            logger.info("JavaIM网络层启动完成");
+            log.info("JavaIM网络层启动完成");
             synchronized (SSLNettyServer.class) {
                 SSLNettyServer.class.notifyAll();
             }
             isRunning = true;
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
-            SaveStackTrace.saveStackTrace(e);
+            log.error("出现错误!",e);
         } finally {
             RecvMessageThreadPool.shutdownGracefully();
             bossGroup.shutdownGracefully();
@@ -199,12 +191,12 @@ public class SSLNettyServer implements NetworkServer {
         // 生成X509证书
         if (!(new File("./ServerEncryption/cert.crt").exists() &&
                 new File("./ServerEncryption/private.key").exists())) {
-            logger.info("正在生成 X.509 CA 证书");
+            log.info("正在生成 X.509 CA 证书");
             X500Name subject = new X500NameBuilder()
                     .addRDN(BCStyle.C, "CN")//证书国家代号(Country Name)
                     .addRDN(BCStyle.O, "JavaIM-Server")//证书组织名(Organization Name)
-                    .addRDN(BCStyle.OU, CodeDynamicConfig.ServerName)//证书组织单位名(Organization Unit Name)
-                    .addRDN(BCStyle.CN, "JavaIM Server("+CodeDynamicConfig.ServerName+") CA")//证书通用名(Common Name)
+                    .addRDN(BCStyle.OU, CodeDynamicConfig.getServerName())//证书组织单位名(Organization Unit Name)
+                    .addRDN(BCStyle.CN, "JavaIM Server("+CodeDynamicConfig.getServerName()+") CA")//证书通用名(Common Name)
                     .addRDN(BCStyle.ST, "Beijing")//证书州或省份(State or Province Name);
                     .addRDN(BCStyle.L, "Beijing")//证书所属城市名(Locality Name)
                     .build();
@@ -258,14 +250,14 @@ public class SSLNettyServer implements NetworkServer {
             } catch (IOException e) {
                 throw new RuntimeException("Failed to write cert to file, Permission denied?",e);
             }
-            logger.info("CA证书创建完成");
-            logger.info("请分发ServerEncryption文件夹中的cert.crt到各个客户端");
-            logger.info("请注意，ServerEncryption文件夹中的“private.key”请保护好");
-            logger.info("此文件如果泄露，您与客户端的连接将可能被劫持");
+            log.info("CA证书创建完成");
+            log.info("请分发ServerEncryption文件夹中的cert.crt到各个客户端");
+            log.info("请注意，ServerEncryption文件夹中的“private.key”请保护好");
+            log.info("此文件如果泄露，您与客户端的连接将可能被劫持");
         }
         // 通过CA证书签署临时SSL证书
 
-        logger.info("正在使用 X.509 CA 证书 签发新的 X.509 临时 SSL 加密证书");
+        log.info("正在使用 X.509 CA 证书 签发新的 X.509 临时 SSL 加密证书");
         // 加载CA证书
         Certificate caCert;
         PrivateKey caPrivateKey;
@@ -287,7 +279,7 @@ public class SSLNettyServer implements NetworkServer {
         X500Name subject = new X500NameBuilder()
                 .addRDN(BCStyle.C, "CN")//证书国家代号(Country Name)
                 .addRDN(BCStyle.O, "JavaIM-Server")//证书组织名(Organization Name)
-                .addRDN(BCStyle.OU, CodeDynamicConfig.ServerName)//证书组织单位名(Organization Unit Name)
+                .addRDN(BCStyle.OU, CodeDynamicConfig.getServerName())//证书组织单位名(Organization Unit Name)
                 .addRDN(BCStyle.CN, "JavaIM Server Encryption")//证书通用名(Common Name)
                 .addRDN(BCStyle.ST, "Shanghai")//证书州或省份(State or Province Name)
                 .addRDN(BCStyle.L, "Shanghai")//证书所属城市名(Locality Name)
@@ -331,7 +323,7 @@ public class SSLNettyServer implements NetworkServer {
         } catch (CertIOException | CertificateException e) {
             throw new RuntimeException("Generate SSL Cert Failed!",e);
         }
-        logger.info("X.509 SSL 证书已经签发完成");
+        log.info("X.509 SSL 证书已经签发完成");
     }
 
     private static String lf(String str, int length) {
@@ -367,9 +359,9 @@ public class SSLNettyServer implements NetworkServer {
         if (!isRunning()) {
             throw new IllegalStateException("Server is not running");
         }
-        logger.info("JavaIM 网络层正在关闭...");
+        log.info("JavaIM 网络层正在关闭...");
         future.channel().close();
-        logger.info("服务器关闭完成");
+        log.info("服务器关闭完成");
     }
 
     private ExecutorService IOThreadPool;
@@ -383,8 +375,8 @@ public class SSLNettyServer implements NetworkServer {
         private final Gson gson = new Gson();
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
-            logger.info("检测到新客户端连接...");
-            logger.info("此客户端IP地址：{}",ctx.channel().remoteAddress());
+            log.info("检测到新客户端连接...");
+            log.info("此客户端IP地址：{}",ctx.channel().remoteAddress());
             if (!ServerTools.getServerInstance().isServerCompleateStart()) {
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("Error");
@@ -411,8 +403,8 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
-            logger.info("检测到客户端离线...");
-            logger.info("此客户端IP地址：{}",ctx.channel().remoteAddress());
+            log.info("检测到客户端离线...");
+            log.info("此客户端IP地址：{}",ctx.channel().remoteAddress());
             NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
             if (thisClient == null)
                 return;
@@ -424,7 +416,7 @@ public class SSLNettyServer implements NetworkServer {
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             try {
                 if (!(msg instanceof String Msg)) {
-                    logger.info(String.format("客户端：%s 发送了非String消息：%s", ctx.channel().remoteAddress(), msg.toString()));
+                    log.info(String.format("客户端：%s 发送了非String消息：%s", ctx.channel().remoteAddress(), msg.toString()));
                     return;
                 }
                 if (Msg.isEmpty())
@@ -443,9 +435,8 @@ public class SSLNettyServer implements NetworkServer {
                 NetworkClient thisClient = clientNetworkClientPair.get(ctx.channel());
                 ServerTools.getServerInstanceOrThrow().onReceiveMessage(thisClient, Msg);
             } catch (Throwable throwable) {
-                logger.warn(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
-                logger.warn("错误为：",throwable);
-                SaveStackTrace.saveStackTrace(throwable);
+                log.warn(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
+                log.warn("错误为：",throwable);
 
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("Error");
@@ -468,12 +459,12 @@ public class SSLNettyServer implements NetworkServer {
                 Throwable exceptionCause = cause.getCause();
                 if (exceptionCause instanceof SSLHandshakeException)
                 {
-                    logger.warn(String.format("客户端：%s 因为SSL错误：%s已断开连接",ctx.channel().remoteAddress(),exceptionCause.getMessage()));
+                    log.warn(String.format("客户端：%s 因为SSL错误：%s已断开连接",ctx.channel().remoteAddress(),exceptionCause.getMessage()));
                     return;
                 }
             }
-            SaveStackTrace.saveStackTrace(cause);
-            logger.warn(String.format("客户端：%s 因为：%s 已经断开连接",ctx.channel().remoteAddress(),cause.getMessage()));
+            log.error("出现错误!",cause);
+            log.warn(String.format("客户端：%s 因为：%s 已经断开连接",ctx.channel().remoteAddress(),cause.getMessage()));
             ctx.channel().close();
         }
     }
@@ -537,7 +528,7 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public user onUserLogin(String UserName) {
-            logger.info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
+            log.info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
             return super.onUserLogin(UserName);
         }
 

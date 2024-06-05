@@ -17,11 +17,10 @@
 package org.yuezhikong.Server.api;
 
 import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.UserData.userInformation;
@@ -33,9 +32,9 @@ import javax.security.auth.login.AccountNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public abstract class SingleAPI implements api{
     private final IServer ServerInstance;
-    private final Logger logger = LoggerFactory.getLogger(SingleAPI.class);
 
     /**
      * 初始化服务端API
@@ -75,7 +74,7 @@ public abstract class SingleAPI implements api{
     {
         if (user.isServer())
         {
-            logger.info(inputMessage);
+            log.info(inputMessage);
             return;
         }
         String[] inputs = inputMessage.replaceAll("\r","").split("\n");

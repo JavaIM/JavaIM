@@ -17,6 +17,7 @@ public class PluginLoggingBridge {
      * @apiNote 一个插件只能有一个logger处理器！
      * @throws IllegalStateException 当插件已经有一个logger处理器时
      */
+    @SuppressWarnings("unused")
     public static void RegisterLogger(Plugin plugin, Logger logger) {
         checks.checkState(pluginLoggerPair.get(plugin) != null,"Plugin already has a logger!");
         pluginLoggerPair.put(plugin, logger);

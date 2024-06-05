@@ -1,10 +1,10 @@
 package org.yuezhikong.Server.plugin.configuration;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.Server.plugin.Plugin.Plugin;
-import org.yuezhikong.utils.SaveStackTrace;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+@Slf4j
 @SuppressWarnings("unused")
 public class PluginConfig {
     private PluginConfig() {}
@@ -57,7 +58,7 @@ public class PluginConfig {
             FileUtils.copyInputStreamToFile(inputStream,ConfigurationFile);
 
         } catch (IOException e) {
-            SaveStackTrace.saveStackTrace(e);
+            log.error("出现错误!",e);
         }
     }
 
@@ -100,7 +101,7 @@ public class PluginConfig {
             FileUtils.copyInputStreamToFile(inputStream,ConfigurationFile);
 
         } catch (IOException e) {
-            SaveStackTrace.saveStackTrace(e);
+            log.error("出现错误!",e);
         }
     }
 
@@ -135,7 +136,7 @@ public class PluginConfig {
             properties.load(new FileInputStream(ConfigurationFile));
             return properties;
         } catch (IOException e) {
-            SaveStackTrace.saveStackTrace(e);
+            log.error("出现错误!",e);
         }
         return null;
     }

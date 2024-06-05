@@ -16,13 +16,13 @@
  */
 package org.yuezhikong.utils.database;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.utils.SaveStackTrace;
 import org.yuezhikong.utils.checks;
 
 import java.io.IOException;
@@ -30,6 +30,7 @@ import java.sql.*;
 import java.util.Objects;
 import java.util.Properties;
 
+@Slf4j
 public class DatabaseHelper {
 
     /**
@@ -40,12 +41,12 @@ public class DatabaseHelper {
         Connection connection = null;
         String JDBCUrl;
         try {
-            if (!CodeDynamicConfig.GetSQLITEMode()) {
-                JDBCUrl = "jdbc:mysql://" + CodeDynamicConfig.GetMySQLDataBaseHost()
-                        + ":" + CodeDynamicConfig.GetMySQLDataBasePort() + "/" + CodeDynamicConfig.GetMySQLDataBaseName()
+            if (!CodeDynamicConfig.isUse_SQLITE_Mode()) {
+                JDBCUrl = "jdbc:mysql://" + CodeDynamicConfig.getMySQLDataBaseHost()
+                        + ":" + CodeDynamicConfig.getMySQLDataBasePort() + "/" + CodeDynamicConfig.getMySQLDataBaseName()
                         + "?failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1&autoReconnect=true";
                 Class.forName("com.mysql.cj.jdbc.Driver");
-                connection = DriverManager.getConnection(JDBCUrl, CodeDynamicConfig.GetMySQLDataBaseUser(), CodeDynamicConfig.GetMySQLDataBasePasswd());
+                connection = DriverManager.getConnection(JDBCUrl, CodeDynamicConfig.getMySQLDataBaseUser(), CodeDynamicConfig.getMySQLDataBasePasswd());
             } else {
                 Class.forName("org.sqlite.JDBC");
                 JDBCUrl = "jdbc:sqlite:data.db";
@@ -81,7 +82,7 @@ public class DatabaseHelper {
             try {
                 Objects.requireNonNull(connection).close();
             } catch (SQLException | NullPointerException e) {
-                SaveStackTrace.saveStackTrace(e);
+                log.error("出现错误!",e);
             }
         }
         return JDBCUrl;
@@ -97,7 +98,7 @@ public class DatabaseHelper {
         checks.checkArgument(JDBCUrl == null, "JDBC Url can not be null!");
         Properties MybatisConfig = new Properties();
         MybatisConfig.setProperty("jdbc.url",JDBCUrl);
-        if (CodeDynamicConfig.GetSQLITEMode())
+        if (CodeDynamicConfig.isUse_SQLITE_Mode())
         {
             MybatisConfig.setProperty("jdbc.driver", "org.sqlite.JDBC");
             MybatisConfig.setProperty("jdbc.username", "");
@@ -105,8 +106,8 @@ public class DatabaseHelper {
         }
         else {
             MybatisConfig.setProperty("jdbc.driver", "com.mysql.cj.jdbc.Driver");
-            MybatisConfig.setProperty("jdbc.username", CodeDynamicConfig.GetMySQLDataBaseUser());
-            MybatisConfig.setProperty("jdbc.password", CodeDynamicConfig.GetMySQLDataBasePasswd());
+            MybatisConfig.setProperty("jdbc.username", CodeDynamicConfig.getMySQLDataBaseUser());
+            MybatisConfig.setProperty("jdbc.password", CodeDynamicConfig.getMySQLDataBasePasswd());
         }
         try {
             return new SqlSessionFactoryBuilder().build(Resources.getResourceAsStream("mybatis-config.xml"), MybatisConfig).openSession(true);
@@ -126,7 +127,7 @@ public class DatabaseHelper {
      */
     @ApiStatus.Internal
     private static boolean CheckColumnsExist(String Columns,String TableName,@NotNull Connection DatabaseConnection) throws SQLException {
-        if (CodeDynamicConfig.GetSQLITEMode())
+        if (CodeDynamicConfig.isUse_SQLITE_Mode())
         {
             ResultSet rs = DatabaseConnection.createStatement().executeQuery("PRAGMA table_info ("+TableName+")");
             while (rs.next()) {

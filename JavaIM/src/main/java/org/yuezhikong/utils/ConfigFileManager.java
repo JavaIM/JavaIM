@@ -16,11 +16,13 @@
  */
 package org.yuezhikong.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.Properties;
 
+@Slf4j
 public class ConfigFileManager {
     public void CreateServerprop(){
         Properties sprop = new Properties();
@@ -36,7 +38,7 @@ public class ConfigFileManager {
 
             sprop.store(new FileOutputStream("server.properties"), "JavaIM Server Configuration");
         } catch (IOException ex) {
-            SaveStackTrace.saveStackTrace(ex);
+            log.error("出现错误!",ex);
         }
     }
     public static @NotNull Properties LoadServerProperties(){
@@ -44,7 +46,7 @@ public class ConfigFileManager {
         try {
             prop.load(new FileInputStream("server.properties"));
         } catch (IOException ex) {
-            SaveStackTrace.saveStackTrace(ex);
+            log.error("出现错误!",ex);
         }
         return prop;
     }

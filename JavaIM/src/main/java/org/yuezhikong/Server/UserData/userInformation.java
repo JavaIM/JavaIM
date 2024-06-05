@@ -1,5 +1,12 @@
 package org.yuezhikong.Server.UserData;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class userInformation {
     private int Permission;
     private String UserName;
@@ -8,72 +15,4 @@ public class userInformation {
     private String token;
     private String userId;
     private String avatar;
-
-    public userInformation() {}
-    public userInformation(String userId, int Permission, String UserName, String Passwd, String salt, String token)
-    {
-        this.userId = userId;
-        this.Permission = Permission;
-        this.UserName = UserName;
-        this.Passwd = Passwd;
-        this.salt = salt;
-        this.token = token;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public int getPermission() {
-        return Permission;
-    }
-
-    public String getUserName() {
-        return UserName;
-    }
-
-    public String getPasswd() {
-        return Passwd;
-    }
-
-    public String getSalt() {
-        return salt;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public String getAvatar() {
-        return avatar;
-    }
-
-    public void setPasswd(String passwd) {
-        Passwd = passwd;
-    }
-
-    public void setPermission(int permission) {
-        Permission = permission;
-    }
-
-    public void setSalt(String salt) {
-        this.salt = salt;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-
-    public void setUserName(String userName) {
-        UserName = userName;
-    }
-
-    public void setAvatar(String avatar) {
-        this.avatar = avatar;
-    }
 }

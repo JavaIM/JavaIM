@@ -2,13 +2,13 @@ package org.yuezhikong.Server;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
-import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
-import org.yuezhikong.Main;
 import org.yuezhikong.Server.UserData.*;
 import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
@@ -31,7 +31,7 @@ import org.yuezhikong.utils.database.dao.userUploadFileDao;
 import org.yuezhikong.utils.logging.CustomLogger;
 import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.database.DatabaseHelper;
-import org.yuezhikong.utils.SaveStackTrace;
+import org.yuezhikong.utils.logging.PluginLoggingBridge;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * JavaIM服务端
  */
+@Slf4j
 public final class Server implements IServer{
 
     /**
@@ -88,11 +89,6 @@ public final class Server implements IServer{
      * 服务器API
      */
     private api serverAPI;
-
-    /**
-     * 日志记录器
-     */
-    private CustomLogger logger;
     /**
      * 网络层服务器
      */
@@ -120,10 +116,11 @@ public final class Server implements IServer{
      */
     public void start(@Range(from = 1, to = 65535) int ListenPort) {
         long startUnix = System.currentTimeMillis();
-        LoggerFactory.getLogger(Main.class).info("正在启动JavaIM");
+        log.info("正在启动JavaIM");
         if (Instance != null)
             throw new RuntimeException("JavaIM Server is already running!");
         Instance = this;
+        PluginLoggingBridge.reset();
 
         ExecutorService StartUpThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(0);
@@ -133,11 +130,10 @@ public final class Server implements IServer{
             }
         });
 
-        LoggerFactory.getLogger(Main.class).info("正在预加载插件");
+        log.info("正在预加载插件");
         getPluginManager().PreloadPluginOnDirectory(new File("./plugins"), StartUpThreadPool);
-        LoggerFactory.getLogger(Main.class).info("插件预加载完成");
-
-        logger = (CustomLogger) LoggerFactory.getLogger(Server.class);//初始化日志
+        log.info("插件预加载完成");
+        
         serverAPI = new SingleAPI(this) {
             @Override
             public void SendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType) {
@@ -151,7 +147,7 @@ public final class Server implements IServer{
                     //如果是插件用户，则直接调用插件用户中的方法
                     ((PluginUser) User).WriteData(SendData);
                 else if (User instanceof ConsoleUser)
-                    logger.info(SendData);
+                    log.info(SendData);
                 else if (User instanceof tcpUser)
                     ((tcpUser) User).getNetworkClient().send(SendData);
             }
@@ -161,14 +157,14 @@ public final class Server implements IServer{
         networkServer = new SSLNettyServer();
         new Thread(() -> {
             Future<?> DatabaseStartTask = StartUpThreadPool.submit(() -> {
-                logger.info("正在处理数据库");
+                log.info("正在处理数据库");
                 String JDBCUrl;
                 try {
                     //获取JDBCUrl,创建表与自动更新数据库
                     JDBCUrl = DatabaseHelper.InitDataBase();
                 } catch (Throwable throwable)
                 {
-                    logger.error("数据库启动失败",throwable);
+                    log.error("数据库启动失败",throwable);
                     if (!networkServer.isRunning()) {
                         synchronized (SSLNettyServer.class) {
                             if (!networkServer.isRunning()) {
@@ -181,22 +177,22 @@ public final class Server implements IServer{
                         }
                     }
                     StartUpThreadPool.shutdownNow();
-                    logger.error("JavaIM启动失败，因为数据库出错");
+                    log.error("JavaIM启动失败，因为数据库出错");
                     try {
                         stop();
                     } catch (NullPointerException ignored) {}
-                    logger.info("JavaIM服务器已经关闭");
+                    log.info("JavaIM服务器已经关闭");
                     return;
                 }
                 //初始化Mybatis
                 sqlSession = DatabaseHelper.InitMybatis(JDBCUrl);
-                logger.info("数据库启动完成");
+                log.info("数据库启动完成");
             });
 
             Future<?> PluginLoadTask = StartUpThreadPool.submit(() -> {
-                logger.info("正在加载插件");
+                log.info("正在加载插件");
                 getPluginManager().LoadPluginOnDirectory(new File("./plugins"), StartUpThreadPool);
-                logger.info("插件加载完成");
+                log.info("插件加载完成");
             });
 
             Thread UserCommandRequestThread = new Thread(() -> {
@@ -227,7 +223,7 @@ public final class Server implements IServer{
                         if (chatEvent.isCancelled())
                             continue;
                         //格式化&发送
-                        logger.ChatMsg("[Server]:"+consoleInput);
+                        ((CustomLogger) log).ChatMsg("[Server]:"+consoleInput);
                         ChatProtocol chatProtocol = new ChatProtocol();
                         chatProtocol.setSourceUserName("Server");
                         chatProtocol.setMessage(consoleInput);
@@ -236,13 +232,13 @@ public final class Server implements IServer{
                                 serverAPI.SendJsonToClient(user,SendProtocolData,"ChatProtocol"));
                     }
                 } catch (Throwable throwable) {
-                    logger.error("JavaIM User Command Thread 出现异常");
-                    logger.error("请联系开发者");
-                    SaveStackTrace.saveStackTrace(throwable);
+                    log.error("JavaIM User Command Thread 出现异常");
+                    log.error("请联系开发者");
+                    log.error("出现错误!",throwable);
                 }
             },"User Command Thread");
 
-            logger.info("正在等待网络层启动完成");
+            log.info("正在等待网络层启动完成");
             if (!networkServer.isRunning()) {
                 synchronized (SSLNettyServer.class) {
                     if (!networkServer.isRunning()) {
@@ -256,19 +252,19 @@ public final class Server implements IServer{
             }
 
             try {
-                logger.info("正在等待插件启动完成");
+                log.info("正在等待插件启动完成");
                 PluginLoadTask.get();
-                logger.info("正在等待数据库启动完成");
+                log.info("正在等待数据库启动完成");
                 DatabaseStartTask.get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException("Thread Pool Fatal",e);
             }
 
-            logger.info("正在启动用户指令处理线程");
+            log.info("正在启动用户指令处理线程");
             UserCommandRequestThread.start();
-            logger.info("用户指令处理线程启动完成");
+            log.info("用户指令处理线程启动完成");
 
-            logger.info("JavaIM 启动完成 (耗时:{}ms)",System.currentTimeMillis() - startUnix);
+            log.info("JavaIM 启动完成 (耗时:{}ms)",System.currentTimeMillis() - startUnix);
             startSuccessful = true;
             StartUpThreadPool.shutdownNow();
             getPluginManager().callEvent(new ServerStartSuccessfulEvent());
@@ -278,14 +274,8 @@ public final class Server implements IServer{
         networkServer.start(ListenPort, StartUpThreadPool);
     }
 
+    @Getter
     private static Server Instance;
-    /**
-     * 获取JavaIM服务端实例
-     * @return JavaIM服务端实例
-     */
-    public static Server getInstance() {
-        return Instance;
-    }
 
     @Override
     public NetworkServer getNetwork() {
@@ -294,7 +284,7 @@ public final class Server implements IServer{
 
     @Override
     public void stop() {
-        logger.info("JavaIM服务器正在关闭...");
+        log.info("JavaIM服务器正在关闭...");
         users.clear();
         pluginManager.callEvent(new ServerStopEvent());
         try {
@@ -305,7 +295,7 @@ public final class Server implements IServer{
         getNetwork().stop();
         Instance = null;
         sqlSession.close();
-        logger.info("JavaIM服务器已关闭");
+        log.info("JavaIM服务器已关闭");
     }
 
     /**
@@ -321,7 +311,7 @@ public final class Server implements IServer{
         }
         ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(user, protocol.getMessage());
         if (!getRequest().UserChatRequests(input)){
-            logger.ChatMsg("["+user.getUserName()+"]:"+input.getChatMessage());
+            ((CustomLogger) log).ChatMsg("["+user.getUserName()+"]:"+input.getChatMessage());
 
             ChatProtocol chatProtocol = new ChatProtocol();
             chatProtocol.setSourceUserName(user.getUserName());
@@ -842,6 +832,6 @@ public final class Server implements IServer{
     @SuppressWarnings("removal")
     @Override
     public CustomLogger getLogger() {
-        return logger;
+        return (CustomLogger) log;
     }
 }
