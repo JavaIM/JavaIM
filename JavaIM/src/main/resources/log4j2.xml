@@ -2,7 +2,7 @@
 <Configuration status="ERROR" packages="org.yuezhikong.utils.log4j2">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%encode{\b}[时间：%d{HH:mm:ss}] [线程：%t] [日志等级：%level]: %msg%n>" />
+            <PatternLayout pattern="[时间：%d{HH:mm:ss}] [线程：%t] [日志等级：%level]: %msg%n" />
         </Console>
         <RollingRandomAccessFile name="File" fileName="logs/latest.log" filePattern="logs/%d{yyyy-MM-dd}-%i.gz">
             <PatternLayout pattern="[时间：%d{HH:mm:ss}] [线程：%t] [日志等级：%level]: %msg%n" />

@@ -16,24 +16,14 @@
  */
 package org.yuezhikong.Server.api;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.utils.CustomVar;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.util.List;
 
 public interface api {
-    /**
-     * 将命令进行格式化
-     * @param Command 原始命令信息
-     * @return 命令和参数
-     */
-    @Contract("_ -> new")
-    @NotNull
-    CustomVar.Command CommandFormat(@NotNull @Nls String Command);
 
     /**
      * 为指定用户发送消息

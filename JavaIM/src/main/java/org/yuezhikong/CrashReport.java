@@ -92,8 +92,10 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
                 logger.error("详情请查看错误报告");
                 logger.error("位于：{}", FileName);
                 logger.error("请自行查看");
+                if (ServerTools.getServerInstance() == null || !ServerTools.getServerInstance().isServerCompleateStart())
+                    return;
                 try {
-                    ServerTools.getServerInstanceOrThrow().stop();
+                    ServerTools.getServerInstance().stop();
                 } catch (IllegalStateException ignored) {}
             }));
             System.exit(1);

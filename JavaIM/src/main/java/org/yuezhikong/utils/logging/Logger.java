@@ -55,10 +55,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void trace(String msg, Throwable t) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        t.printStackTrace(pw);
-        CustomLoggerRequest(msg,sw.toString());
+        if (t == null) {
+            CustomLoggerRequest(msg);
+            return;
+        }
+        CustomLoggerRequest(msg,t);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -83,10 +84,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void trace(Marker marker, String msg, Throwable t) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        t.printStackTrace(pw);
-        CustomLoggerRequest(msg,sw.toString());
+        if (t == null) {
+            CustomLoggerRequest(msg);
+            return;
+        }
+        CustomLoggerRequest(msg,t);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -101,10 +103,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void debug(String s, Throwable throwable) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        CustomLoggerRequest(s, sw.toString());
+        if (throwable == null) {
+            CustomLoggerRequest(s);
+            return;
+        }
+        CustomLoggerRequest(s, throwable);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -129,10 +132,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Throwable throwable) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        CustomLoggerRequest(s,sw.toString());
+        if (throwable == null) {
+            CustomLoggerRequest(s);
+            return;
+        }
+        CustomLoggerRequest(s,throwable);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -157,10 +161,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void info(String s, Throwable throwable) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        CustomLoggerRequest(s,sw.toString());
+        if (throwable == null) {
+            CustomLoggerRequest(s);
+            return;
+        }
+        CustomLoggerRequest(s,throwable);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -185,10 +190,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Throwable throwable) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        CustomLoggerRequest(s,sw.toString());
+        if (throwable == null) {
+            CustomLoggerRequest(s);
+            return;
+        }
+        CustomLoggerRequest(s,throwable);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -213,10 +219,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void warn(String s, Throwable throwable) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        CustomLoggerRequest(s,sw.toString());
+        if (throwable == null) {
+            CustomLoggerRequest(s);
+            return;
+        }
+        CustomLoggerRequest(s,throwable);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -241,10 +248,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Throwable throwable) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        CustomLoggerRequest(s,sw.toString());
+        if (throwable == null) {
+            CustomLoggerRequest(s);
+            return;
+        }
+        CustomLoggerRequest(s,throwable);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -269,10 +277,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void error(String s, Throwable throwable) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        CustomLoggerRequest(s,sw.toString());
+        if (throwable == null) {
+            CustomLoggerRequest(s);
+            return;
+        }
+        CustomLoggerRequest(s,throwable);
     }
     @Override
     @MustBeInvokedByOverriders
@@ -297,10 +306,11 @@ public abstract class Logger implements CustomLogger {
     @Override
     @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Throwable throwable) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        CustomLoggerRequest(s,sw.toString());
+        if (throwable == null) {
+            CustomLoggerRequest(s);
+            return;
+        }
+        CustomLoggerRequest(s,throwable);
     }
     @Override
     @MustBeInvokedByOverriders

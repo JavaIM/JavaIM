@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.event.Cancellable;
 import org.yuezhikong.Server.plugin.event.events.Event;
-import org.yuezhikong.utils.CustomVar;
 
 /**
  * 用户使用命令事件
@@ -14,11 +13,14 @@ public class ServerCommandEvent implements Event, Cancellable {
     @Getter
     private final user UserData;
     @Getter
-    private final CustomVar.Command Command;
-    public ServerCommandEvent(user UserData, CustomVar.Command Command)
+    private final String command;
+    @Getter
+    private final String[] args;
+    public ServerCommandEvent(user UserData, String Command, String[] args)
     {
         this.UserData = UserData;
-        this.Command = Command;
+        this.command = Command;
+        this.args = args;
     }
 
     @Override

@@ -20,14 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.Server.IServer;
-import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.plugin.Plugin.Plugin;
 import org.yuezhikong.Server.plugin.Plugin.PluginData;
-import org.yuezhikong.Server.plugin.command.CommandExecutor;
 import org.yuezhikong.Server.plugin.event.EventHandler;
 import org.yuezhikong.Server.plugin.event.Listener;
 import org.yuezhikong.Server.plugin.event.events.Event;
-import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.checks;
 import org.yuezhikong.utils.logging.PluginLoggingBridge;
 
@@ -142,52 +139,6 @@ public class SimplePluginManager implements PluginManager{
         {
             throw new RuntimeException("This file is not preLoaded!");
         }
-    }
-
-    private record CommandSavedData(String Command, String Description, CommandExecutor executor, Plugin plugin) {}
-    private final List<CommandSavedData> commandSavedData = new CopyOnWriteArrayList<>();
-
-    @Override
-    public boolean RequestPluginCommand(CustomVar.Command CommandInformation, user User) {
-        for (CommandSavedData savedData : commandSavedData)
-        {
-            if (savedData.Command().equals(CommandInformation.Command()))
-            {
-                savedData.executor().execute(User,CommandInformation.Command(),CommandInformation.argv());
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public List<String> getPluginCommandsDescription() {
-        List<String> ReturnList = new ArrayList<>();
-        for (CommandSavedData savedData : commandSavedData)
-        {
-            ReturnList.add(savedData.Command()+" "+savedData.Description());
-        }
-        return ReturnList;
-    }
-
-    @Override
-    public boolean RegisterCommand(String CommandName, String Description, CommandExecutor executor, Plugin plugin) {
-        if (CommandName == null || executor == null || plugin == null)
-            return false;
-        String command = "/"+CommandName;
-        for (CommandSavedData savedData : commandSavedData)
-        {
-            if (savedData.Command().equals(command))
-                return false;
-        }
-        return commandSavedData.add(new CommandSavedData(command,Description,executor,plugin));
-    }
-
-    @Override
-    public boolean UnRegisterCommand(String CommandName) {
-        if (CommandName == null)
-            return false;
-        return commandSavedData.removeIf(commandSavedData -> commandSavedData.Command().equals("/"+CommandName));
     }
 
     @Override

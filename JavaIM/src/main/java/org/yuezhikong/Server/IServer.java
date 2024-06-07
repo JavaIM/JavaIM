@@ -21,6 +21,8 @@ import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
+import org.yuezhikong.Server.request.ChatRequest;
+import org.yuezhikong.Server.request.ChatRequestImpl;
 import org.yuezhikong.utils.logging.CustomLogger;
 
 import java.util.List;

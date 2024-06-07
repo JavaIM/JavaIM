@@ -24,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.UserData.userInformation;
-import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
 
@@ -44,26 +43,7 @@ public abstract class SingleAPI implements api{
     {
         ServerInstance = serverInstance;
     }
-    /**
-     * 将命令进行格式化
-     * @param Command 原始命令信息
-     * @return 命令和参数
-     */
-    @Contract("_ -> new")
-    @NotNull
-    @Override
-    public CustomVar.Command CommandFormat(@NotNull @Nls String Command)
-    {
-        String command;
-        String[] argv;
-        {
-            String[] CommandLineFormatted = Command.split("\\s+"); //分割一个或者多个空格
-            command = CommandLineFormatted[0];
-            argv = new String[CommandLineFormatted.length - 1];
-            System.arraycopy(CommandLineFormatted, 1, argv, 0, argv.length);
-        }
-        return new CustomVar.Command(command,argv);
-    }
+
     /**
      * 为指定用户发送消息
      * @param user 发信的目标用户

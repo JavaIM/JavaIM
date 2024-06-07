@@ -16,22 +16,31 @@
  */
 package org.yuezhikong;
 
+import lombok.Getter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jline.jansi.AnsiConsole;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Attributes;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.Notice;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.security.Security;
-import java.util.Scanner;
+import java.util.logging.Level;
 
 public class Main {
     private static final Logger log;
+    @Getter
+    private final static Terminal terminal;
     static {
         System.out.println("正在初始化JavaIM...");
         // 初始化Slf4j Service Provider
@@ -51,11 +60,33 @@ public class Main {
             public void println(@Nullable String x) {
             }
         });
+
         // 初始化 STDOUT Logger
         log = LoggerFactory.getLogger(Main.class);
         // 恢复sysOut与sysErr
         System.setOut(out);
         System.setErr(err);
+
+        // 安装 JUL to slf4j
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+        if (log.isTraceEnabled())
+            java.util.logging.Logger.getLogger("").setLevel(Level.FINEST);
+        // 初始化 JLine Terminal
+        Terminal terminal1;
+        try {
+            if (System.console() != null) {
+                AnsiConsole.systemInstall();
+                terminal1 = AnsiConsole.getTerminal();
+            }
+            else
+                terminal1 = TerminalBuilder.builder().system(true).exec(false).ffm(false).jna(false).dumb(true).build();
+        } catch (IOException e) {
+            terminal1 = null;
+            err.println("JavaIM 初始化失败");
+            System.exit(1);
+        }
+        terminal = terminal1;
     }
 
     public static void CreateServerProperties(){
@@ -68,188 +99,188 @@ public class Main {
      */
     private static void stdoutRedistribution()
     {
-        System.setOut(new PrintStream(System.out)
-        {
-            @Override
-            public void print(boolean b) {
-                log.info("[STDOUT] {}", b);
-            }
-
-            @Override
-            public void print(char c) {
-                log.info("[STDOUT] {}", c);
-            }
-
-            @Override
-            public void print(int i) {
-                log.info("[STDOUT] {}", i);
-            }
-
-            @Override
-            public void print(long l) {
-                log.info("[STDOUT] {}", l);
-            }
-
-            @Override
-            public void print(float f) {
-                log.info("[STDOUT] {}", f);
-            }
-
-            @Override
-            public void print(double d) {
-                log.info("[STDOUT] {}", d);
-            }
-
-            @Override
-            public void print(char @NotNull [] s) {
-                log.info("[STDOUT] {}", new String(s));
-            }
-
-            @Override
-            public void print(@Nullable String s) {
-                log.info("[STDOUT] {}", s);
-            }
-
-            @Override
-            public void print(@Nullable Object obj) {
-                log.info("[STDOUT] {}", obj);
-            }
-            @Override
-            public void println(boolean b) {
-                log.info("[STDOUT] {}", b);
-            }
-
-            @Override
-            public void println(char c) {
-                log.info("[STDOUT] {}", c);
-            }
-
-            @Override
-            public void println(int i) {
-                log.info("[STDOUT] {}", i);
-            }
-
-            @Override
-            public void println(long l) {
-                log.info("[STDOUT] {}", l);
-            }
-
-            @Override
-            public void println(float f) {
-                log.info("[STDOUT] {}", f);
-            }
-
-            @Override
-            public void println(double d) {
-                log.info("[STDOUT] {}", d);
-            }
-
-            @Override
-            public void println(char @NotNull [] s) {
-                log.info("[STDOUT] {}", new String(s));
-            }
-
-            @Override
-            public void println(@Nullable String s) {
-                log.info("[STDOUT] {}", s);
-            }
-
-            @Override
-            public void println(@Nullable Object obj) {
-                log.info("[STDOUT] {}", obj);
-            }
-        });
-        System.setErr(new PrintStream(System.err)
-        {
-            @Override
-            public void print(boolean b) {
-                log.error("[STDERR] {}", b);
-            }
-
-            @Override
-            public void print(char c) {
-                log.error("[STDERR] {}", c);
-            }
-
-            @Override
-            public void print(int i) {
-                log.error("[STDERR] {}", i);
-            }
-
-            @Override
-            public void print(long l) {
-                log.error("[STDERR] {}", l);
-            }
-
-            @Override
-            public void print(float f) {
-                log.error("[STDERR] {}", f);
-            }
-
-            @Override
-            public void print(double d) {
-                log.error("[STDERR] {}", d);
-            }
-
-            @Override
-            public void print(char @NotNull [] s) {
-                log.error("[STDERR] {}", new String(s));
-            }
-
-            @Override
-            public void print(@Nullable String s) {
-                log.error("[STDERR] {}", s);
-            }
-
-            @Override
-            public void print(@Nullable Object obj) {
-                log.error("[STDERR] {}", obj);
-            }
-            @Override
-            public void println(boolean b) {
-                log.error("[STDERR] {}", b);
-            }
-
-            @Override
-            public void println(char c) {
-                log.error("[STDERR] {}", c);
-            }
-
-            @Override
-            public void println(int i) {
-                log.error("[STDERR] {}", i);
-            }
-
-            @Override
-            public void println(long l) {
-                log.error("[STDERR] {}", l);
-            }
-
-            @Override
-            public void println(float f) {
-                log.error("[STDERR] {}", f);
-            }
-
-            @Override
-            public void println(double d) {
-                log.error("[STDERR] {}", d);
-            }
-
-            @Override
-            public void println(char @NotNull [] s) {
-                log.error("[STDERR] {}", new String(s));
-            }
-
-            @Override
-            public void println(@Nullable String s) {
-                log.error("[STDERR] {}", s);
-            }
-
-            @Override
-            public void println(@Nullable Object obj) {
-                log.error("[STDERR] {}", obj);
-            }
-        });
+//        System.setOut(new PrintStream(System.out)
+//        {
+//            @Override
+//            public void print(boolean b) {
+//                log.info("[STDOUT] {}", b);
+//            }
+//
+//            @Override
+//            public void print(char c) {
+//                log.info("[STDOUT] {}", c);
+//            }
+//
+//            @Override
+//            public void print(int i) {
+//                log.info("[STDOUT] {}", i);
+//            }
+//
+//            @Override
+//            public void print(long l) {
+//                log.info("[STDOUT] {}", l);
+//            }
+//
+//            @Override
+//            public void print(float f) {
+//                log.info("[STDOUT] {}", f);
+//            }
+//
+//            @Override
+//            public void print(double d) {
+//                log.info("[STDOUT] {}", d);
+//            }
+//
+//            @Override
+//            public void print(char @NotNull [] s) {
+//                log.info("[STDOUT] {}", new String(s));
+//            }
+//
+//            @Override
+//            public void print(@Nullable String s) {
+//                log.info("[STDOUT] {}", s);
+//            }
+//
+//            @Override
+//            public void print(@Nullable Object obj) {
+//                log.info("[STDOUT] {}", obj);
+//            }
+//            @Override
+//            public void println(boolean b) {
+//                log.info("[STDOUT] {}", b);
+//            }
+//
+//            @Override
+//            public void println(char c) {
+//                log.info("[STDOUT] {}", c);
+//            }
+//
+//            @Override
+//            public void println(int i) {
+//                log.info("[STDOUT] {}", i);
+//            }
+//
+//            @Override
+//            public void println(long l) {
+//                log.info("[STDOUT] {}", l);
+//            }
+//
+//            @Override
+//            public void println(float f) {
+//                log.info("[STDOUT] {}", f);
+//            }
+//
+//            @Override
+//            public void println(double d) {
+//                log.info("[STDOUT] {}", d);
+//            }
+//
+//            @Override
+//            public void println(char @NotNull [] s) {
+//                log.info("[STDOUT] {}", new String(s));
+//            }
+//
+//            @Override
+//            public void println(@Nullable String s) {
+//                log.info("[STDOUT] {}", s);
+//            }
+//
+//            @Override
+//            public void println(@Nullable Object obj) {
+//                log.info("[STDOUT] {}", obj);
+//            }
+//        });
+//        System.setErr(new PrintStream(System.err)
+//        {
+//            @Override
+//            public void print(boolean b) {
+//                log.error("[STDERR] {}", b);
+//            }
+//
+//            @Override
+//            public void print(char c) {
+//                log.error("[STDERR] {}", c);
+//            }
+//
+//            @Override
+//            public void print(int i) {
+//                log.error("[STDERR] {}", i);
+//            }
+//
+//            @Override
+//            public void print(long l) {
+//                log.error("[STDERR] {}", l);
+//            }
+//
+//            @Override
+//            public void print(float f) {
+//                log.error("[STDERR] {}", f);
+//            }
+//
+//            @Override
+//            public void print(double d) {
+//                log.error("[STDERR] {}", d);
+//            }
+//
+//            @Override
+//            public void print(char @NotNull [] s) {
+//                log.error("[STDERR] {}", new String(s));
+//            }
+//
+//            @Override
+//            public void print(@Nullable String s) {
+//                log.error("[STDERR] {}", s);
+//            }
+//
+//            @Override
+//            public void print(@Nullable Object obj) {
+//                log.error("[STDERR] {}", obj);
+//            }
+//            @Override
+//            public void println(boolean b) {
+//                log.error("[STDERR] {}", b);
+//            }
+//
+//            @Override
+//            public void println(char c) {
+//                log.error("[STDERR] {}", c);
+//            }
+//
+//            @Override
+//            public void println(int i) {
+//                log.error("[STDERR] {}", i);
+//            }
+//
+//            @Override
+//            public void println(long l) {
+//                log.error("[STDERR] {}", l);
+//            }
+//
+//            @Override
+//            public void println(float f) {
+//                log.error("[STDERR] {}", f);
+//            }
+//
+//            @Override
+//            public void println(double d) {
+//                log.error("[STDERR] {}", d);
+//            }
+//
+//            @Override
+//            public void println(char @NotNull [] s) {
+//                log.error("[STDERR] {}", new String(s));
+//            }
+//
+//            @Override
+//            public void println(@Nullable String s) {
+//                log.error("[STDERR] {}", s);
+//            }
+//
+//            @Override
+//            public void println(@Nullable Object obj) {
+//                log.error("[STDERR] {}", obj);
+//            }
+//        });
 
     }
     public static void ConsoleMain()
@@ -257,9 +288,10 @@ public class Main {
         log.info("欢迎来到JavaIM！版本：{}", CodeDynamicConfig.getVersion());
         log.info("正在启动服务端...");
 
-        Scanner scanner = new Scanner(System.in);
         log.info("请输入绑定的端口");
-        int ServerPort = scanner.nextInt();
+        int ServerPort = Integer.parseInt(
+                LineReaderBuilder.builder().terminal(terminal).build().readLine(">")
+        );
         ThreadGroup ServerGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ServerGroup");
         try {
             new Thread(ServerGroup,"Server Thread")

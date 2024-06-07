@@ -8,7 +8,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.UserInterruptException;
+import org.jline.terminal.Terminal;
 import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.Main;
 import org.yuezhikong.Server.UserData.*;
 import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
 import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
@@ -25,11 +31,12 @@ import org.yuezhikong.Server.plugin.event.events.Server.ServerStartSuccessfulEve
 import org.yuezhikong.Server.plugin.event.events.User.UserAddEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
+import org.yuezhikong.Server.request.ChatRequest;
+import org.yuezhikong.Server.request.ChatRequestImpl;
 import org.yuezhikong.utils.Protocol.*;
 import org.yuezhikong.utils.database.dao.userInformationDao;
 import org.yuezhikong.utils.database.dao.userUploadFileDao;
 import org.yuezhikong.utils.logging.CustomLogger;
-import org.yuezhikong.utils.CustomVar;
 import org.yuezhikong.utils.database.DatabaseHelper;
 import org.yuezhikong.utils.logging.PluginLoggingBridge;
 
@@ -68,7 +75,7 @@ public final class Server implements IServer{
     /**
      * 用户处理器
      */
-    private ChatRequest request;
+    private ChatRequestImpl request;
 
     /**
      * 服务器控制台用户
@@ -152,7 +159,7 @@ public final class Server implements IServer{
                     ((tcpUser) User).getNetworkClient().send(SendData);
             }
         };// 初始化Server API
-        request = new ChatRequest(this);
+        request = new ChatRequestImpl();
 
         networkServer = new SSLNettyServer();
         new Thread(() -> {
@@ -196,48 +203,61 @@ public final class Server implements IServer{
             });
 
             Thread UserCommandRequestThread = new Thread(() -> {
-                while (true) try {
-                    Scanner scanner = new Scanner(System.in);
-                    String consoleInput = scanner.nextLine();
-                    if (consoleInput.isEmpty())
-                        continue;
-                    //判断是指令还是消息
-                    if (consoleInput.startsWith("/")) {
-                        CustomVar.Command command = serverAPI.CommandFormat(consoleInput);
+                Terminal terminal = Main.getTerminal();
+                LineReader reader = LineReaderBuilder.builder().completer(request.getCompleter()).terminal(terminal).build();
+                while (true) {
+                    try {
+                        String line = reader.readLine(">").trim();
+                        if (line.isEmpty())
+                            continue;
+                        if (!line.startsWith("/")) {
+                            //通知发生事件
+                            ServerChatEvent chatEvent = new ServerChatEvent(consoleUser, line);
+                            getPluginManager().callEvent(chatEvent);
+                            //判断是否被取消
+                            if (chatEvent.isCancelled())
+                                continue;
+                            //格式化&发送
+                            ((CustomLogger) log).ChatMsg("[Server]:" + line);
+                            ChatProtocol chatProtocol = new ChatProtocol();
+                            chatProtocol.setSourceUserName("Server");
+                            chatProtocol.setMessage(line);
+                            String SendProtocolData = gson.toJson(chatProtocol);
+                            serverAPI.GetValidClientList(true).forEach((user) ->
+                                    serverAPI.SendJsonToClient(user, SendProtocolData, "ChatProtocol"));
+                            continue;
+                        }
+                        List<String> tmp = reader.getParsedLine().words();
+                        String command = tmp.get(0).substring(1);
+                        String[] args;
+                        if (!tmp.get(tmp.size() - 1).isEmpty()) {
+                            args = new String[tmp.size() - 1];
+                            System.arraycopy(tmp.toArray(new String[0]), 1, args, 0, tmp.size() - 1);
+                        } else {
+                            args = new String[tmp.size() - 2];
+                            System.arraycopy(tmp.toArray(new String[0]), 1, args, 0, tmp.size() - 2);
+                        }
 
                         //通知发生事件
-                        ServerCommandEvent commandEvent = new ServerCommandEvent(consoleUser,command);
-                        getPluginManager().callEvent(commandEvent);
-                        //判断是否被取消
+                        ServerCommandEvent commandEvent = new ServerCommandEvent(getConsoleUser(),command,args);
+                        pluginManager.callEvent(commandEvent);
                         if (commandEvent.isCancelled())
                             return;
-
-                        //指令处理
-                        request.CommandRequest0(consoleUser,command);
-                    }
-                    else {
-                        //通知发生事件
-                        ServerChatEvent chatEvent = new ServerChatEvent(consoleUser,consoleInput);
-                        getPluginManager().callEvent(chatEvent);
-                        //判断是否被取消
-                        if (chatEvent.isCancelled())
+                        getRequest().commandRequest(command, args, getConsoleUser());
+                    } catch (Throwable throwable) {
+                        if (throwable instanceof UserInterruptException) {
+                            log.info("Ctrl+C已被按下...");
+                            log.info("正在关闭JavaIM");
+                            stop();
+                            return;
+                        }
+                        if (throwable instanceof EndOfFileException) {
                             continue;
-                        //格式化&发送
-                        ((CustomLogger) log).ChatMsg("[Server]:"+consoleInput);
-                        ChatProtocol chatProtocol = new ChatProtocol();
-                        chatProtocol.setSourceUserName("Server");
-                        chatProtocol.setMessage(consoleInput);
-                        String SendProtocolData = gson.toJson(chatProtocol);
-                        serverAPI.GetValidClientList(true).forEach((user) ->
-                                serverAPI.SendJsonToClient(user,SendProtocolData,"ChatProtocol"));
+                        }
+                        log.error("出现错误!", throwable);
                     }
-                } catch (Throwable throwable) {
-                    log.error("JavaIM User Command Thread 出现异常");
-                    log.error("请联系开发者");
-                    log.error("出现错误!",throwable);
                 }
             },"User Command Thread");
-
             log.info("正在等待网络层启动完成");
             if (!networkServer.isRunning()) {
                 synchronized (SSLNettyServer.class) {
@@ -285,6 +305,10 @@ public final class Server implements IServer{
     @Override
     public void stop() {
         log.info("JavaIM服务器正在关闭...");
+        getServerAPI().SendMessageToAllClient("服务器已关闭");
+        for (user requestUser : getServerAPI().GetValidClientList(false)) {
+            requestUser.UserDisconnect();
+        }
         users.clear();
         pluginManager.callEvent(new ServerStopEvent());
         try {
@@ -309,13 +333,12 @@ public final class Server implements IServer{
             getServerAPI().SendMessageToUser(user,"请先登录");
             return;
         }
-        ChatRequest.ChatRequestInput input = new ChatRequest.ChatRequestInput(user, protocol.getMessage());
-        if (!getRequest().UserChatRequests(input)){
-            ((CustomLogger) log).ChatMsg("["+user.getUserName()+"]:"+input.getChatMessage());
+        if (!request.UserChatRequests(user, protocol.getMessage())){
+            ((CustomLogger) log).ChatMsg("["+user.getUserName()+"]:"+protocol.getMessage());
 
             ChatProtocol chatProtocol = new ChatProtocol();
             chatProtocol.setSourceUserName(user.getUserName());
-            chatProtocol.setMessage(input.getChatMessage());
+            chatProtocol.setMessage(protocol.getMessage());
             String SendProtocolData = gson.toJson(chatProtocol);
             serverAPI.GetValidClientList(true).forEach((forEachUser) ->
                     serverAPI.SendJsonToClient(forEachUser,SendProtocolData,"ChatProtocol"));
