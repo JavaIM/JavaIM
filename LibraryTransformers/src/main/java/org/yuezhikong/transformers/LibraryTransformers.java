@@ -1,19 +1,27 @@
-package org.yuezhikong;
+package org.yuezhikong.transformers;
 
 import org.apache.maven.plugins.shade.relocation.Relocator;
 import org.apache.maven.plugins.shade.resource.ResourceTransformer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Locale;
 import java.util.jar.JarOutputStream;
 
 public class LibraryTransformers implements ResourceTransformer {
+    private static final Logger log = LoggerFactory.getLogger(LibraryTransformers.class);
     private final static boolean DebugMode = false;
     @Override
     public boolean canTransformResource(String str) {
         String s = str.toLowerCase(Locale.ROOT);
         if (s.contains("license") || s.contains("info_") || s.endsWith(".html"))
+            return true;
+        if (s.equals("authors") || s.contains("changelog") || s.equals("release-timestamp.txt") || s.contains("lombok")
+                || s.equals("meta-inf/services/javax.annotation.processing.processor") || s.contains("readme") || s.startsWith("org/iq80/snappy/")
+                || s.contains("about") || s.contains("notice") || s.endsWith(".jar"))
             return true;
         if (s.endsWith(".dll") || s.endsWith(".so"))
         {
@@ -29,21 +37,20 @@ public class LibraryTransformers implements ResourceTransformer {
                     !s.contains("libsqlitejdbc.so"))
             {
                 if (DebugMode)
-                    System.out.println("Delete Library:"+s);
+                    log.info("Delete Library:{}",s);
                 return true;
             } else {
                 if (DebugMode)
-                    System.out.println("Allow Library:"+s);
+                    log.info("Allow Library:{}",s);
             }
         }
         return false;
     }
 
     @Override
-    public void processResource(String s, InputStream inputStream, List<Relocator> list) {
+    public void processResource(String s, InputStream inputStream, List<Relocator> list) throws IOException {
 
     }
-
 
     @Override
     public boolean hasTransformedResource() {

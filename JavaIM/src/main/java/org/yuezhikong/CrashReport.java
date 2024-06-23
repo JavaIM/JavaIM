@@ -53,8 +53,6 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
         String StackTraceOfThrowable;
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
         try {
-            log.error("出现错误!",e);
-
             StringWriter writer = new StringWriter();
             PrintWriter printWriter = new PrintWriter(writer);
             e.printStackTrace(printWriter);
@@ -67,37 +65,31 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
                 Files.createDirectory(Paths.get("./crash-reports"));
             } catch (FileAlreadyExistsException ignored) {}
             Files.createFile(Paths.get(FileName));
-            FileChannel channel = new FileOutputStream(
-                    FileName).getChannel();
-            String time = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss").format(StartTimeMills);
-            writeStringToFileChannel(channel,"----JavaIM Crash Report----");
-            writeStringToFileChannel(channel,"Time: "+time);
-            writeStringToFileChannel(channel,"Description: "+type);
-            writeStringToFileChannel(channel,"JavaIMVersion: "+CodeDynamicConfig.getVersion());
-            writeStringToFileChannel(channel,"Thread: "+t.getName());
-            writeStringToFileChannelNoAutoAddLineBreak(channel,"\n");
-            writeStringToFileChannel(channel, StackTraceOfThrowable);
-            writeStringToFileChannel(channel,"-- System Information --");
-            writeStringToFileChannel(channel,"JavaIMVersion: "+CodeDynamicConfig.getVersion());
-            writeStringToFileChannel(channel,"Operating System: "+System.getProperty("os.name"));
-            writeStringToFileChannel(channel,"Java Version: "+System.getProperty("java.version"));
-            writeStringToFileChannel(channel,"Java Virtual Machine Version: "+System.getProperty("java.vm.version"));
-            writeStringToFileChannel(channel,"CPU Cores: "+Runtime.getRuntime().availableProcessors());
-            channel.force(false);
-            channel.close();
+            try (FileOutputStream stream = new FileOutputStream(FileName)) {
+                FileChannel channel = stream.getChannel();
+                String time = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss").format(StartTimeMills);
+                writeStringToFileChannel(channel, "----JavaIM Crash Report----");
+                writeStringToFileChannel(channel, "Time: " + time);
+                writeStringToFileChannel(channel, "Description: " + type);
+                writeStringToFileChannel(channel, "JavaIMVersion: " + CodeDynamicConfig.getVersion());
+                writeStringToFileChannel(channel, "Thread: " + t.getName());
+                writeStringToFileChannelNoAutoAddLineBreak(channel, "\n");
+                writeStringToFileChannel(channel, StackTraceOfThrowable);
+                writeStringToFileChannel(channel, "-- System Information --");
+                writeStringToFileChannel(channel, "JavaIMVersion: " + CodeDynamicConfig.getVersion());
+                writeStringToFileChannel(channel, "Operating System: " + System.getProperty("os.name"));
+                writeStringToFileChannel(channel, "Java Version: " + System.getProperty("java.version"));
+                writeStringToFileChannel(channel, "Java Virtual Machine Version: " + System.getProperty("java.vm.version"));
+                writeStringToFileChannel(channel, "CPU Cores: " + Runtime.getRuntime().availableProcessors());
+                channel.force(false);
+                channel.close();
+            }
+            log.error("出现错误!",e);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                Logger logger = LoggerFactory.getLogger(CrashReport.class);
-                logger.error("程序已崩溃");
-                logger.error("详情请查看错误报告");
-                logger.error("位于：{}", FileName);
-                logger.error("请自行查看");
-                if (ServerTools.getServerInstance() == null || !ServerTools.getServerInstance().isServerCompleateStart())
-                    return;
-                try {
-                    ServerTools.getServerInstance().stop();
-                } catch (IllegalStateException ignored) {}
-            }));
+            log.error("程序已崩溃");
+            log.error("详情请查看错误报告");
+            log.error("位于：{}", FileName);
+            log.error("请自行查看");
             System.exit(1);
         } catch (IOException ex) {
             log.error("出现错误!",ex);

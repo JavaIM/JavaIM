@@ -21,10 +21,20 @@
         </developer>
     </developers>
 
+    <scm>
+        <connection>scm:git:git://github.com/JavaIM/JavaIM.git</connection>
+        <url>https://github.com/JavaIM/JavaIM</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/JavaIM/JavaIM/issues</url>
+    </issueManagement>
     <artifactId>JavaIM-Parent</artifactId>
     <groupId>org.yuezhikong</groupId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <description>基于 Java 的加密通讯软件</description>
     <modules>
         <module>LibraryTransformers</module>
         <module>JavaIM</module>

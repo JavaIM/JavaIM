@@ -18,55 +18,35 @@ package org.yuezhikong;
 
 import lombok.Getter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.jetbrains.annotations.Nullable;
 import org.jline.jansi.AnsiConsole;
+import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
-import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.yuezhikong.Server.Server;
+import org.yuezhikong.Server.ServerTools;
+import org.yuezhikong.utils.checkUpdate.CheckUpdate;
 import org.yuezhikong.utils.ConfigFileManager;
+import org.yuezhikong.utils.ConsoleCommandRequest;
 import org.yuezhikong.utils.Notice;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.security.Security;
+import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Level;
 
 public class Main {
-    private static final Logger log;
+    private final static Logger log;
     @Getter
     private final static Terminal terminal;
     static {
         System.out.println("正在初始化JavaIM...");
-        // 初始化Slf4j Service Provider
-        System.setProperty(LoggerFactory.PROVIDER_PROPERTY_KEY,"org.yuezhikong.utils.logging.SLF4JServiceProvider");
-        // 暂时禁止sysOut与sysErr
-        PrintStream err = System.err;
-        PrintStream out = System.out;
-        System.setOut(new PrintStream(System.out)
-        {
-            @Override
-            public void println(@Nullable String x) {
-            }
-        });
-        System.setErr(new PrintStream(System.err)
-        {
-            @Override
-            public void println(@Nullable String x) {
-            }
-        });
-
-        // 初始化 STDOUT Logger
+        // Slf4j Logger加载
         log = LoggerFactory.getLogger(Main.class);
-        // 恢复sysOut与sysErr
-        System.setOut(out);
-        System.setErr(err);
-
         // 安装 JUL to slf4j
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
@@ -83,7 +63,7 @@ public class Main {
                 terminal1 = TerminalBuilder.builder().system(true).exec(false).ffm(false).jna(false).dumb(true).build();
         } catch (IOException e) {
             terminal1 = null;
-            err.println("JavaIM 初始化失败");
+            AnsiConsole.sysErr().println("JavaIM 初始化失败");
             System.exit(1);
         }
         terminal = terminal1;
@@ -283,15 +263,19 @@ public class Main {
 //        });
 
     }
-    public static void ConsoleMain()
+    public static void ConsoleMain(Map<String,String> commandLineArgs, LineReader lineReader)
     {
         log.info("欢迎来到JavaIM！版本：{}", CodeDynamicConfig.getVersion());
         log.info("正在启动服务端...");
 
-        log.info("请输入绑定的端口");
-        int ServerPort = Integer.parseInt(
-                LineReaderBuilder.builder().terminal(terminal).build().readLine(">")
-        );
+        int ServerPort;
+        if (!commandLineArgs.containsKey("bindPort")) {
+            log.info("请输入绑定的端口");
+            ServerPort = Integer.parseInt(
+                    lineReader.readLine(">")
+            );
+        } else
+            ServerPort = Integer.parseInt(commandLineArgs.get("bindPort"));
         ThreadGroup ServerGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ServerGroup");
         try {
             new Thread(ServerGroup,"Server Thread")
@@ -315,9 +299,19 @@ public class Main {
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
-    @SuppressWarnings("removal")
     public static void main(String[] args) {
         new Notice();
+        // 初始化Shutdown Hook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (ServerTools.getServerInstance() == null || !ServerTools.getServerInstance().isServerCompleateStart())
+                    return;
+                try {
+                    ServerTools.getServerInstance().stop();
+                } catch (IllegalStateException ignored) {
+                }
+            } catch (Throwable ignored) {}
+        }));
         // 初始化BouncyCastle，设置为JCE Provider
         Security.addProvider(new BouncyCastleProvider());
         // 初始化Stdout重定向
@@ -330,9 +324,33 @@ public class Main {
             CreateServerProperties();
         }
         // 命令行参数处理
+        Map<String,String> commandLineArgs = ConsoleCommandRequest.commandLineRequest(args);
 
-        ConsoleCommandRequest.Request(args);
+        // 初始化 LineReader
+        LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
+        // 自动更新
+        boolean checkUpdate, installUpdate;
+        if (!commandLineArgs.containsKey("checkUpdate")) {
+            log.info("是否检查更新?(Y/N)");
+            checkUpdate = "Y".equals(
+                    reader.readLine(">").toUpperCase(Locale.ROOT)
+            );
+        } else {
+            checkUpdate = Boolean.parseBoolean(commandLineArgs.get("checkUpdate"));
+        }
+
+        if (!commandLineArgs.containsKey("installUpdate")) {
+            log.info("是否允许自动安装更新?(Y/N)");
+            installUpdate = "Y".equals(
+                    reader.readLine(">").toUpperCase(Locale.ROOT)
+            );
+        } else {
+            installUpdate = Boolean.parseBoolean(commandLineArgs.get("installUpdate"));
+        }
+
+        if (checkUpdate)
+            CheckUpdate.checkUpdate(installUpdate,commandLineArgs.getOrDefault("githubAccessToken", ""));
         // 启动JavaIM启动逻辑
-        ConsoleMain();
+        ConsoleMain(commandLineArgs, reader);
     }
 }
