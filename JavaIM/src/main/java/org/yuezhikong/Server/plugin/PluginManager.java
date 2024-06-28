@@ -44,20 +44,20 @@ public interface PluginManager {
      * @throws ClassCastException 插件主类未实现Plugin接口
      * @throws UnsupportedOperationException 此插件不允许在此时间节点加载
      */
-    void PreLoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException, UnsupportedOperationException;
+    void preloadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException, UnsupportedOperationException;
 
     /**
      * 加载一个插件
      * @param PluginFile 这个插件的文件
      */
-    void LoadPlugin(@NotNull File PluginFile);
+    void loadPlugin(@NotNull File PluginFile);
 
     /**
      * 添加一个事件监听器
      * @param listener 监听器实例
      * @param plugin 插件实例
      */
-    void AddEventListener(Listener listener, Plugin plugin);
+    void addEventListener(Listener listener, Plugin plugin);
 
     /**
      * 获取注册的所有事件监听器
@@ -71,7 +71,7 @@ public interface PluginManager {
      * @param listener 事件监听器实例
      * @param plugin 插件实例
      */
-    void RemoveEventListener(Listener listener, Plugin plugin);
+    void removeEventListener(Listener listener, Plugin plugin);
 
     /**
      * 卸载一个插件
@@ -79,13 +79,13 @@ public interface PluginManager {
      * @throws IOException 无法关闭URLClassLoader
      * @throws IllegalStateException 在PreLoad阶段调用UnLoadPlugin抛出
      */
-    void UnLoadPlugin(@NotNull Plugin plugin) throws IOException;
+    void unloadPlugin(@NotNull Plugin plugin) throws IOException;
 
     /**
      * 卸载所有插件
      * @throws IOException 无法关闭URLClassLoader
      */
-    void UnLoadAllPlugin() throws IOException;
+    void unloadAllPlugin() throws IOException;
 
     /**
      * 预加载一个文件夹中的插件
@@ -93,14 +93,14 @@ public interface PluginManager {
      * @param StartUpThreadPool 用于加载插件的线程池
      * @apiNote 注意，通过此方法加载，只会加载后缀为.jar的插件
      */
-    void PreloadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool);
+    void preloadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool);
     /**
      * 加载一个文件夹中的插件
      * @param Directory 文件夹
      * @param StartUpThreadPool 用于加载插件的线程池
      * @apiNote 注意，通过此方法加载，只会加载后缀为.jar的插件
      */
-    void LoadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool);
+    void loadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool);
 
     /**
      * 调用事件处理程序

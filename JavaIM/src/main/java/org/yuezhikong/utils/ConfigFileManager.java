@@ -24,7 +24,7 @@ import java.util.Properties;
 
 @Slf4j
 public class ConfigFileManager {
-    public void CreateServerprop(){
+    public void createServerConfig(){
         Properties sprop = new Properties();
         try {
             sprop.setProperty("EnableLoginSystem", "true");
@@ -41,7 +41,7 @@ public class ConfigFileManager {
             log.error("出现错误!",ex);
         }
     }
-    public static @NotNull Properties LoadServerProperties(){
+    public static @NotNull Properties loadServerConfig(){
         Properties prop = new Properties();
         try {
             prop.load(new FileInputStream("server.properties"));

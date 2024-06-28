@@ -20,28 +20,27 @@ import org.yuezhikong.Server.plugin.PluginClassLoader;
 import org.yuezhikong.Server.plugin.event.Listener;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 插件信息
  */
-@SuppressWarnings("unused")
 public class PluginData {
 
     public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor, PluginClassLoader PluginClassLoader, File PluginMainFile, boolean loaded)
     {}
-    private final List<Listener> EventListener = new CopyOnWriteArrayList<>();
+    private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final staticData data;
 
     /**
      * 添加一个事件监听器
      * @param listener 监听器实例
      */
-    public void AddEventListener(Listener listener)
+    public void addEventListener(Listener listener)
     {
-        EventListener.add(listener);
+        listeners.add(listener);
     }
 
     /**
@@ -50,16 +49,15 @@ public class PluginData {
      */
     public List<Listener> getEventListener()
     {
-        return new ArrayList<>(EventListener);
+        return Collections.unmodifiableList(listeners);
     }
 
     /**
      * 取消注册一个事件监听器
      * @param listener 事件监听器实例
      */
-    public void RemoveEventListener(Listener listener)
-    {
-        EventListener.remove(listener);
+    public void removeEventListener(Listener listener) {
+        listeners.remove(listener);
     }
 
     /**

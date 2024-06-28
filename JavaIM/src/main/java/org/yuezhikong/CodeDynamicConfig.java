@@ -18,7 +18,7 @@ package org.yuezhikong;
 
 import lombok.Getter;
 
-import static org.yuezhikong.utils.ConfigFileManager.LoadServerProperties;
+import static org.yuezhikong.utils.ConfigFileManager.loadServerConfig;
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
@@ -31,25 +31,25 @@ public final class CodeDynamicConfig {
 
     //服务器名
     @Getter
-    private final static String ServerName = LoadServerProperties().getProperty("Server-Name","A JavaIM Server");
+    private final static String ServerName = loadServerConfig().getProperty("Server-Name","A JavaIM Server");
     //是否使用SQLITE
     @Getter
-    private final static boolean Use_SQLITE_Mode = Boolean.parseBoolean(LoadServerProperties().getProperty("Use_SQLITE_Mode"));
+    private final static boolean Use_SQLITE_Mode = Boolean.parseBoolean(loadServerConfig().getProperty("Use_SQLITE_Mode"));
     //MySQL数据库地址
     @Getter
-    private final static String MySQLDataBaseHost = LoadServerProperties().getProperty("MySQLDataBaseHost");
+    private final static String MySQLDataBaseHost = loadServerConfig().getProperty("MySQLDataBaseHost");
     //MySQL数据库端口
     @Getter
-    private final static String MySQLDataBasePort = LoadServerProperties().getProperty("MySQLDataBasePort");
+    private final static String MySQLDataBasePort = loadServerConfig().getProperty("MySQLDataBasePort");
     //MySQL数据库名称
     @Getter
-    private final static String MySQLDataBaseName = LoadServerProperties().getProperty("MySQLDataBaseName");
+    private final static String MySQLDataBaseName = loadServerConfig().getProperty("MySQLDataBaseName");
     //MySQL数据库用户
     @Getter
-    private final static String MySQLDataBaseUser = LoadServerProperties().getProperty("MySQLDataBaseUser");
+    private final static String MySQLDataBaseUser = loadServerConfig().getProperty("MySQLDataBaseUser");
     //MySQL数据库密码
     @Getter
-    private final static String MySQLDataBasePasswd = LoadServerProperties().getProperty("MySQLDataBasePasswd");
+    private final static String MySQLDataBasePasswd = loadServerConfig().getProperty("MySQLDataBasePasswd");
 
 
     /**

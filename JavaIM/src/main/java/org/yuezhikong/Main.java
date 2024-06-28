@@ -71,7 +71,7 @@ public class Main {
 
     public static void CreateServerProperties(){
         ConfigFileManager prop = new ConfigFileManager();
-        prop.CreateServerprop();
+        prop.createServerConfig();
     }
 
     /**

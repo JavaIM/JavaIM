@@ -138,7 +138,7 @@ public final class Server implements IServer{
         });
 
         log.info("正在预加载插件");
-        getPluginManager().PreloadPluginOnDirectory(new File("./plugins"), StartUpThreadPool);
+        getPluginManager().preloadPluginOnDirectory(new File("./plugins"), StartUpThreadPool);
         log.info("插件预加载完成");
         
         serverAPI = new SingleAPI(this) {
@@ -198,7 +198,7 @@ public final class Server implements IServer{
 
             Future<?> PluginLoadTask = StartUpThreadPool.submit(() -> {
                 log.info("正在加载插件");
-                getPluginManager().LoadPluginOnDirectory(new File("./plugins"), StartUpThreadPool);
+                getPluginManager().loadPluginOnDirectory(new File("./plugins"), StartUpThreadPool);
                 log.info("插件加载完成");
             });
 
@@ -312,7 +312,7 @@ public final class Server implements IServer{
         users.clear();
         pluginManager.callEvent(new ServerStopEvent());
         try {
-            pluginManager.UnLoadAllPlugin();
+            pluginManager.unloadAllPlugin();
         } catch (Throwable ignored) {}
         userMessageRequestThreadPool.shutdownNow();
         System.gc();

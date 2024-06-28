@@ -21,9 +21,9 @@ public class PluginConfig {
      * 保存默认配置文件
      * @param plugin 插件实例
      */
-    public static void SaveDefaultConfiguration(Plugin plugin)
+    public static void saveDefaultConfiguration(Plugin plugin)
     {
-        SaveDefaultConfiguration(plugin,"config.properties");
+        saveDefaultConfiguration(plugin,"config.properties");
     }
 
     /**
@@ -31,15 +31,13 @@ public class PluginConfig {
      * @param plugin 插件实例
      * @param FileName 文件名
      */
-    public static void SaveDefaultConfiguration(Plugin plugin,String FileName)
+    public static void saveDefaultConfiguration(Plugin plugin, String FileName)
     {
         File PluginDirectory = new File("./plugins/"+plugin.getPluginData().getStaticData().PluginName());
         if (PluginDirectory.exists() && PluginDirectory.isFile())
         {
             if ((!PluginDirectory.delete()) || (!PluginDirectory.mkdirs()))
-            {
                 return;
-            }
         }
         else if (!PluginDirectory.exists())
             if (!PluginDirectory.mkdirs())
@@ -66,9 +64,9 @@ public class PluginConfig {
      * 强制保存配置文件
      * @param plugin 插件实例
      */
-    public static void SaveConfiguration(Plugin plugin)
+    public static void saveConfiguration(Plugin plugin)
     {
-        SaveConfiguration(plugin,"config.properties");
+        saveConfiguration(plugin,"config.properties");
     }
 
     /**
@@ -76,7 +74,7 @@ public class PluginConfig {
      * @param plugin 插件实例
      * @param FileName 文件名
      */
-    public static void SaveConfiguration(Plugin plugin,String FileName)
+    public static void saveConfiguration(Plugin plugin, String FileName)
     {
         File PluginDirectory = new File("./plugins/"+plugin.getPluginData().getStaticData().PluginName());
         if (PluginDirectory.exists() && PluginDirectory.isFile())

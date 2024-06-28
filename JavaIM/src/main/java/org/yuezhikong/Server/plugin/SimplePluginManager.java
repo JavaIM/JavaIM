@@ -47,7 +47,7 @@ public class SimplePluginManager implements PluginManager{
     private final List<Plugin> pluginList = new CopyOnWriteArrayList<>();
     private final List<PluginData> pluginDataList = new CopyOnWriteArrayList<>();
     @Override
-    public void PreLoadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException,UnsupportedOperationException {
+    public void preloadPlugin(@NotNull File PluginFile) throws IOException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException,UnsupportedOperationException {
         //启动classloader
         PluginClassLoader classLoader = new PluginClassLoader(new URL[]{
                 PluginFile.toURI().toURL()
@@ -116,7 +116,7 @@ public class SimplePluginManager implements PluginManager{
     }
 
     @Override
-    public void LoadPlugin(@NotNull File PluginFile) {
+    public void loadPlugin(@NotNull File PluginFile) {
         AtomicReference<Plugin> plugin = new AtomicReference<>();
         pluginDataList.forEach(pluginData -> {
            if (pluginData.getStaticData().PluginMainFile().getAbsolutePath().equals(PluginFile.getAbsolutePath()))
@@ -142,8 +142,8 @@ public class SimplePluginManager implements PluginManager{
     }
 
     @Override
-    public void AddEventListener(Listener listener, Plugin plugin) {
-        plugin.getPluginData().AddEventListener(listener);
+    public void addEventListener(Listener listener, Plugin plugin) {
+        plugin.getPluginData().addEventListener(listener);
     }
 
     @Override
@@ -152,21 +152,20 @@ public class SimplePluginManager implements PluginManager{
     }
 
     @Override
-    public void RemoveEventListener(Listener listener, Plugin plugin) {
-        plugin.getPluginData().RemoveEventListener(listener);
+    public void removeEventListener(Listener listener, Plugin plugin) {
+        plugin.getPluginData().removeEventListener(listener);
     }
 
     @Override
-    public void UnLoadPlugin(@NotNull Plugin plugin) throws IOException {
+    public void unloadPlugin(@NotNull Plugin plugin) throws IOException {
         checks.checkState(!LoadStage, "Server PreLoad Stage can not Unload Plugin, you can try load in ONLOAD METHOD");
         PluginData pluginData = plugin.getPluginData();
         log.info("正在卸载插件 {} v{} by{}", pluginData.getStaticData().PluginName(), pluginData.getStaticData().PluginVersion(), pluginData.getStaticData().PluginAuthor());
-        for (Listener listener : plugin.getPluginData().getEventListener())
-        {
-            RemoveEventListener(listener,plugin);
+        for (Listener listener : plugin.getPluginData().getEventListener()) {
+            removeEventListener(listener,plugin);
         }
         try {
-            PluginLoggingBridge.RemoveLogger(plugin);
+            PluginLoggingBridge.unregisterLogger(plugin);
         } catch (IllegalStateException ignored) {}
         pluginData.getStaticData().plugin().onUnload();
         pluginList.remove(plugin);
@@ -182,15 +181,14 @@ public class SimplePluginManager implements PluginManager{
     }
 
     @Override
-    public void UnLoadAllPlugin() throws IOException {
+    public void unloadAllPlugin() throws IOException {
         record Data(String Name,String Version,String Author,PluginClassLoader classLoader){}
         List<Data> DataList = new ArrayList<>();
         for (PluginData pluginData : pluginDataList)
         {
             log.info("正在卸载插件 {} v{} by {}", pluginData.getStaticData().PluginName(), pluginData.getStaticData().PluginVersion(), pluginData.getStaticData().PluginAuthor());
-            for (Listener listener : pluginData.getEventListener())
-            {
-                RemoveEventListener(listener,pluginData.getStaticData().plugin());
+            for (Listener listener : pluginData.getEventListener()) {
+                removeEventListener(listener,pluginData.getStaticData().plugin());
             }
             pluginData.getStaticData().plugin().onUnload();
             DataList.add(new Data(pluginData.getStaticData().PluginName(),
@@ -221,7 +219,7 @@ public class SimplePluginManager implements PluginManager{
      * @param Directory 文件夹
      * @return 文件列表
      */
-    private @Nullable List<File> GetPluginFileList(@NotNull File Directory)
+    private @Nullable List<File> getPluginFileList(@NotNull File Directory)
     {
         if (Directory.isDirectory())
         {
@@ -245,7 +243,7 @@ public class SimplePluginManager implements PluginManager{
 
     private boolean LoadStage = false;
     @Override
-    public void PreloadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool) {
+    public void preloadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool) {
         if (!Directory.exists() && !(Directory.mkdir()))
             throw new RuntimeException("创建文件夹失败");
 
@@ -256,14 +254,14 @@ public class SimplePluginManager implements PluginManager{
                 throw new RuntimeException("创建文件夹失败");
         }
 
-        List<File> fileList = Objects.requireNonNull(GetPluginFileList(Directory));
+        List<File> fileList = Objects.requireNonNull(getPluginFileList(Directory));
         if (fileList.isEmpty())
             return;
         List<Future<?>> loadTasksFuture = new ArrayList<>();
         for (File loadPluginFile : fileList) {
             loadTasksFuture.add(StartUpThreadPool.submit(() -> {
                 try {
-                    PreLoadPlugin(loadPluginFile);
+                    preloadPlugin(loadPluginFile);
                 }
                 catch (Throwable t)
                 {
@@ -296,7 +294,7 @@ public class SimplePluginManager implements PluginManager{
     }
 
     @Override
-    public void LoadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool) {
+    public void loadPluginOnDirectory(@NotNull File Directory, ExecutorService StartUpThreadPool) {
         LoadStage = true;
         if (!Directory.exists() && !(Directory.mkdir()))
             throw new RuntimeException("创建文件夹失败");
@@ -308,14 +306,14 @@ public class SimplePluginManager implements PluginManager{
                 throw new RuntimeException("创建文件夹失败");
         }
 
-        List<File> fileList = Objects.requireNonNull(GetPluginFileList(Directory));
+        List<File> fileList = Objects.requireNonNull(getPluginFileList(Directory));
         if (fileList.isEmpty())
             return;
         List<Future<?>> loadTasksFuture = new ArrayList<>();
         for (File loadPluginFile : fileList) {
             loadTasksFuture.add(StartUpThreadPool.submit(() -> {
                 try {
-                    LoadPlugin(loadPluginFile);
+                    loadPlugin(loadPluginFile);
                 } catch (Throwable ignored) {}
             }));
         }
@@ -379,9 +377,7 @@ public class SimplePluginManager implements PluginManager{
         for (Plugin plugin : pluginList)
         {
             if (name.equals(plugin.getPluginData().getStaticData().PluginName()))
-            {
                 return plugin;
-            }
         }
         return null;
     }
