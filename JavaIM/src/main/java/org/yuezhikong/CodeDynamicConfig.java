@@ -18,7 +18,8 @@ package org.yuezhikong;
 
 import lombok.Getter;
 
-import static org.yuezhikong.utils.ConfigFileManager.loadServerConfig;
+import static org.yuezhikong.utils.ConfigFileManager.getServerConfig;
+
 
 public final class CodeDynamicConfig {
     //静态区，不允许修改
@@ -31,27 +32,25 @@ public final class CodeDynamicConfig {
 
     //服务器名
     @Getter
-    private final static String ServerName = loadServerConfig().getProperty("Server-Name","A JavaIM Server");
+    private final static String ServerName = getServerConfig("serverName","A JavaIM Server");
     //是否使用SQLITE
     @Getter
-    private final static boolean Use_SQLITE_Mode = Boolean.parseBoolean(loadServerConfig().getProperty("Use_SQLITE_Mode"));
+    private final static boolean Use_SQLITE_Mode = Boolean.parseBoolean(getServerConfig("sqlite"));
     //MySQL数据库地址
     @Getter
-    private final static String MySQLDataBaseHost = loadServerConfig().getProperty("MySQLDataBaseHost");
+    private final static String MySQLDataBaseHost = getServerConfig("mysqlHost");
     //MySQL数据库端口
     @Getter
-    private final static String MySQLDataBasePort = loadServerConfig().getProperty("MySQLDataBasePort");
+    private final static String MySQLDataBasePort = getServerConfig("mysqlPort");
     //MySQL数据库名称
     @Getter
-    private final static String MySQLDataBaseName = loadServerConfig().getProperty("MySQLDataBaseName");
+    private final static String MySQLDataBaseName = getServerConfig("mysqlDBName");
     //MySQL数据库用户
     @Getter
-    private final static String MySQLDataBaseUser = loadServerConfig().getProperty("MySQLDataBaseUser");
+    private final static String MySQLDataBaseUser = getServerConfig("mysqlUser");
     //MySQL数据库密码
     @Getter
-    private final static String MySQLDataBasePasswd = loadServerConfig().getProperty("MySQLDataBasePasswd");
-
-
+    private final static String MySQLDataBasePasswd = getServerConfig("mysqlPasswd");
     /**
      * Static Config不得被实例化
      */

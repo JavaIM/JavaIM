@@ -69,200 +69,6 @@ public class Main {
         terminal = terminal1;
     }
 
-    public static void CreateServerProperties(){
-        ConfigFileManager prop = new ConfigFileManager();
-        prop.createServerConfig();
-    }
-
-    /**
-     * 重定向System.out与System.err
-     */
-    private static void stdoutRedistribution()
-    {
-//        System.setOut(new PrintStream(System.out)
-//        {
-//            @Override
-//            public void print(boolean b) {
-//                log.info("[STDOUT] {}", b);
-//            }
-//
-//            @Override
-//            public void print(char c) {
-//                log.info("[STDOUT] {}", c);
-//            }
-//
-//            @Override
-//            public void print(int i) {
-//                log.info("[STDOUT] {}", i);
-//            }
-//
-//            @Override
-//            public void print(long l) {
-//                log.info("[STDOUT] {}", l);
-//            }
-//
-//            @Override
-//            public void print(float f) {
-//                log.info("[STDOUT] {}", f);
-//            }
-//
-//            @Override
-//            public void print(double d) {
-//                log.info("[STDOUT] {}", d);
-//            }
-//
-//            @Override
-//            public void print(char @NotNull [] s) {
-//                log.info("[STDOUT] {}", new String(s));
-//            }
-//
-//            @Override
-//            public void print(@Nullable String s) {
-//                log.info("[STDOUT] {}", s);
-//            }
-//
-//            @Override
-//            public void print(@Nullable Object obj) {
-//                log.info("[STDOUT] {}", obj);
-//            }
-//            @Override
-//            public void println(boolean b) {
-//                log.info("[STDOUT] {}", b);
-//            }
-//
-//            @Override
-//            public void println(char c) {
-//                log.info("[STDOUT] {}", c);
-//            }
-//
-//            @Override
-//            public void println(int i) {
-//                log.info("[STDOUT] {}", i);
-//            }
-//
-//            @Override
-//            public void println(long l) {
-//                log.info("[STDOUT] {}", l);
-//            }
-//
-//            @Override
-//            public void println(float f) {
-//                log.info("[STDOUT] {}", f);
-//            }
-//
-//            @Override
-//            public void println(double d) {
-//                log.info("[STDOUT] {}", d);
-//            }
-//
-//            @Override
-//            public void println(char @NotNull [] s) {
-//                log.info("[STDOUT] {}", new String(s));
-//            }
-//
-//            @Override
-//            public void println(@Nullable String s) {
-//                log.info("[STDOUT] {}", s);
-//            }
-//
-//            @Override
-//            public void println(@Nullable Object obj) {
-//                log.info("[STDOUT] {}", obj);
-//            }
-//        });
-//        System.setErr(new PrintStream(System.err)
-//        {
-//            @Override
-//            public void print(boolean b) {
-//                log.error("[STDERR] {}", b);
-//            }
-//
-//            @Override
-//            public void print(char c) {
-//                log.error("[STDERR] {}", c);
-//            }
-//
-//            @Override
-//            public void print(int i) {
-//                log.error("[STDERR] {}", i);
-//            }
-//
-//            @Override
-//            public void print(long l) {
-//                log.error("[STDERR] {}", l);
-//            }
-//
-//            @Override
-//            public void print(float f) {
-//                log.error("[STDERR] {}", f);
-//            }
-//
-//            @Override
-//            public void print(double d) {
-//                log.error("[STDERR] {}", d);
-//            }
-//
-//            @Override
-//            public void print(char @NotNull [] s) {
-//                log.error("[STDERR] {}", new String(s));
-//            }
-//
-//            @Override
-//            public void print(@Nullable String s) {
-//                log.error("[STDERR] {}", s);
-//            }
-//
-//            @Override
-//            public void print(@Nullable Object obj) {
-//                log.error("[STDERR] {}", obj);
-//            }
-//            @Override
-//            public void println(boolean b) {
-//                log.error("[STDERR] {}", b);
-//            }
-//
-//            @Override
-//            public void println(char c) {
-//                log.error("[STDERR] {}", c);
-//            }
-//
-//            @Override
-//            public void println(int i) {
-//                log.error("[STDERR] {}", i);
-//            }
-//
-//            @Override
-//            public void println(long l) {
-//                log.error("[STDERR] {}", l);
-//            }
-//
-//            @Override
-//            public void println(float f) {
-//                log.error("[STDERR] {}", f);
-//            }
-//
-//            @Override
-//            public void println(double d) {
-//                log.error("[STDERR] {}", d);
-//            }
-//
-//            @Override
-//            public void println(char @NotNull [] s) {
-//                log.error("[STDERR] {}", new String(s));
-//            }
-//
-//            @Override
-//            public void println(@Nullable String s) {
-//                log.error("[STDERR] {}", s);
-//            }
-//
-//            @Override
-//            public void println(@Nullable Object obj) {
-//                log.error("[STDERR] {}", obj);
-//            }
-//        });
-
-    }
     public static void ConsoleMain(Map<String,String> commandLineArgs, LineReader lineReader)
     {
         log.info("欢迎来到JavaIM！版本：{}", CodeDynamicConfig.getVersion());
@@ -314,20 +120,19 @@ public class Main {
         }));
         // 初始化BouncyCastle，设置为JCE Provider
         Security.addProvider(new BouncyCastleProvider());
-        // 初始化Stdout重定向
-        stdoutRedistribution();
         // 初始化主线程崩溃报告程序
         Thread.currentThread().setUncaughtExceptionHandler(CrashReport.getCrashReport());
-        // 服务端配置文件初始化
-        if (!(new File("server.properties").exists())){
-            log.info("目录下没有检测到服务端配置文件，正在创建");
-            CreateServerProperties();
-        }
-        // 命令行参数处理
-        Map<String,String> commandLineArgs = ConsoleCommandRequest.commandLineRequest(args);
-
         // 初始化 LineReader
         LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
+        // 服务端配置文件初始化
+        if (!(new File("server.properties").exists())){
+            log.info("目录下没有检测到服务端配置文件，判断为第一次进入");
+            ConfigFileManager.createServerConfig();
+            firstStart(reader);
+        } else
+            ConfigFileManager.reloadServerConfig();
+        // 命令行参数处理
+        Map<String,String> commandLineArgs = ConsoleCommandRequest.commandLineRequest(args);
         // 自动更新
         boolean checkUpdate, installUpdate;
         if (!commandLineArgs.containsKey("checkUpdate")) {
@@ -352,5 +157,43 @@ public class Main {
             CheckUpdate.checkUpdate(installUpdate,commandLineArgs.getOrDefault("githubAccessToken", ""));
         // 启动JavaIM启动逻辑
         ConsoleMain(commandLineArgs, reader);
+    }
+
+    /**
+     * 首次启动 JavaIM 时的向导
+     * @param reader LineReader
+     */
+    private static void firstStart(LineReader reader) {
+        log.info("检测到您疑似是首次启动 JavaIM, 是否进行配置?(Y/N)");
+        if (!"Y".equals(reader.readLine(">").toUpperCase(Locale.ROOT)))
+            return;
+        log.info("请设置服务器名称");
+        ConfigFileManager.setServerConfig("serverName",reader.readLine("服务器名称>"));
+        log.info("是否使用sqlite(Y/N)");
+        if ("Y".equals(reader.readLine("是否使用sqlite>").toUpperCase(Locale.ROOT))) {
+            ConfigFileManager.setServerConfig("sqlite","true");
+            ConfigFileManager.setServerConfig("mysqlHost","");
+            ConfigFileManager.setServerConfig("mysqlPort","");
+            ConfigFileManager.setServerConfig("mysqlDBName","");
+            ConfigFileManager.setServerConfig("mysqlUser","");
+            ConfigFileManager.setServerConfig("mysqlPasswd","");
+            log.info("正在保存您的配置...");
+            ConfigFileManager.rewriteServerConfig();
+            log.info("设置向导成功完成!");
+            return;
+        }
+        log.info("请设置 mysql 地址");
+        ConfigFileManager.setServerConfig("mysqlHost",reader.readLine("mysql地址>"));
+        log.info("请设置 mysql 端口");
+        ConfigFileManager.setServerConfig("mysqlPort",reader.readLine("mysql端口>"));
+        log.info("请设置 mysql 数据库名称");
+        ConfigFileManager.setServerConfig("mysqlDBName",reader.readLine("mysql数据库名称>"));
+        log.info("请设置 mysql 登录用户");
+        ConfigFileManager.setServerConfig("mysqlUser",reader.readLine("mysql登录用户>"));
+        log.info("请设置 mysql 登录密码");
+        ConfigFileManager.setServerConfig("mysqlPasswd",reader.readLine("mysql登录密码>"));
+        log.info("正在保存您的配置...");
+        ConfigFileManager.rewriteServerConfig();
+        log.info("设置向导成功完成!");
     }
 }

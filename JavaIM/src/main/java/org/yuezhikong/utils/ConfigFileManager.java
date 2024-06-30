@@ -17,37 +17,87 @@
 package org.yuezhikong.utils;
 
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
+import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.Properties;
 
 @Slf4j
 public class ConfigFileManager {
-    public void createServerConfig(){
-        Properties sprop = new Properties();
-        try {
-            sprop.setProperty("EnableLoginSystem", "true");
-            sprop.setProperty("Use_SQLITE_Mode", "true");
-            sprop.setProperty("MySQLDataBaseHost", "127.0.0.1");
-            sprop.setProperty("MySQLDataBasePort", "3306");
-            sprop.setProperty("MySQLDataBaseName", "JavaIM");
-            sprop.setProperty("MySQLDataBaseUser", "JavaIM");
-            sprop.setProperty("MySQLDataBasePasswd", "JavaIM");
-            sprop.setProperty("Server-Name", "A JavaIM Server");
+    private static final Properties prop = new Properties();
+    private ConfigFileManager() {}
 
-            sprop.store(new FileOutputStream("server.properties"), "JavaIM Server Configuration");
+    /**
+     * 创建服务端配置文件
+     */
+    public static void createServerConfig(){
+        try (OutputStream fos = new FileOutputStream("server.properties")) {
+            prop.setProperty("serverName", "A JavaIM Server");
+            prop.setProperty("sqlite","true");
+            prop.setProperty("mysqlHost","127.0.0.1");
+            prop.setProperty("mysqlPort","3306");
+            prop.setProperty("mysqlDBName","JavaIM");
+            prop.setProperty("mysqlUser","JavaIM");
+            prop.setProperty("mysqlPasswd","JavaIM");
+            prop.store(fos,"JavaIM Configuration");
         } catch (IOException ex) {
             log.error("出现错误!",ex);
         }
     }
-    public static @NotNull Properties loadServerConfig(){
-        Properties prop = new Properties();
-        try {
-            prop.load(new FileInputStream("server.properties"));
+
+    /**
+     * 获取服务端配置信息
+     * @param key 键
+     * @param defaultValue 默认值
+     * @return 配置信息
+     */
+    @Contract(pure = true)
+    public static String getServerConfig(String key, String defaultValue){
+        return prop.getProperty(key, defaultValue);
+    }
+
+    /**
+     * 获取服务端配置信息
+     * @param key 键
+     * @return 配置信息
+     */
+    @Contract(pure = true)
+    public static @Nullable String getServerConfig(String key) {
+        return getServerConfig(key, null);
+    }
+
+    /**
+     * 重载服务端配置文件
+     * @apiNote 不会修改动态配置! CodeDynamicConfig 不会受到影响!
+     */
+    public static void reloadServerConfig(){
+        try (InputStream fis = new FileInputStream("server.properties")){
+            prop.load(fis);
         } catch (IOException ex) {
-            log.error("出现错误!",ex);
+            log.error("刷新服务端配置文件时出现错误!",ex);
         }
-        return prop;
+    }
+
+    /**
+     * 设置服务端配置信息
+     * @param key 键
+     * @param value 值
+     * @apiNote 不会修改动态配置! CodeDynamicConfig 不会受到影响!
+     */
+    public static void setServerConfig(String key, String value) {
+        prop.setProperty(key, value);
+    }
+
+    /**
+     * 覆写服务端配置信息(保存更改)
+     */
+    public static void rewriteServerConfig() {
+        try (OutputStream fos = new FileOutputStream(FileUtils.delete(new File("server.properties")))){
+            prop.store(fos,"JavaIM Configuration");
+        } catch (IOException ex) {
+            log.error("覆写服务端配置文件时出现错误!",ex);
+        }
     }
 }
