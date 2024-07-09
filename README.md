@@ -14,7 +14,7 @@ JavaIM目前通过TLS v1.3(允许降级v1.2)对通信内容进行加密。
 
 > 建议使用最新开发版(GitHub Action CI 构建)，release可能严重落后于开发版本 建议使用开发版
 
-> 此项目为服务端 客户端可见[Java客户端](https://github.com/JavaIM/JavaIMClient)或[Android客户端](https://github.com/JavaIM/JavaIMAndroid)
+> 此项目为服务端 客户端可见[Java客户端](https://github.com/JavaIM/JavaIMClient)或[Android客户端](https://github.com/JavaIM/JavaIMForAndroid)
 
 ## 现在开始！
 ### 💻 使用JavaIM
