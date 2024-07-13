@@ -39,6 +39,13 @@
             <version>2.4.1</version>
         </dependency>
 
+        <!-- Progress bar -->
+        <dependency>
+            <groupId>me.tongfei</groupId>
+            <artifactId>progressbar</artifactId>
+            <version>0.10.1</version>
+        </dependency>
+
         <!-- Source generator -->
         <dependency>
             <groupId>org.projectlombok</groupId>

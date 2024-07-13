@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.yuezhikong.utils.ProgressBarUtils;
 import org.yuezhikong.utils.checkUpdate.oauth.GitHubDeviceCodeAPI;
 import org.yuezhikong.utils.checkUpdate.oauth.GitHubOAuthAccessTokenAPI;
 
@@ -296,9 +297,16 @@ public class CheckUpdate {
                     .build(), HttpResponse.BodyHandlers.ofInputStream()
             );
             File tmpZipFile = File.createTempFile("JavaIMUpdate", ".zip");
+            tmpZipFile.deleteOnExit();
+            long fileSize = response.headers().firstValue("Content-Length").map(Long::parseLong).orElse(-1L);
             try (InputStream is = response.body(); OutputStream os = new FileOutputStream(tmpZipFile))  {
-                IOUtils.copy(is,os);
+                if (fileSize == -1) {
+                    log.error("远程服务器未返回 Content-Length，无法判断文件大小，无法提供进度条!");
+                    IOUtils.copy(is,os);
+                } else
+                    ProgressBarUtils.copyStream("下载 JavaIM 更新包", fileSize, is, os);
             }
+            log.info("正在解压缩...");
             try (ZipFile zipFile = new ZipFile(tmpZipFile)) {
                 Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
                 while (enumeration.hasMoreElements()) {
@@ -306,7 +314,11 @@ public class CheckUpdate {
                     if (!zipEntry.getName().contains("SNAPSHOT"))
                         continue;
                     try (InputStream is = zipFile.getInputStream(zipEntry); OutputStream os = new FileOutputStream(downloadTo))  {
-                        IOUtils.copy(is,os);
+                        if (zipEntry.getSize() == -1) {
+                            log.error("我们不知道文件大小，无法提供进度条!");
+                            IOUtils.copy(is,os);
+                        } else
+                            ProgressBarUtils.copyStream("解压 JavaIM 更新包", zipEntry.getSize(), is, os);
                     }
 
                     log.info("更新完成!");
