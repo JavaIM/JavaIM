@@ -391,7 +391,10 @@ public class CheckUpdate {
                     ZipEntry zipEntry = enumeration.nextElement();
                     if (!zipEntry.getName().contains("SNAPSHOT"))
                         continue;
-                    try (InputStream is = zipFile.getInputStream(zipEntry); DataOutputStream os = new DataOutputStream(new FileOutputStream(downloadTo)))  {
+
+                    File file = File.createTempFile("JavaIMUpdate",".jar");
+                    file.deleteOnExit();
+                    try (InputStream is = zipFile.getInputStream(zipEntry); DataOutputStream os = new DataOutputStream(new FileOutputStream(file)))  {
                         if (zipEntry.getSize() == -1) {
                             log.error("我们不知道文件大小，无法提供进度条!");
                             IOUtils.copy(is,os);
@@ -399,8 +402,16 @@ public class CheckUpdate {
                             ProgressBarUtils.copyStream("解压 JavaIM 更新包", zipEntry.getSize(), is, os);
                     }
 
-                    log.info("更新完成!");
-                    log.info("即将关闭JVM...");
+                    try (InputStream is = new FileInputStream(file); OutputStream os = new FileOutputStream(downloadTo)) {
+                        byte[] buffer = new byte[4096];
+                        int length;
+                        while ((length = is.read(buffer)) != -1) {
+                            os.write(buffer, 0, length);
+                        }
+                    }
+
+                    System.out.println("更新完成!");
+                    System.out.println("即将关闭JVM...");
                     System.exit(0);
                 }
             }

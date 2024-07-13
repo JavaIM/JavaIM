@@ -144,17 +144,18 @@ public class Main {
             checkUpdate = Boolean.parseBoolean(commandLineArgs.get("checkUpdate"));
         }
 
-        if (!commandLineArgs.containsKey("installUpdate")) {
-            log.info("是否允许自动安装更新?(Y/N)");
-            installUpdate = "Y".equals(
-                    reader.readLine(">").toUpperCase(Locale.ROOT)
-            );
-        } else {
-            installUpdate = Boolean.parseBoolean(commandLineArgs.get("installUpdate"));
-        }
+        if (checkUpdate) {
+            if (!commandLineArgs.containsKey("installUpdate")) {
+                log.info("是否允许自动安装更新?(Y/N)");
+                installUpdate = "Y".equals(
+                        reader.readLine(">").toUpperCase(Locale.ROOT)
+                );
+            } else {
+                installUpdate = Boolean.parseBoolean(commandLineArgs.get("installUpdate"));
+            }
 
-        if (checkUpdate)
-            CheckUpdate.checkUpdate(installUpdate,commandLineArgs.getOrDefault("githubAccessToken", ""));
+            CheckUpdate.checkUpdate(installUpdate, commandLineArgs.getOrDefault("githubAccessToken", ""));
+        }
         // 启动JavaIM启动逻辑
         ConsoleMain(commandLineArgs, reader);
     }
