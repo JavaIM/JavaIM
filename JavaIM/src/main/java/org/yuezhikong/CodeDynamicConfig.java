@@ -29,6 +29,9 @@ public final class CodeDynamicConfig {
     //本程序版本：
     @Getter
     private static final String Version = "InDev";
+    // 多线程下载分片数量
+    @Getter
+    private final static int DownloadParts = Runtime.getRuntime().availableProcessors();
 
     //服务器名
     @Getter
