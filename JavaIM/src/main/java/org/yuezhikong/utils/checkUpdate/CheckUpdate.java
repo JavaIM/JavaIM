@@ -383,6 +383,8 @@ public class CheckUpdate {
                 });
                 if (stop.get())
                     return;
+
+                threadPool.shutdown();
             }
             log.info("正在解压缩...");
             try (ZipFile zipFile = new ZipFile(tmpZipFile)) {
