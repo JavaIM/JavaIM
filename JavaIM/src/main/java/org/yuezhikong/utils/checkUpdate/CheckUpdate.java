@@ -6,8 +6,8 @@ import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.io.IOUtils;
-import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.CodeDynamicConfig;
+import org.jetbrains.annotations.Nullable;
+import org.yuezhikong.utils.MultiThreadDownloadManager;
 import org.yuezhikong.utils.ProgressBarUtils;
 import org.yuezhikong.utils.checkUpdate.oauth.GitHubDeviceCodeAPI;
 import org.yuezhikong.utils.checkUpdate.oauth.GitHubOAuthAccessTokenAPI;
@@ -23,14 +23,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -297,95 +291,16 @@ public class CheckUpdate {
 
             // 请求 302 得到的位置，下载文件
             log.info("正在下载新版本文件...");
-            HttpResponse<InputStream> response = httpClient.send(HttpRequest.newBuilder(URI.create(redirectLocation.get()))
-                    .header("Accept","*/*")
-                    .header("User-Agent","JavaIM updateHelper")
-                    .timeout(Duration.ofMinutes(10))
-                    .build(), HttpResponse.BodyHandlers.ofInputStream()
-            );
             File tmpZipFile = File.createTempFile("JavaIMUpdate", ".zip");
             tmpZipFile.deleteOnExit();
-            long fileSize = response.headers().firstValue("Content-Length").map(Long::parseLong).orElse(-1L);
-            String acceptRangeMode = response.headers().firstValue("Accept-Ranges").orElse("none");
-            if (acceptRangeMode.equals("none"))
-                // 如果 GitHub 禁止了分片下载，恢复传统单线程下载(应该不会发生,仅作为fallback)
-                try (InputStream is = response.body(); DataOutputStream os = new DataOutputStream(new FileOutputStream(tmpZipFile))) {
-                    if (fileSize == -1) {
-                        log.error("远程服务器未返回 Content-Length，无法判断文件大小，无法提供进度条!");
-                        IOUtils.copy(is,os);
-                    } else
-                        ProgressBarUtils.copyStream("下载 JavaIM 更新包", fileSize, is, os);
-                }
-            // 支持的情况下，使用多线程下载
-            else try (ProgressBar progressBar = new ProgressBar("下载 JavaIM 更新包", fileSize))  {
-                if (!acceptRangeMode.equals("bytes"))
-                    log.warn("GitHub 返回支持分片下载，但类型并非bytes，而是{}，在这种情况下，多线程下载可能不可靠!", acceptRangeMode);
-                ExecutorService threadPool = Executors.newFixedThreadPool(CodeDynamicConfig.getDownloadParts(), new ThreadFactory() {
-                    private final AtomicInteger threadNumber = new AtomicInteger(1);
-                    @Override
-                    public Thread newThread(@NotNull Runnable r) {
-                        return new Thread(new ThreadGroup("CheckUpdateThreadPool"),
-                                r,"Download File Thread #"+threadNumber.getAndIncrement());
-                    }
-                });
-
-                List<Future<Boolean>> futures = new ArrayList<>();
-                // 计算每个部分的大小
-                long partSize = fileSize / CodeDynamicConfig.getDownloadParts();
-                long remainingBytes = fileSize % CodeDynamicConfig.getDownloadParts();
-
-                for (int i = 0; i < CodeDynamicConfig.getDownloadParts(); i++) {
-                    // 计算当前部分的起始和结束字节
-                    long start = i * partSize;
-                    long end = (i == CodeDynamicConfig.getDownloadParts() - 1) ? fileSize - 1 : start + partSize - 1;
-
-                    // 如果当前部分不是最后一部分，并且剩余字节大于0，将部分大小增加1，直到剩余字节为0
-                    if (i < remainingBytes && i < CodeDynamicConfig.getDownloadParts() - 1) {
-                        end++;
-                        remainingBytes--;
-                    }
-
-                    // 创建下载任务
-                    long finalEnd = end;
-                    futures.add(threadPool.submit(() -> {
-                        HttpResponse<InputStream> responsePart = httpClient.send(HttpRequest.newBuilder(URI.create(redirectLocation.get()))
-                                .header("Accept","*/*")
-                                .header("User-Agent","JavaIM updateHelper")
-                                .header("Range",String.format("%s=%d-%d",acceptRangeMode, start, finalEnd))
-                                .timeout(Duration.ofMinutes(10))
-                                .build(), HttpResponse.BodyHandlers.ofInputStream()
-                        );
-                        if (responsePart.statusCode() != 206) {
-                            return Boolean.FALSE;
-                        }
-
-                        try (InputStream partIs = responsePart.body();
-                             RandomAccessFile raf = new RandomAccessFile(tmpZipFile, "rw")
-                        ) {
-                            raf.seek(start);
-                            ProgressBarUtils.copyStreamAndUpdateProgressBar(progressBar, partIs, raf);
-                        }
-                        return Boolean.TRUE;
-                    }));
-                }
-
-                AtomicBoolean stop = new AtomicBoolean(false);
-                futures.forEach((future) -> {
-                    try {
-                        if (!future.get() && !stop.get()) {
-                            log.error("下载文件失败!");
-                            log.error("有一个或多个分片的返回不为206!");
-                            stop.set(true);
-                        }
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException("Download File Error",e);
-                    }
-                });
-                if (stop.get())
-                    return;
-
-                threadPool.shutdown();
-            }
+            if (!ProgressBarUtils.downloadFile(
+                    "下载 JavaIM 更新包"
+                    ,HttpRequest.newBuilder(URI.create(redirectLocation.get()))
+                            .header("Accept","*/*")
+                            .header("User-Agent","JavaIM updateHelper")
+                            .timeout(Duration.ofMinutes(10))
+                    , tmpZipFile))
+                return;
             log.info("正在解压缩...");
             try (ZipFile zipFile = new ZipFile(tmpZipFile)) {
                 Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
