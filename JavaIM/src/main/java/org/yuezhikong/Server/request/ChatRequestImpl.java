@@ -52,20 +52,21 @@ public class ChatRequestImpl implements ChatRequest {
     }
 
     public ChatRequestImpl() {
-        registerCommand0(new CommandInformation(null,new InternalCommands.AboutCommand(),"about"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.HelpCommand(),"help"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.ListCommand(),"list"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.TellCommand(),"tell"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.OpCommand(),"op"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.DeopCommand(),"deop"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.BanCommand(),"ban"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.UnbanCommand(),"unban"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.QuitCommand(),"quit"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.ChangePasswordCommand(),"change-password"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.KickCommand(),"kick"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.GetUploadFilesCommand(),"getUploadFiles"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.RunGCCommand(),"runGC"));
-        registerCommand0(new CommandInformation(null,new InternalCommands.DeleteFileByFileIdCommand(),"deleteFileByFileId"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.AboutCommand(), "about"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.CrashCommand(), "crash"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.HelpCommand(), "help"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.ListCommand(), "list"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.TellCommand(), "tell"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.OpCommand(), "op"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.DeopCommand(), "deop"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.BanCommand(), "ban"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.UnbanCommand(), "unban"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.QuitCommand(), "quit"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.ChangePasswordCommand(), "change-password"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.KickCommand(), "kick"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.GetUploadFilesCommand(), "getUploadFiles"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.RunGCCommand(), "runGC"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.DeleteFileByFileIdCommand(), "deleteFileByFileId"));
     }
 
     @Override

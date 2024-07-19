@@ -56,18 +56,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class Server implements IServer{
 
     /**
-     * 用户消息处理线程池
-     */
-    private final ExecutorService userMessageRequestThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
-        private final AtomicInteger threadNumber = new AtomicInteger(1);
-        @Override
-        public Thread newThread(@NotNull Runnable r) {
-            return new Thread(new ThreadGroup("UserThreadPool"),
-                    r,"Message Request Thread #"+threadNumber.getAndIncrement());
-        }
-    });
-
-    /**
      * 用户列表
      */
     private final List<user> users = new CopyOnWriteArrayList<>();
@@ -314,7 +302,6 @@ public final class Server implements IServer{
         try {
             pluginManager.unloadAllPlugin();
         } catch (Throwable ignored) {}
-        userMessageRequestThreadPool.shutdownNow();
         System.gc();
         getNetwork().stop();
         Instance = null;

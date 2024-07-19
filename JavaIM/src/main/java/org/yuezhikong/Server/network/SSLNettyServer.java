@@ -116,8 +116,10 @@ public class SSLNettyServer implements NetworkServer {
                 private final AtomicInteger threadNumber = new AtomicInteger(1);
                 @Override
                 public Thread newThread(@NotNull Runnable r) {
-                    return new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
+                    Thread t = new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
                             r,"Recv Message Thread #"+threadNumber.getAndIncrement());
+                    t.setUncaughtExceptionHandler(null);
+                    return t;
                 }
             });
             return new NettyThreadPoolTaskReturn(bossGroup, workerGroup, RecvMessageThreadPool);

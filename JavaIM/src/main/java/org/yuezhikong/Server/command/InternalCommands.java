@@ -7,6 +7,7 @@ import org.jline.reader.Candidate;
 import org.jline.reader.LineReader;
 import org.jline.reader.ParsedLine;
 import org.jline.reader.impl.completer.NullCompleter;
+import org.yuezhikong.CrashReport;
 import org.yuezhikong.Main;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
@@ -64,6 +65,45 @@ public class InternalCommands {
         @Override
         public String getUsage() {
             return "/about";
+        }
+
+        @Override
+        public boolean isAllowBroadcastCommandRunning() {
+            return true;
+        }
+    }
+    public static class CrashCommand implements Command {
+
+        @Override
+        public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
+            new Completers.TreeCompleter(
+                    node("/crash",
+                            node(NullCompleter.INSTANCE)
+                    )
+            ).complete(reader, line, candidates);
+        }
+
+        @Override
+        public boolean execute(String command, String[] args, user User) {
+            if (args.length != 0)
+                return false;
+            api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
+            if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
+                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                return true;
+            }
+            CrashReport.crashReport("手动崩溃", new RuntimeException("Manual crash"), Thread.currentThread());
+            return true;
+        }
+
+        @Override
+        public String getDescription() {
+            return "崩溃服务端";
+        }
+
+        @Override
+        public String getUsage() {
+            return "/crash";
         }
 
         @Override

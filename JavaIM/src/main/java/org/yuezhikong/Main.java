@@ -88,7 +88,6 @@ public class Main {
             {
                 @Override
                 public void run() {
-                    this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
                     new Server().start(ServerPort);
                 }
                 public Thread start2()
@@ -106,6 +105,7 @@ public class Main {
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler(CrashReport.getCrashReport());
         new Notice();
         // 初始化Shutdown Hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
