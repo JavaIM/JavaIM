@@ -1,10 +1,12 @@
 # JavaIM
 
-[![status](https://img.shields.io/github/actions/workflow/status/JavaIM/JavaIM/buildandcodeql.yml?style=for-the-badge)](https://github.com/JavaIM/JavaIM/actions)
-[
-![Latest Tag](https://img.shields.io/github/v/tag/JavaIM/JavaIM?label=LATEST%20TAG&style=for-the-badge)
-![GitHub Releases (by Asset)](https://img.shields.io/github/downloads/JavaIM/JavaIM/latest/total?style=for-the-badge)
-](https://github.com/JavaIM/JavaIM/releases/latest)  
+
+[![GPL 3.0](https://img.shields.io/github/license/JavaIM/JavaIM?logo=github)](LICENSE)
+[![Actions CI](https://github.com/JavaIM/JavaIM/actions/workflows/buildandcodeql.yml/badge.svg)](https://github.com/JavaIM/JavaIM/actions)
+[![Latest Tag](https://img.shields.io/github/v/tag/JavaIM/JavaIM?logo=github)](https://github.com/JavaIM/JavaIM/releases/latest)  
+
+![Java 17](https://img.shields.io/badge/Java-17-orange)
+[![CodeFactor](https://www.codefactor.io/repository/github/JavaIM/JavaIM/badge)](https://www.codefactor.io/repository/github/JavaIM/JavaIM)
 
 > 注意： JavaIM仍然处于开发阶段，不能保证通信的安全性。
 
