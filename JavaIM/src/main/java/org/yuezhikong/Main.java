@@ -28,12 +28,13 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.utils.checkUpdate.CheckUpdate;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.ConsoleCommandRequest;
 import org.yuezhikong.utils.Notice;
+import org.yuezhikong.utils.checkUpdate.CheckUpdate;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.security.Security;
 import java.util.Locale;
 import java.util.Map;
@@ -43,6 +44,7 @@ public class Main {
     private final static Logger log;
     @Getter
     private final static Terminal terminal;
+
     static {
         System.out.println("正在初始化JavaIM...");
         // Slf4j Logger加载
@@ -58,8 +60,7 @@ public class Main {
             if (System.console() != null) {
                 AnsiConsole.systemInstall();
                 terminal1 = AnsiConsole.getTerminal();
-            }
-            else
+            } else
                 terminal1 = TerminalBuilder.builder().system(true).exec(false).ffm(false).jna(false).dumb(true).build();
         } catch (IOException e) {
             terminal1 = null;
@@ -69,38 +70,37 @@ public class Main {
         terminal = terminal1;
     }
 
-    public static void ConsoleMain(Map<String,String> commandLineArgs, LineReader lineReader)
-    {
+    public static void ConsoleMain(Map<String, String> commandLineArgs, LineReader lineReader) {
         log.info("欢迎来到JavaIM！版本：{}", CodeDynamicConfig.getVersion());
         log.info("正在启动服务端...");
 
-        int ServerPort;
+        int serverPort;
         if (!commandLineArgs.containsKey("bindPort")) {
             log.info("请输入绑定的端口");
-            ServerPort = Integer.parseInt(
+            serverPort = Integer.parseInt(
                     lineReader.readLine(">")
             );
         } else
-            ServerPort = Integer.parseInt(commandLineArgs.get("bindPort"));
-        ThreadGroup ServerGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ServerGroup");
+            serverPort = Integer.parseInt(commandLineArgs.get("bindPort"));
+        ThreadGroup serverGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(), "serverGroup");
         try {
-            new Thread(ServerGroup,"Server Thread")
-            {
+            new Thread(serverGroup, "Server Thread") {
                 @Override
                 public void run() {
-                    new Server().start(ServerPort);
+                    new Server().start(serverPort);
                 }
-                public Thread start2()
-                {
+
+                public Thread start2() {
                     start();
                     return this;
                 }
             }.start2().join();
         } catch (InterruptedException e) {
-            log.error("出现错误!",e);
+            log.error("出现错误!", e);
         }
         System.exit(0);
     }
+
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
@@ -116,7 +116,8 @@ public class Main {
                     ServerTools.getServerInstance().stop();
                 } catch (IllegalStateException ignored) {
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {
+            }
         }));
         // 初始化BouncyCastle，设置为JCE Provider
         Security.addProvider(new BouncyCastleProvider());
@@ -125,14 +126,14 @@ public class Main {
         // 初始化 LineReader
         LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
         // 服务端配置文件初始化
-        if (!(new File("server.properties").exists())){
+        if (!(new File("server.properties").exists())) {
             log.info("目录下没有检测到服务端配置文件，判断为第一次进入");
             ConfigFileManager.createServerConfig();
             firstStart(reader);
         } else
             ConfigFileManager.reloadServerConfig();
         // 命令行参数处理
-        Map<String,String> commandLineArgs = ConsoleCommandRequest.commandLineRequest(args);
+        Map<String, String> commandLineArgs = ConsoleCommandRequest.commandLineRequest(args);
         // 自动更新
         boolean checkUpdate, installUpdate;
         if (!commandLineArgs.containsKey("checkUpdate")) {
@@ -162,6 +163,7 @@ public class Main {
 
     /**
      * 首次启动 JavaIM 时的向导
+     *
      * @param reader LineReader
      */
     private static void firstStart(LineReader reader) {
@@ -169,30 +171,30 @@ public class Main {
         if (!"Y".equals(reader.readLine(">").toUpperCase(Locale.ROOT)))
             return;
         log.info("请设置服务器名称");
-        ConfigFileManager.setServerConfig("serverName",reader.readLine("服务器名称>"));
+        ConfigFileManager.setServerConfig("serverName", reader.readLine("服务器名称>"));
         log.info("是否使用sqlite(Y/N)");
         if ("Y".equals(reader.readLine("是否使用sqlite>").toUpperCase(Locale.ROOT))) {
-            ConfigFileManager.setServerConfig("sqlite","true");
-            ConfigFileManager.setServerConfig("mysqlHost","");
-            ConfigFileManager.setServerConfig("mysqlPort","");
-            ConfigFileManager.setServerConfig("mysqlDBName","");
-            ConfigFileManager.setServerConfig("mysqlUser","");
-            ConfigFileManager.setServerConfig("mysqlPasswd","");
+            ConfigFileManager.setServerConfig("sqlite", "true");
+            ConfigFileManager.setServerConfig("mysqlHost", "");
+            ConfigFileManager.setServerConfig("mysqlPort", "");
+            ConfigFileManager.setServerConfig("mysqlDBName", "");
+            ConfigFileManager.setServerConfig("mysqlUser", "");
+            ConfigFileManager.setServerConfig("mysqlPasswd", "");
             log.info("正在保存您的配置...");
             ConfigFileManager.rewriteServerConfig();
             log.info("设置向导成功完成!");
             return;
         }
         log.info("请设置 mysql 地址");
-        ConfigFileManager.setServerConfig("mysqlHost",reader.readLine("mysql地址>"));
+        ConfigFileManager.setServerConfig("mysqlHost", reader.readLine("mysql地址>"));
         log.info("请设置 mysql 端口");
-        ConfigFileManager.setServerConfig("mysqlPort",reader.readLine("mysql端口>"));
+        ConfigFileManager.setServerConfig("mysqlPort", reader.readLine("mysql端口>"));
         log.info("请设置 mysql 数据库名称");
-        ConfigFileManager.setServerConfig("mysqlDBName",reader.readLine("mysql数据库名称>"));
+        ConfigFileManager.setServerConfig("mysqlDBName", reader.readLine("mysql数据库名称>"));
         log.info("请设置 mysql 登录用户");
-        ConfigFileManager.setServerConfig("mysqlUser",reader.readLine("mysql登录用户>"));
+        ConfigFileManager.setServerConfig("mysqlUser", reader.readLine("mysql登录用户>"));
         log.info("请设置 mysql 登录密码");
-        ConfigFileManager.setServerConfig("mysqlPasswd",reader.readLine("mysql登录密码>"));
+        ConfigFileManager.setServerConfig("mysqlPasswd", reader.readLine("mysql登录密码>"));
         log.info("正在保存您的配置...");
         ConfigFileManager.rewriteServerConfig();
         log.info("设置向导成功完成!");

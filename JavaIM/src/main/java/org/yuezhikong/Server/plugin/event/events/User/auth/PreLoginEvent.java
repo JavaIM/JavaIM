@@ -41,8 +41,7 @@ public class PreLoginEvent implements Event, Cancellable {
         Cancel = cancelled;
     }
 
-    public PreLoginEvent(String UserName,boolean TokenLogin)
-    {
+    public PreLoginEvent(String UserName, boolean TokenLogin) {
         this.UserName = UserName;
         this.TokenLogin = TokenLogin;
     }

@@ -22,7 +22,6 @@ import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.request.ChatRequest;
-import org.yuezhikong.Server.request.ChatRequestImpl;
 import org.yuezhikong.utils.logging.CustomLogger;
 
 import java.util.List;
@@ -33,6 +32,7 @@ public interface IServer {
 
     /**
      * 获取IO线程池
+     *
      * @return IO线程池
      */
     @SuppressWarnings("unused")
@@ -40,12 +40,14 @@ public interface IServer {
 
     /**
      * 获取用户列表
+     *
      * @return 包含所有用户的列表
      */
     List<user> getUsers();
 
     /**
      * 将一个用户注册到Users
+     *
      * @param User 用户
      * @return 是否成功注册(失败一般是因为同用户名的用户已经登录
      */
@@ -53,45 +55,52 @@ public interface IServer {
 
     /**
      * 取消注册一个用户
+     *
      * @param User 用户
      */
     void UnRegisterUser(user User);
 
     /**
      * 获取聊天处理器
+     *
      * @return 聊天处理器
      */
     ChatRequest getRequest();
 
     /**
      * 获取控制台用户
+     *
      * @return 控制台用户，此用户的操作将被视为为控制台操作
      */
     user getConsoleUser();
 
     /**
      * 获取插件管理器
+     *
      * @return 插件管理器
      */
     PluginManager getPluginManager();
 
     /**
      * 获取服务端API
+     *
      * @return 服务端API
      */
     api getServerAPI();
 
     /**
      * 获取Logger
+     *
      * @return Logger
-     * @deprecated 请使用Slf4j获取Logger
      * @see org.slf4j.LoggerFactory#getLogger(Class)
+     * @deprecated 请使用Slf4j获取Logger
      */
-    @Deprecated(since="1.4", forRemoval = true)
+    @Deprecated(since = "1.4", forRemoval = true)
     CustomLogger getLogger();
 
     /**
      * 获取Mybatis SQL会话
+     *
      * @return SQL会话
      */
     SqlSession getSqlSession();
@@ -114,6 +123,7 @@ public interface IServer {
 
     /**
      * 服务器是否启动完成
+     *
      * @return 是/否
      */
     boolean isServerCompleateStart();

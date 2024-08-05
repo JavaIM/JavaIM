@@ -30,7 +30,7 @@ final class JavaIMCompleter implements Completer {
             try {
                 info.commandInstance().complete(reader, line, candidates);
             } catch (Throwable t) {
-                log.error("在处理指令自动补全时出现错误!",t);
+                log.error("在处理指令自动补全时出现错误!", t);
             }
         });
     }

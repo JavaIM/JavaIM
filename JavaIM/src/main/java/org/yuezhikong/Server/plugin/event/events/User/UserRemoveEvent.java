@@ -7,8 +7,8 @@ import org.yuezhikong.Server.plugin.event.events.Event;
 @Getter
 public class UserRemoveEvent implements Event {
     private final user User;
-    public UserRemoveEvent(user User)
-    {
+
+    public UserRemoveEvent(user User) {
         this.User = User;
     }
 }

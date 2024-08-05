@@ -16,8 +16,8 @@ public class UserCommandEvent implements Event, Cancellable {
     private final String command;
     @Getter
     private final String[] args;
-    public UserCommandEvent(user UserData, String command, String[] args)
-    {
+
+    public UserCommandEvent(user UserData, String command, String[] args) {
         this.UserData = UserData;
         this.command = command;
         this.args = args;

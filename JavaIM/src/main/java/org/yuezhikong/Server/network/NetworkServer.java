@@ -14,18 +14,21 @@ public interface NetworkServer {
     interface NetworkClient {
         /**
          * 获取客户端的IP地址
+         *
          * @return IP地址
          */
         SocketAddress getSocketAddress();
 
         /**
          * 发信给此客户端
+         *
          * @throws IllegalStateException 客户端已断开连接
          */
         void send(String message) throws IllegalStateException;
 
         /**
          * 是否在线
+         *
          * @return 是否在线
          */
         boolean isOnline();
@@ -43,7 +46,8 @@ public interface NetworkServer {
 
     /**
      * 启动服务器
-     * @param ListenPort 监听端口
+     *
+     * @param ListenPort        监听端口
      * @param StartUpThreadPool 用于启动网络层的线程池
      * @throws IllegalStateException 服务器已经启动
      * @apiNote 堵塞函数
@@ -62,12 +66,14 @@ public interface NetworkServer {
 
     /**
      * 关闭服务器
+     *
      * @throws IllegalStateException 服务器未启动
      */
     void stop() throws IllegalStateException;
 
     /**
      * 获取网络层IO线程池
+     *
      * @return IO线程池
      */
     ExecutorService getIOThreadPool();

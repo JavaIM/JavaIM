@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 
 public class SLF4JServiceProvider extends org.apache.logging.slf4j.SLF4JServiceProvider {
     private ILoggerFactory loggerFactory;
+
     @Override
     public ILoggerFactory getLoggerFactory() {
         return loggerFactory;
@@ -19,7 +20,7 @@ public class SLF4JServiceProvider extends org.apache.logging.slf4j.SLF4JServiceP
         super.initialize();
         IMarkerFactory markerFactory = super.getMarkerFactory();
         if (!(markerFactory instanceof Log4jMarkerFactory))
-            throw new IllegalStateException("can not support "+markerFactory.getClass().getName()+" only support Log4jMarkerFactory");
+            throw new IllegalStateException("can not support " + markerFactory.getClass().getName() + " only support Log4jMarkerFactory");
         loggerFactory = new JavaIMLoggerFactory((Log4jMarkerFactory) markerFactory);
     }
 

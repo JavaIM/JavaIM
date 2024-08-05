@@ -13,13 +13,14 @@ public class UserChatEvent implements Event, Cancellable {
     private final user UserData;
     @Getter
     private final String ChatMessage;
-    public UserChatEvent(user UserData, String ChatMessage)
-    {
+
+    public UserChatEvent(user UserData, String ChatMessage) {
         this.UserData = UserData;
         this.ChatMessage = ChatMessage;
     }
 
     private boolean cancel = false;
+
     @Override
     public boolean isCancelled() {
         return cancel;

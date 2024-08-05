@@ -31,23 +31,23 @@ import java.util.Map;
 public class ConsoleCommandRequest {
     /**
      * 解析并处理控制台命令
+     *
      * @param args 命令行参数
      */
     // Map为控制台命令行的option与参数
-    public static Map<String,String> commandLineRequest(String[] args)
-    {
+    public static Map<String, String> commandLineRequest(String[] args) {
         // 命令行解析器
         CommandLineParser parser = new DefaultParser();
         // 命令行选项声明
         Options options = new Options();
         options.addOption("h", "help", false, "显示帮助信息");
         options.addOption("v", "version", false, "显示版本信息");
-        options.addOption("p","bindPort", true, "设置服务器绑定的端口");
-        options.addOption("cu","checkUpdate", true, "是否允许检查更新");
-        options.addOption("iu","installUpdate", true, "是否允许自动安装更新");
-        options.addOption("ga","githubAccessToken",true,"设置GitHub的Access Token");
+        options.addOption("p", "bindPort", true, "设置服务器绑定的端口");
+        options.addOption("cu", "checkUpdate", true, "是否允许检查更新");
+        options.addOption("iu", "installUpdate", true, "是否允许自动安装更新");
+        options.addOption("ga", "githubAccessToken", true, "设置GitHub的Access Token");
 
-        HashMap<String,String> commandLineMap = new HashMap<>();
+        HashMap<String, String> commandLineMap = new HashMap<>();
         String mainFileName = new File(ConsoleCommandRequest.class.getProtectionDomain().getCodeSource().getLocation().getFile()).getName();
         try {
             CommandLine cmd = parser.parse(options, args);
@@ -60,7 +60,7 @@ public class ConsoleCommandRequest {
                 formatter.printHelp(
                         pw,
                         formatter.getWidth(),
-                        "java -jar "+mainFileName,
+                        "java -jar " + mainFileName,
                         null,
                         options, formatter.getLeftPadding(),
                         formatter.getDescPadding(),
@@ -90,7 +90,7 @@ public class ConsoleCommandRequest {
 
             if (cmd.hasOption("cu")) {
                 String optionValue = cmd.getOptionValue("cu");
-                if (!optionValue.equals("true") && ! optionValue.equals("false"))
+                if (!optionValue.equals("true") && !optionValue.equals("false"))
                     commandLineCheckFailed();
                 commandLineMap.put("checkUpdate", optionValue);
             }
@@ -102,7 +102,7 @@ public class ConsoleCommandRequest {
 
             if (cmd.hasOption("iu")) {
                 String optionValue = cmd.getOptionValue("iu");
-                if (!optionValue.equals("true") && ! optionValue.equals("false"))
+                if (!optionValue.equals("true") && !optionValue.equals("false"))
                     commandLineCheckFailed();
                 commandLineMap.put("installUpdate", optionValue);
             }

@@ -19,7 +19,8 @@ package org.yuezhikong.utils.Protocol;
 import lombok.Data;
 
 @Data
-public class LoginProtocol { private LoginPacketHeadBean LoginPacketHead;
+public class LoginProtocol {
+    private LoginPacketHeadBean LoginPacketHead;
     private LoginPacketBodyBean LoginPacketBody;
 
     @Data

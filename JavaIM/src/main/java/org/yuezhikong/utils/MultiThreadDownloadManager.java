@@ -8,11 +8,9 @@ import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.CodeDynamicConfig;
 
 import java.io.*;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -24,27 +22,30 @@ public class MultiThreadDownloadManager implements AutoCloseable {
 
     private final ExecutorService threadPool = Executors.newFixedThreadPool(CodeDynamicConfig.getDownloadParts(), new ThreadFactory() {
         private final AtomicInteger threadNumber = new AtomicInteger(1);
+
         @Override
         public Thread newThread(@NotNull Runnable r) {
             return new Thread(new ThreadGroup("CheckUpdateThreadPool"),
-                    r,"Download File Thread #"+threadNumber.getAndIncrement());
+                    r, "Download File Thread #" + threadNumber.getAndIncrement());
         }
     });
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private volatile boolean canAddNewDownload = true;
+
     /**
      * 复制流到文件
-     * @param ignoredBuilder    用于给子类提供的来源标识
-     * @param is                输入流
-     * @param dataOutput        数据输出
-     * @apiNote fileSize当服务器响应中 Content-Length Header不存在时，输入null
+     *
+     * @param ignoredBuilder 用于给子类提供的来源标识
+     * @param is             输入流
+     * @param dataOutput     数据输出
      * @return 复制是否成功
+     * @apiNote fileSize当服务器响应中 Content-Length Header不存在时，输入null
      */
     protected boolean copyStreamToFile(HttpRequest.Builder ignoredBuilder,
-                                    InputStream is,
-                                    DataOutput dataOutput
+                                       InputStream is,
+                                       DataOutput dataOutput
     ) throws IOException {
         byte[] buffer = new byte[4096];
         int length;
@@ -56,30 +57,35 @@ public class MultiThreadDownloadManager implements AutoCloseable {
 
     /**
      * 当初始化下载时
-     * @param requestBuilder        http请求
-     * @param fileSize              文件长度
-     * @param singleThread          是否是单线程
+     *
+     * @param requestBuilder http请求
+     * @param fileSize       文件长度
+     * @param singleThread   是否是单线程
      * @apiNote 用于提供给子类的API
      */
     protected void onDownloadInit(HttpRequest.Builder requestBuilder,
                                   @Nullable Long fileSize,
-                                  boolean singleThread) {}
+                                  boolean singleThread) {
+    }
 
     /**
      * 当下载结束时
-     * @param requestBuilder    http请求
+     *
+     * @param requestBuilder http请求
      * @apiNote 用于提供给子类的API
      */
-    protected void onDownloadComplete(HttpRequest.Builder requestBuilder) {}
+    protected void onDownloadComplete(HttpRequest.Builder requestBuilder) {
+    }
 
     /**
      * 多线程下载文件
-     * @param requestBuilder            http请求
-     * @param file                      下载到的文件
-     * @throws IllegalStateException    下载器已经被关闭
-     * @throws IOException              IO错误
-     * @throws InterruptedException     线程被中断
+     *
+     * @param requestBuilder http请求
+     * @param file           下载到的文件
      * @return 下载是否完成
+     * @throws IllegalStateException 下载器已经被关闭
+     * @throws IOException           IO错误
+     * @throws InterruptedException  线程被中断
      */
     @Contract(pure = true)
     public final boolean downloadFile(HttpRequest.Builder requestBuilder, File file) throws IllegalStateException, IOException, InterruptedException {
@@ -103,11 +109,12 @@ public class MultiThreadDownloadManager implements AutoCloseable {
 
     /**
      * 开始多线程下载文件
-     * @param requestBuilder        http请求
-     * @param file                  下载到的文件
+     *
+     * @param requestBuilder http请求
+     * @param file           下载到的文件
+     * @return 下载是否成功
      * @throws IOException          IO错误
      * @throws InterruptedException 线程被中断
-     * @return 下载是否成功
      */
     @Contract(pure = true)
     private boolean beginDownload(HttpRequest.Builder requestBuilder, File file) throws IOException, InterruptedException {
@@ -117,16 +124,16 @@ public class MultiThreadDownloadManager implements AutoCloseable {
 
         if (fileSize == -1) {
             log.info("服务器返回的 Content-Length Header不存在，将使用单线程下载");
-            onDownloadInit(requestBuilder, null,true);
-            return copyStreamToFile(requestBuilder,response.body(), new DataOutputStream(new FileOutputStream(file)));
+            onDownloadInit(requestBuilder, null, true);
+            return copyStreamToFile(requestBuilder, response.body(), new DataOutputStream(new FileOutputStream(file)));
         }
         if (!acceptRangeMode.equals("bytes")) {
             log.info("服务器返回不允许/不受支持的分片加载类型，将使用单线程下载");
-            onDownloadInit(requestBuilder, fileSize,true);
-            return copyStreamToFile(requestBuilder,response.body(), new DataOutputStream(new FileOutputStream(file)));
+            onDownloadInit(requestBuilder, fileSize, true);
+            return copyStreamToFile(requestBuilder, response.body(), new DataOutputStream(new FileOutputStream(file)));
         }
 
-        onDownloadInit(requestBuilder, fileSize,false);
+        onDownloadInit(requestBuilder, fileSize, false);
         List<Future<Boolean>> futures = new ArrayList<>();
         // 计算每个部分的大小
         long partSize = fileSize / CodeDynamicConfig.getDownloadParts();
@@ -148,8 +155,8 @@ public class MultiThreadDownloadManager implements AutoCloseable {
             futures.add(threadPool.submit(() -> {
                 HttpResponse<InputStream> responsePart = httpClient.send(
                         requestBuilder.copy()
-                        .header("Range",String.format("%s=%d-%d",acceptRangeMode, start, finalEnd))
-                        .build(), HttpResponse.BodyHandlers.ofInputStream()
+                                .header("Range", String.format("%s=%d-%d", acceptRangeMode, start, finalEnd))
+                                .build(), HttpResponse.BodyHandlers.ofInputStream()
                 );
                 if (responsePart.statusCode() != 206) {
                     return Boolean.FALSE;
@@ -159,7 +166,7 @@ public class MultiThreadDownloadManager implements AutoCloseable {
                      RandomAccessFile raf = new RandomAccessFile(file, "rw")
                 ) {
                     raf.seek(start);
-                    copyStreamToFile(requestBuilder,partIs, raf);
+                    copyStreamToFile(requestBuilder, partIs, raf);
                 }
                 return Boolean.TRUE;
             }));
@@ -174,7 +181,7 @@ public class MultiThreadDownloadManager implements AutoCloseable {
                     success.set(false);
                 }
             } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException("Download File Error",e);
+                throw new RuntimeException("Download File Error", e);
             }
         });
         return success.get();

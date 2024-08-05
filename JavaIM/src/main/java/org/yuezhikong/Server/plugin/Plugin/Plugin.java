@@ -21,6 +21,7 @@ import org.yuezhikong.Server.plugin.event.events.Server.ServerStartSuccessfulEve
 public interface Plugin {
     /**
      * 当被加载时
+     *
      * @apiNote 警告，此阶段与数据库连接，网络层监听处理等<b>并行</b>,请勿在此阶段操作网络、数据库等IO,如果确实需要操作，请在<code>ServerStartSuccessfulEvent</code>操作
      * @see ServerStartSuccessfulEvent
      */
@@ -28,10 +29,14 @@ public interface Plugin {
 
     /**
      * 当预加载时
+     *
      * @apiNote 警告，此阶段
      */
     void onPreload();
+
     void setPluginData(PluginData pluginData);
+
     PluginData getPluginData();
+
     void onUnload();
 }

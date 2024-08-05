@@ -35,7 +35,7 @@ public final class CodeDynamicConfig {
 
     //服务器名
     @Getter
-    private final static String ServerName = getServerConfig("serverName","A JavaIM Server");
+    private final static String ServerName = getServerConfig("serverName", "A JavaIM Server");
     //是否使用SQLITE
     @Getter
     private final static boolean Use_SQLITE_Mode = Boolean.parseBoolean(getServerConfig("sqlite"));
@@ -54,8 +54,10 @@ public final class CodeDynamicConfig {
     //MySQL数据库密码
     @Getter
     private final static String MySQLDataBasePasswd = getServerConfig("mysqlPasswd");
+
     /**
      * Static Config不得被实例化
      */
-    private CodeDynamicConfig() {}
+    private CodeDynamicConfig() {
+    }
 }

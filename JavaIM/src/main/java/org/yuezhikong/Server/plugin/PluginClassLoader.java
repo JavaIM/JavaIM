@@ -8,29 +8,28 @@ import java.net.URLClassLoader;
 public class PluginClassLoader extends URLClassLoader {
 
     private final PluginManager manager;
-    public PluginClassLoader(URL[] urls, ClassLoader parent,PluginManager manager) {
+
+    public PluginClassLoader(URL[] urls, ClassLoader parent, PluginManager manager) {
         super(urls, parent);
         this.manager = manager;
     }
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        try
-        {
+        try {
             return super.loadClass(name, resolve);
+        } catch (ClassNotFoundException ignored) {
         }
-        catch (ClassNotFoundException ignored) {}
 
         if (check)
             throw new ClassNotFoundException(name);
         //未在父类找到(意味着JavaIM主程序与插件本身均未找到插件，应试图前去其他插件加载)
-        for (PluginData data : manager.getPluginDataList())
-        {
+        for (PluginData data : manager.getPluginDataList()) {
             data.getStaticData().PluginClassLoader().setOtherPluginCheckClass(true);
             try {
                 return data.getStaticData().PluginClassLoader().loadClass(name);
-            } catch (ClassNotFoundException ignored) {}
-            finally {
+            } catch (ClassNotFoundException ignored) {
+            } finally {
                 data.getStaticData().PluginClassLoader().setOtherPluginCheckClass(false);
             }
         }
@@ -38,6 +37,7 @@ public class PluginClassLoader extends URLClassLoader {
     }
 
     private boolean check;
+
     /**
      * 设置是否为其他插件正在尝试本插件
      */

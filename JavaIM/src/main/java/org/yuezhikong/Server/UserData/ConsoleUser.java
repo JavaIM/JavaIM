@@ -9,8 +9,7 @@ public class ConsoleUser implements user {
     public ConsoleUser() {
         try {
             Class.forName(new Throwable().getStackTrace()[1].getClassName()).asSubclass(IServer.class);
-        } catch (ClassCastException | ClassNotFoundException e)
-        {
+        } catch (ClassCastException | ClassNotFoundException e) {
             throw new UnsupportedOperationException("only Server can create Console User!");
         }
     }

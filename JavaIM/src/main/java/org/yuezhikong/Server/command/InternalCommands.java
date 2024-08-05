@@ -32,7 +32,9 @@ import static org.jline.builtins.Completers.TreeCompleter.node;
 
 @Slf4j
 public class InternalCommands {
-    private InternalCommands() {}
+    private InternalCommands() {
+    }
+
     public static class AboutCommand implements Command {
 
         @Override
@@ -72,6 +74,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class CrashCommand implements Command {
 
         @Override
@@ -111,6 +114,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class HelpCommand implements Command {
 
         @Override
@@ -150,6 +154,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class ListCommand implements Command {
 
         @Override
@@ -202,6 +207,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class TellCommand implements Command {
 
         @Override
@@ -228,24 +234,22 @@ public class InternalCommands {
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
             StringBuilder stringBuilder = new StringBuilder();
-            for (String arg : args)
-            {
+            for (String arg : args) {
                 stringBuilder.append(arg).append(" ");
             }
 
-            if (!stringBuilder.isEmpty())
-            {
+            if (!stringBuilder.isEmpty()) {
                 stringBuilder.deleteCharAt(stringBuilder.length() - 1);
             }
 
-            stringBuilder.delete(0,args[0].length() + 1);
-            stringBuilder.insert(0,"[私聊] ");
+            stringBuilder.delete(0, args[0].length() + 1);
+            stringBuilder.insert(0, "[私聊] ");
 
             String ChatMessage = stringBuilder.toString();
 
             if (args[0].equals("Server"))//当私聊目标为后台时
             {
-                ((CustomLogger) log).ChatMsg("["+User.getUserName()+"]:"+ChatMessage);
+                ((CustomLogger) log).ChatMsg("[" + User.getUserName() + "]:" + ChatMessage);
                 serverAPI.SendMessageToUser(User, "你对" + args[0] + "发送了私聊：" + ChatMessage);
                 return true;
             }
@@ -253,7 +257,7 @@ public class InternalCommands {
                 ChatProtocol chatProtocol = new ChatProtocol();
                 chatProtocol.setSourceUserName(User.getUserName());
                 chatProtocol.setMessage(ChatMessage);
-                serverAPI.SendJsonToClient(serverAPI.GetUserByUserName(args[0]),new Gson().toJson(chatProtocol),"ChatProtocol");
+                serverAPI.SendJsonToClient(serverAPI.GetUserByUserName(args[0]), new Gson().toJson(chatProtocol), "ChatProtocol");
                 serverAPI.SendMessageToUser(User, "你对" + args[0] + "发送了私聊：" + ChatMessage);
             } catch (AccountNotFoundException e) {
                 serverAPI.SendMessageToUser(User, "此用户不存在");
@@ -276,6 +280,7 @@ public class InternalCommands {
             return false;
         }
     }
+
     public static class OpCommand implements Command {
 
         @Override
@@ -306,7 +311,7 @@ public class InternalCommands {
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-            userInformation information = mapper.getUser(null,args[0],null,null);
+            userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
                 serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
@@ -347,6 +352,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class DeopCommand implements Command {
 
         @Override
@@ -377,7 +383,7 @@ public class InternalCommands {
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-            userInformation information = mapper.getUser(null,args[0],null,null);
+            userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
                 serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
@@ -418,6 +424,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class BanCommand implements Command {
 
         @Override
@@ -448,7 +455,7 @@ public class InternalCommands {
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-            userInformation information = mapper.getUser(null,args[0],null,null);
+            userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
                 serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
@@ -482,6 +489,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class UnbanCommand implements Command {
 
         @Override
@@ -512,7 +520,7 @@ public class InternalCommands {
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-            userInformation information = mapper.getUser(null,args[0],null,null);
+            userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
                 serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
@@ -537,6 +545,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class QuitCommand implements Command {
 
         @Override
@@ -577,6 +586,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class ChangePasswordCommand implements Command {
 
         @Override
@@ -607,7 +617,7 @@ public class InternalCommands {
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
-            userInformation information = mapper.getUser(null,args[0],null,null);
+            userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
                 serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
@@ -633,6 +643,7 @@ public class InternalCommands {
             return false;
         }
     }
+
     public static class KickCommand implements Command {
 
         @Override
@@ -691,6 +702,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class GetUploadFilesCommand implements Command {
 
         @Override
@@ -716,7 +728,7 @@ public class InternalCommands {
             userUploadFileDao mapper = instance.getSqlSession().getMapper(userUploadFileDao.class);
             List<userUploadFile> uploadFiles = mapper.getUploadFiles();
             if (uploadFiles == null || uploadFiles.isEmpty()) {
-                serverAPI.SendMessageToUser(User,"没有上传的文件");
+                serverAPI.SendMessageToUser(User, "没有上传的文件");
                 return true;
             }
             uploadFiles.forEach((uploadFile) -> {
@@ -751,6 +763,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class RunGCCommand implements Command {
 
         @Override
@@ -791,6 +804,7 @@ public class InternalCommands {
             return true;
         }
     }
+
     public static class DeleteFileByFileIdCommand implements Command {
 
         @Override
@@ -834,18 +848,18 @@ public class InternalCommands {
             userUploadFileDao mapper = server.getSqlSession().getMapper(userUploadFileDao.class);
             userUploadFile uploadFile = mapper.getUploadFileByFileId(args[0]);
             if (uploadFile == null) {
-                serverAPI.SendMessageToUser(User,"文件不存在");
+                serverAPI.SendMessageToUser(User, "文件不存在");
                 return true;
             }
 
-            File file = new File("./uploadFiles",uploadFile.getOwnFile());
+            File file = new File("./uploadFiles", uploadFile.getOwnFile());
             if (!file.delete()) {
-                serverAPI.SendMessageToUser(User,"出现错误，访问被拒绝或不存在");
+                serverAPI.SendMessageToUser(User, "出现错误，访问被拒绝或不存在");
                 return true;
             }
 
             if (!mapper.deleteFile(uploadFile)) {
-                serverAPI.SendMessageToUser(User,"出现错误，访问被拒绝或不存在");
+                serverAPI.SendMessageToUser(User, "出现错误，访问被拒绝或不存在");
                 return true;
             }
             serverAPI.SendMessageToUser(User, "操作成功完成。");

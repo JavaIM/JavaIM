@@ -5,15 +5,16 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class SHA256 {
-    private SHA256() {}
+    private SHA256() {
+    }
 
     /**
      * 执行sha256摘要
+     *
      * @param str 原始
      * @return sha256摘要
      */
-    public static String sha256(String str)
-    {
+    public static String sha256(String str) {
         try {
             // 获取SHA-256 MessageDigest实例
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -32,7 +33,7 @@ public class SHA256 {
             return hexString.toString();
 
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA256 Provider Not Found!",e); // SHA-256应该总是可用的
+            throw new RuntimeException("SHA256 Provider Not Found!", e); // SHA-256应该总是可用的
         }
     }
 }

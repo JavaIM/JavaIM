@@ -11,9 +11,9 @@ public interface ChatRequest {
     /**
      * 指令信息
      *
-     * @param plugin            插件
-     * @param commandInstance   指令
-     * @param command           指令名
+     * @param plugin          插件
+     * @param commandInstance 指令
+     * @param command         指令名
      * @apiNote 插件如果为null，则为本体创建的指令
      */
     record CommandInformation(Plugin plugin, Command commandInstance, String command) {

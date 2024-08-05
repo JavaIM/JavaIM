@@ -12,8 +12,8 @@ public interface userUploadFileDao {
     /**
      * 获取用户上传的文件
      *
-     * @param fileId    文件Id
-     * @return  用户拥有的文件的数据库信息实体类
+     * @param fileId 文件Id
+     * @return 用户拥有的文件的数据库信息实体类
      */
     @Nullable
     @Contract(pure = true)
@@ -22,7 +22,7 @@ public interface userUploadFileDao {
     /**
      * 获取上传文件的列表
      *
-     * @return  用户拥有的文件的数据库信息实体类
+     * @return 用户拥有的文件的数据库信息实体类
      */
     @Nullable
     @Contract(pure = true)
@@ -40,6 +40,7 @@ public interface userUploadFileDao {
 
     /**
      * 向数据库添加一个文件信息
+     *
      * @param file 文件
      * @return 操作是否成功
      */
@@ -47,6 +48,7 @@ public interface userUploadFileDao {
 
     /**
      * 更新数据库保存的文件信息
+     *
      * @param file 文件
      * @return 操作是否成功
      */
@@ -54,6 +56,7 @@ public interface userUploadFileDao {
 
     /**
      * 更新数据库保存的文件信息
+     *
      * @param file 文件
      * @return 操作是否成功
      */

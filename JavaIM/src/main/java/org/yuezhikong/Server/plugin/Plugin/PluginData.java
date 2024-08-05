@@ -29,31 +29,34 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class PluginData {
 
-    public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor, PluginClassLoader PluginClassLoader, File PluginMainFile, boolean loaded)
-    {}
+    public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor,
+                             PluginClassLoader PluginClassLoader, File PluginMainFile, boolean loaded) {
+    }
+
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final staticData data;
 
     /**
      * 添加一个事件监听器
+     *
      * @param listener 监听器实例
      */
-    public void addEventListener(Listener listener)
-    {
+    public void addEventListener(Listener listener) {
         listeners.add(listener);
     }
 
     /**
      * 获取注册的所有事件监听器
+     *
      * @return 监听器实例
      */
-    public List<Listener> getEventListener()
-    {
+    public List<Listener> getEventListener() {
         return Collections.unmodifiableList(listeners);
     }
 
     /**
      * 取消注册一个事件监听器
+     *
      * @param listener 事件监听器实例
      */
     public void removeEventListener(Listener listener) {
@@ -62,16 +65,17 @@ public class PluginData {
 
     /**
      * 创建新的插件数据实例
-     * @apiNote 应当仅被插件管理器调用!
+     *
      * @param data 插件静态数据
+     * @apiNote 应当仅被插件管理器调用!
      */
-    public PluginData(staticData data)
-    {
+    public PluginData(staticData data) {
         this.data = data;
     }
 
     /**
      * 获取插件静态数据
+     *
      * @return 静态数据
      */
     public staticData getStaticData() {

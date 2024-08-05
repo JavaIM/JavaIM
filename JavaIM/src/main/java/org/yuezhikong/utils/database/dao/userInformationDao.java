@@ -9,6 +9,7 @@ import java.util.List;
 public interface userInformationDao {
     /**
      * 从数据库获取用户列表
+     *
      * @return 用户数据库信息实体类
      */
     @Nullable
@@ -17,12 +18,12 @@ public interface userInformationDao {
     /**
      * 获取用户
      *
-     * @param userId    用户Id
-     * @param userName  用户名
-     * @param token     Token
-     * @param salt      Salt
-     * @return  用户数据库信息实体类
-     * @apiNote 只需要有一个条件即可查询,无需全部满足
+     * @param userId   用户Id
+     * @param userName 用户名
+     * @param token    Token
+     * @param salt     Salt
+     * @return 用户数据库信息实体类
+     * @apiNote 只需要有一个条件即可查询, 无需全部满足
      */
     @Nullable
     userInformation getUser(@Nullable @Param("userId") String userId,
@@ -33,6 +34,7 @@ public interface userInformationDao {
 
     /**
      * 根据用户名从数据库中获取用户
+     *
      * @param userName 用户名
      * @return 用户数据库信息实体类
      */
@@ -41,6 +43,7 @@ public interface userInformationDao {
 
     /**
      * 根据Token从数据库中获取用户
+     *
      * @param token Token
      * @return 用户数据库信息实体类
      */
@@ -49,6 +52,7 @@ public interface userInformationDao {
 
     /**
      * 根据密码盐从数据库中获取用户
+     *
      * @param salt 盐
      * @return 用户数据库信息实体类
      */
@@ -57,6 +61,7 @@ public interface userInformationDao {
 
     /**
      * 向数据库添加一个用户
+     *
      * @param User 用户
      * @return 操作是否成功
      */
@@ -64,6 +69,7 @@ public interface userInformationDao {
 
     /**
      * 更新数据库保存的用户信息
+     *
      * @param User 用户
      * @return 操作是否成功
      */

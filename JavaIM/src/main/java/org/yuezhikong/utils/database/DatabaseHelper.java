@@ -26,7 +26,10 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.utils.checks;
 
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -35,6 +38,7 @@ public class DatabaseHelper {
 
     /**
      * 初始化数据库
+     *
      * @return JDBCUrl
      */
     public static String InitDataBase() {
@@ -56,8 +60,8 @@ public class DatabaseHelper {
             connection.createStatement().executeUpdate(
                     "CREATE TABLE if not exists UserData" +
                             " (" +
-                            " userId varchar(255),"+        //用户ID
-                            " avatarFileId varchar(255),"+   //头像对应的文件ID
+                            " userId varchar(255)," +        //用户ID
+                            " avatarFileId varchar(255)," +   //头像对应的文件ID
                             " Permission INT," +            //权限等级，目前只有三个等级，-1级：被封禁用户，0级：普通用户，1级：管理员
                             " UserName varchar(255)," +     //用户名
                             " Passwd varchar(255)," +       //密码
@@ -68,21 +72,19 @@ public class DatabaseHelper {
             connection.createStatement().executeUpdate(
                     "CREATE TABLE if not exists FileOwner" +
                             " (" +
-                            " userId varchar(255),"+    //用户ID
+                            " userId varchar(255)," +    //用户ID
                             " ownFile varchar(255)," +   //拥有的文件的ID
-                            " origFileName varchar(255)"+ //原始文件名
+                            " origFileName varchar(255)" + //原始文件名
                             " );");
             //更新数据库表
             UpdateDatabase(connection);
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Database Connection Init Failed",e);
-        }
-        finally {
+        } catch (Exception e) {
+            throw new RuntimeException("Database Connection Init Failed", e);
+        } finally {
             try {
                 Objects.requireNonNull(connection).close();
             } catch (SQLException | NullPointerException e) {
-                log.error("出现错误!",e);
+                log.error("出现错误!", e);
             }
         }
         return JDBCUrl;
@@ -90,21 +92,19 @@ public class DatabaseHelper {
 
     /**
      * 初始化Mybatis
+     *
      * @param JDBCUrl JDBCUrl
      * @return SQL会话
      */
-    public static SqlSession InitMybatis(String JDBCUrl)
-    {
+    public static SqlSession InitMybatis(String JDBCUrl) {
         checks.checkArgument(JDBCUrl == null, "JDBC Url can not be null!");
         Properties MybatisConfig = new Properties();
-        MybatisConfig.setProperty("jdbc.url",JDBCUrl);
-        if (CodeDynamicConfig.isUse_SQLITE_Mode())
-        {
+        MybatisConfig.setProperty("jdbc.url", JDBCUrl);
+        if (CodeDynamicConfig.isUse_SQLITE_Mode()) {
             MybatisConfig.setProperty("jdbc.driver", "org.sqlite.JDBC");
             MybatisConfig.setProperty("jdbc.username", "");
             MybatisConfig.setProperty("jdbc.password", "");
-        }
-        else {
+        } else {
             MybatisConfig.setProperty("jdbc.driver", "com.mysql.cj.jdbc.Driver");
             MybatisConfig.setProperty("jdbc.username", CodeDynamicConfig.getMySQLDataBaseUser());
             MybatisConfig.setProperty("jdbc.password", CodeDynamicConfig.getMySQLDataBasePasswd());
@@ -112,24 +112,24 @@ public class DatabaseHelper {
         try {
             return new SqlSessionFactoryBuilder().build(Resources.getResourceAsStream("mybatis-config.xml"), MybatisConfig).openSession(true);
         } catch (IOException e) {
-            throw new RuntimeException("Mybatis Open Failed",e);
+            throw new RuntimeException("Mybatis Open Failed", e);
         }
     }
 
     /**
      * 检查某个列是否存在
-     * @param Columns 列名
-     * @param TableName 表名
+     *
+     * @param Columns            列名
+     * @param TableName          表名
      * @param DatabaseConnection 连接
      * @return true为存在，false为不存在
      * @throws SQLException SQL出现错误
      * @apiNote 注意，此函数可能导致SQL注入，请勿将用户输入载入到此函数
      */
     @ApiStatus.Internal
-    private static boolean CheckColumnsExist(String Columns,String TableName,@NotNull Connection DatabaseConnection) throws SQLException {
-        if (CodeDynamicConfig.isUse_SQLITE_Mode())
-        {
-            ResultSet rs = DatabaseConnection.createStatement().executeQuery("PRAGMA table_info ("+TableName+")");
+    private static boolean CheckColumnsExist(String Columns, String TableName, @NotNull Connection DatabaseConnection) throws SQLException {
+        if (CodeDynamicConfig.isUse_SQLITE_Mode()) {
+            ResultSet rs = DatabaseConnection.createStatement().executeQuery("PRAGMA table_info (" + TableName + ")");
             while (rs.next()) {
                 //查看此列名
                 String column = rs.getString("name");
@@ -137,30 +137,29 @@ public class DatabaseHelper {
                     return true;
                 }
             }
-        }
-        else
-        {
+        } else {
             //查询UserData中是否存在列
-            return DatabaseConnection.createStatement().executeQuery("SHOW COLUMNS FROM "+TableName+" LIKE '"+Columns+"';").next();
+            return DatabaseConnection.createStatement().executeQuery("SHOW COLUMNS FROM " + TableName + " LIKE '" + Columns + "';").next();
         }
         return false;
     }
 
     /**
      * 更新数据库
+     *
      * @param DatabaseConnection 数据库连接
      * @throws SQLException SQL出错
      */
     public static void UpdateDatabase(@NotNull Connection DatabaseConnection) throws SQLException {
-        if (!CheckColumnsExist("token","UserData",DatabaseConnection))
+        if (!CheckColumnsExist("token", "UserData", DatabaseConnection))
             //不存在时，添加”token“列
             DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN token VARCHAR(255) NOT NULL DEFAULT '';");
 
-        if (!CheckColumnsExist("avatar","UserData",DatabaseConnection))
+        if (!CheckColumnsExist("avatar", "UserData", DatabaseConnection))
             //不存在时，添加“avatar”列
             DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN avatar VARCHAR(255) NOT NULL DEFAULT '';");
 
-        if (!CheckColumnsExist("userId","UserData",DatabaseConnection))
+        if (!CheckColumnsExist("userId", "UserData", DatabaseConnection))
             //不存在时，添加“userId”列
             DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN userId VARCHAR(255) NOT NULL DEFAULT '';");
     }

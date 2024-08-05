@@ -4,10 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
-import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.io.IOUtils;
-import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.utils.MultiThreadDownloadManager;
 import org.yuezhikong.utils.ProgressBarUtils;
 import org.yuezhikong.utils.checkUpdate.oauth.GitHubDeviceCodeAPI;
 import org.yuezhikong.utils.checkUpdate.oauth.GitHubOAuthAccessTokenAPI;
@@ -23,23 +20,27 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Enumeration;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 @Slf4j
 public class CheckUpdate {
     private final static Gson gson = new Gson();
+
     /**
      * 检查更新
-     * @param installUpdate 是否允许自动安装(覆盖源文件+关闭JVM)
+     *
+     * @param installUpdate     是否允许自动安装(覆盖源文件+关闭JVM)
      * @param githubAccessToken accessToken
      */
     public static void checkUpdate(boolean installUpdate, String githubAccessToken) {
         long currentUnixTime = System.currentTimeMillis();
         log.info("正在检查更新(这可能需要一段时间...)");
-        String commits,currentFileGitCommitId;
+        String commits, currentFileGitCommitId;
         // 获取保存的本文件commit Id
         try {
             Properties properties = new Properties();
@@ -97,14 +98,15 @@ public class CheckUpdate {
         log.info("committer: {}", commitAPI.getCommit().getCommitter().getName());
         if (!installUpdate)
             return;// 判断是否自动安装更新
-        installUpdate(githubAccessToken, commitAPI.getSha(),httpClient);
+        installUpdate(githubAccessToken, commitAPI.getSha(), httpClient);
     }
 
     /**
      * 安装更新
+     *
      * @param githubAccessToken GitHub access token
-     * @param commitSha commit的sha
-     * @param httpClient http客户端
+     * @param commitSha         commit的sha
+     * @param httpClient        http客户端
      */
     private static void installUpdate(String githubAccessToken, String commitSha, HttpClient httpClient) {
         log.info("因为您允许自动安装更新，所以正在下载更新并安装...");
@@ -114,7 +116,7 @@ public class CheckUpdate {
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.github.com/repos/JavaIM/JavaIM/actions/artifacts"))
                     .timeout(Duration.ofSeconds(30))
-                    .header("Accept","application/json")
+                    .header("Accept", "application/json")
                     .header("Content-Type", "application/json")
                     .header("User-Agent", "JavaIM updateHelper")
                     .build();
@@ -165,7 +167,7 @@ public class CheckUpdate {
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create("https://github.com/login/device/code"))
                     .POST(HttpRequest.BodyPublishers.ofString("{\"client_id\":\"Iv23liaNX7FdDSiQmD4Q\"}", StandardCharsets.UTF_8))
-                    .header("Accept","application/json")
+                    .header("Accept", "application/json")
                     .header("Content-Type", "application/json")
                     .header("User-Agent", "JavaIM updateHelper")
                     .timeout(Duration.ofSeconds(30))
@@ -188,7 +190,7 @@ public class CheckUpdate {
         try {
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
             clipboard.setContents(new StringSelection(deviceCodeAPIResult.getUser_code()), null);
-            log.info("已经将 User Code: {} 写入剪贴板",deviceCodeAPIResult.getUser_code());
+            log.info("已经将 User Code: {} 写入剪贴板", deviceCodeAPIResult.getUser_code());
         } catch (Throwable throwable) {
             log.error("剪贴板写入失败");
         }
@@ -215,10 +217,10 @@ public class CheckUpdate {
         HttpRequest accessTokenRequest = HttpRequest.newBuilder(URI.create("https://github.com/login/oauth/access_token"))
                 .POST(HttpRequest.BodyPublishers.ofString(
                         "{\"client_id\":\"Iv23liaNX7FdDSiQmD4Q\"," +
-                                "\"device_code\":\""+deviceCodeAPIResult.getDevice_code()+"\"," +
-                                "\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\"",StandardCharsets.UTF_8)
+                                "\"device_code\":\"" + deviceCodeAPIResult.getDevice_code() + "\"," +
+                                "\"grant_type\":\"urn:ietf:params:oauth:grant-type:device_code\"", StandardCharsets.UTF_8)
                 )
-                .header("Accept","application/json")
+                .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
                 .header("User-Agent", "JavaIM updateHelper")
                 .timeout(Duration.ofSeconds(30))
@@ -228,7 +230,7 @@ public class CheckUpdate {
                 String body = httpClient.send(accessTokenRequest, HttpResponse.BodyHandlers.ofString()).body();
                 if (body.contains("error")) {
                     if (!body.contains("authorization_pending")) {
-                        log.error("Github返回的错误代码不是正在等待请求! 原始返回:{}",body);
+                        log.error("Github返回的错误代码不是正在等待请求! 原始返回:{}", body);
                         return;
                     }
 
@@ -256,12 +258,13 @@ public class CheckUpdate {
 
     /**
      * 下载更新
-     * @param downloadTo jar下载到
+     *
+     * @param downloadTo        jar下载到
      * @param githubAccessToken GitHub access token
-     * @param downloadUrl 下载链接
-     * @param httpClient http客户端
+     * @param downloadUrl       下载链接
+     * @param httpClient        http客户端
      */
-    private static void downloadUpdate(File downloadTo, String githubAccessToken, String downloadUrl,HttpClient httpClient) {
+    private static void downloadUpdate(File downloadTo, String githubAccessToken, String downloadUrl, HttpClient httpClient) {
         // 判断 downloadTo是否可以写入
         if (downloadTo.isDirectory()) {
             log.error("codeSource为文件夹，您当前正在直接执行classes?");
@@ -276,16 +279,16 @@ public class CheckUpdate {
         try {
             // 请求 GitHub API,获得重定向位置
             HttpResponse<Void> RedirectRequestResponse = httpClient.send(HttpRequest.newBuilder(URI.create(downloadUrl))
-                    .header("Accept","application/vnd.github+json")
+                    .header("Accept", "application/vnd.github+json")
                     .header("User-Agent", "JavaIM updateHelper")
-                    .header("Authorization","Bearer "+githubAccessToken)
+                    .header("Authorization", "Bearer " + githubAccessToken)
                     .header("X-GitHub-Api-Version", "2022-11-28")
                     .timeout(Duration.ofSeconds(30))
                     .build(), HttpResponse.BodyHandlers.discarding());
 
             Optional<String> redirectLocation = RedirectRequestResponse.headers().firstValue("location");
             if (RedirectRequestResponse.statusCode() != 302 || redirectLocation.isEmpty()) {
-                log.error("请求：{} URI，尝试获取重定向位置失败，返回值为:{}",RedirectRequestResponse.uri(), RedirectRequestResponse.statusCode());
+                log.error("请求：{} URI，尝试获取重定向位置失败，返回值为:{}", RedirectRequestResponse.uri(), RedirectRequestResponse.statusCode());
                 return;
             }
 
@@ -295,9 +298,9 @@ public class CheckUpdate {
             tmpZipFile.deleteOnExit();
             if (!ProgressBarUtils.downloadFile(
                     "下载 JavaIM 更新包"
-                    ,HttpRequest.newBuilder(URI.create(redirectLocation.get()))
-                            .header("Accept","*/*")
-                            .header("User-Agent","JavaIM updateHelper")
+                    , HttpRequest.newBuilder(URI.create(redirectLocation.get()))
+                            .header("Accept", "*/*")
+                            .header("User-Agent", "JavaIM updateHelper")
                             .timeout(Duration.ofMinutes(10))
                     , tmpZipFile))
                 return;
@@ -309,12 +312,12 @@ public class CheckUpdate {
                     if (!zipEntry.getName().contains("SNAPSHOT"))
                         continue;
 
-                    File file = File.createTempFile("JavaIMUpdate",".jar");
+                    File file = File.createTempFile("JavaIMUpdate", ".jar");
                     file.deleteOnExit();
-                    try (InputStream is = zipFile.getInputStream(zipEntry); DataOutputStream os = new DataOutputStream(new FileOutputStream(file)))  {
+                    try (InputStream is = zipFile.getInputStream(zipEntry); DataOutputStream os = new DataOutputStream(new FileOutputStream(file))) {
                         if (zipEntry.getSize() == -1) {
                             log.error("我们不知道文件大小，无法提供进度条!");
-                            IOUtils.copy(is,os);
+                            IOUtils.copy(is, os);
                         } else
                             ProgressBarUtils.copyStream("解压 JavaIM 更新包", zipEntry.getSize(), is, os);
                     }

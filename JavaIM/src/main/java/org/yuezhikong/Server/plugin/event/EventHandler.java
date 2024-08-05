@@ -30,5 +30,6 @@ public @interface EventHandler {
         NORMAL,
         LOW
     }
+
     EventPriority Priority() default EventPriority.NORMAL;
 }

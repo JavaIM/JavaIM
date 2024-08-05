@@ -3,38 +3,44 @@ package org.yuezhikong.utils;
 import me.tongfei.progressbar.ProgressBar;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
+import java.io.DataOutput;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.http.HttpRequest;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ProgressBarUtils {
 
-    private ProgressBarUtils() {}
+    private ProgressBarUtils() {
+    }
 
     /**
      * 复制 InputStream 到 DataOutput, 并显示进度条
-     * @param taskName              进度条任务名称
-     * @param progressInitialMax    进度条最大值
-     * @param inputStream           输入流
-     * @param dataOutputObject      数据输出
-     * @throws IOException          复制时出现IO错误
+     *
+     * @param taskName           进度条任务名称
+     * @param progressInitialMax 进度条最大值
+     * @param inputStream        输入流
+     * @param dataOutputObject   数据输出
+     * @throws IOException 复制时出现IO错误
      */
     public static void copyStream(@NotNull @Nls String taskName,
                                   @Range(from = 1, to = Long.MAX_VALUE) long progressInitialMax,
                                   @NotNull InputStream inputStream,
                                   @NotNull DataOutput dataOutputObject) throws IOException {
-        try (ProgressBar progressBar = new ProgressBar(taskName,progressInitialMax))  {
+        try (ProgressBar progressBar = new ProgressBar(taskName, progressInitialMax)) {
             copyStreamOnlyUpdateProgress(progressBar, inputStream, dataOutputObject);
         }
     }
 
     /**
      * 复制 InputStream 到 DataOutput, 但是只更新进度条
-     * @param progressBar             进度条
-     * @param inputStream             输入流
-     * @param dataOutputObject        数据输出
-     * @throws IOException            复制时出现IO错误
+     *
+     * @param progressBar      进度条
+     * @param inputStream      输入流
+     * @param dataOutputObject 数据输出
+     * @throws IOException 复制时出现IO错误
      */
     public static void copyStreamOnlyUpdateProgress(ProgressBar progressBar, InputStream inputStream, DataOutput dataOutputObject) throws IOException {
         byte[] buffer = new byte[4096];
@@ -47,7 +53,9 @@ public class ProgressBarUtils {
     }
 
     private static class ProgressBarDownloadManager extends MultiThreadDownloadManager {
-        private record request(@Nullable ProgressBar progressBar, boolean singleThread) {}
+        private record request(@Nullable ProgressBar progressBar, boolean singleThread) {
+        }
+
         private final Map<HttpRequest.Builder, request> requestMap = new HashMap<>();
 
         private final boolean givenProgressBar;
@@ -92,7 +100,7 @@ public class ProgressBarUtils {
         }
 
         @Override
-        protected boolean copyStreamToFile(HttpRequest.Builder requestBuilder,InputStream is, DataOutput dataOutput) throws IOException {
+        protected boolean copyStreamToFile(HttpRequest.Builder requestBuilder, InputStream is, DataOutput dataOutput) throws IOException {
             ProgressBar progressBar;
             if (givenProgressBar) {
                 progressBar = this.progressBar;
@@ -108,12 +116,13 @@ public class ProgressBarUtils {
 
     /**
      * 下载文件，创建新进度条
-     * @param taskName                  任务名
-     * @param requestBuilder            http请求
-     * @param file                      下载到的文件
-     * @throws IOException              IO错误
-     * @throws InterruptedException     线程被中断
+     *
+     * @param taskName       任务名
+     * @param requestBuilder http请求
+     * @param file           下载到的文件
      * @return 下载是否完成
+     * @throws IOException          IO错误
+     * @throws InterruptedException 线程被中断
      */
     @Contract(pure = true)
     public static boolean downloadFile(@NotNull @Nls String taskName, @NotNull HttpRequest.Builder requestBuilder, @NotNull File file) throws IOException, InterruptedException {
@@ -124,12 +133,13 @@ public class ProgressBarUtils {
 
     /**
      * 下载文件，更新旧进度条
-     * @param progressBar               进度条
-     * @param requestBuilder            http请求
-     * @param file                      下载到的文件
-     * @throws IOException              IO错误
-     * @throws InterruptedException     线程被中断
+     *
+     * @param progressBar    进度条
+     * @param requestBuilder http请求
+     * @param file           下载到的文件
      * @return 下载是否完成
+     * @throws IOException          IO错误
+     * @throws InterruptedException 线程被中断
      * @apiNote 请注意进度条长度!
      */
     @SuppressWarnings("unused")

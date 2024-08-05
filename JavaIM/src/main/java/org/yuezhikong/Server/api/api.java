@@ -28,8 +28,8 @@ public interface api {
     /**
      * 为指定用户发送消息
      *
-     * @param user          发信的目标用户
-     * @param inputMessage  发信的信息
+     * @param user         发信的目标用户
+     * @param inputMessage 发信的信息
      */
     void SendMessageToUser(@NotNull user user, @NotNull @Nls String inputMessage);
 
@@ -44,25 +44,27 @@ public interface api {
      * 获取有效的客户端列表
      *
      * @param CheckLoginStatus 是否检查登录状态
-     * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      * @return 有效的客户端列表
+     * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      */
-    @NotNull List<user> GetValidClientList(boolean CheckLoginStatus);
+    @NotNull
+    List<user> GetValidClientList(boolean CheckLoginStatus);
 
     /**
      * 新的获取用户User Data Class api
      *
-     * @param UserName  用户名
+     * @param UserName 用户名
      * @return 用户User Data Class
-     * @exception AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
+     * @throws AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
-    @NotNull user GetUserByUserName(@NotNull @Nls String UserName) throws AccountNotFoundException;
+    @NotNull
+    user GetUserByUserName(@NotNull @Nls String UserName) throws AccountNotFoundException;
 
     /**
      * 修改用户的密码
      *
-     * @param User      用户
-     * @param password  密码
+     * @param User     用户
+     * @param password 密码
      */
     void ChangeUserPassword(user User, String password);
 
@@ -78,9 +80,10 @@ public interface api {
     /**
      * 根据用户Id获取用户
      *
-     * @param userId    用户Id
+     * @param userId 用户Id
      * @return 用户
      * @throws AccountNotFoundException 根据Id找不到用户
      */
-    @NotNull user GetUserByUserId(String userId) throws AccountNotFoundException;
+    @NotNull
+    user GetUserByUserId(String userId) throws AccountNotFoundException;
 }

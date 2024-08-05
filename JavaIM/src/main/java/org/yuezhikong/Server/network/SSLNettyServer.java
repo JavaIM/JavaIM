@@ -71,6 +71,7 @@ public class SSLNettyServer implements NetworkServer {
 
     private boolean isRunning = false;
     private boolean run = false;
+
     @Override
     public void start(@Range(from = 1, to = 65535) int ListenPort, ExecutorService StartUpThreadPool) throws IllegalStateException {
         if (run)
@@ -84,40 +85,46 @@ public class SSLNettyServer implements NetworkServer {
         });
 
 
-        record NettyThreadPoolTaskReturn(EventLoopGroup bossGroup, EventLoopGroup workerGroup,DefaultEventLoopGroup RecvMessageThreadPool) {}
+        record NettyThreadPoolTaskReturn(EventLoopGroup bossGroup, EventLoopGroup workerGroup,
+                                         DefaultEventLoopGroup RecvMessageThreadPool) {
+        }
         Future<?> NettyThreadPoolTask = StartUpThreadPool.submit(() -> {
             log.info("正在创建各线程池");
             ThreadGroup IOThreadGroup = new ThreadGroup("JavaIM IO Thread");
             IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
                 private final AtomicInteger threadNumber = new AtomicInteger(1);
+
                 @Override
                 public Thread newThread(@NotNull Runnable r) {
                     return new Thread(IOThreadGroup,
-                            r,"IO Thread #"+threadNumber.getAndIncrement());
+                            r, "IO Thread #" + threadNumber.getAndIncrement());
                 }
             });
             EventLoopGroup bossGroup = new NioEventLoopGroup(2, new ThreadFactory() {
                 private final AtomicInteger threadNumber = new AtomicInteger(1);
+
                 @Override
                 public Thread newThread(@NotNull Runnable r) {
                     return new Thread(IOThreadGroup,
-                            r,"Netty Boss Thread #"+threadNumber.getAndIncrement());
+                            r, "Netty Boss Thread #" + threadNumber.getAndIncrement());
                 }
             });
-            EventLoopGroup workerGroup = new NioEventLoopGroup(10,new ThreadFactory() {
+            EventLoopGroup workerGroup = new NioEventLoopGroup(10, new ThreadFactory() {
                 private final AtomicInteger threadNumber = new AtomicInteger(1);
+
                 @Override
                 public Thread newThread(@NotNull Runnable r) {
                     return new Thread(IOThreadGroup,
-                            r,"Netty Worker Thread #"+threadNumber.getAndIncrement());
+                            r, "Netty Worker Thread #" + threadNumber.getAndIncrement());
                 }
             });
-            DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup(10,new ThreadFactory() {
+            DefaultEventLoopGroup RecvMessageThreadPool = new DefaultEventLoopGroup(10, new ThreadFactory() {
                 private final AtomicInteger threadNumber = new AtomicInteger(1);
+
                 @Override
                 public Thread newThread(@NotNull Runnable r) {
                     Thread t = new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
-                            r,"Recv Message Thread #"+threadNumber.getAndIncrement());
+                            r, "Recv Message Thread #" + threadNumber.getAndIncrement());
                     t.setUncaughtExceptionHandler(null);
                     return t;
                 }
@@ -125,7 +132,7 @@ public class SSLNettyServer implements NetworkServer {
             return new NettyThreadPoolTaskReturn(bossGroup, workerGroup, RecvMessageThreadPool);
         });
 
-        EventLoopGroup bossGroup,workerGroup;
+        EventLoopGroup bossGroup, workerGroup;
         DefaultEventLoopGroup RecvMessageThreadPool;
         try {
             CACertTask.get();
@@ -134,7 +141,7 @@ public class SSLNettyServer implements NetworkServer {
             workerGroup = taskReturn.workerGroup();
             RecvMessageThreadPool = taskReturn.RecvMessageThreadPool();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Thread Pool Fatal",e);
+            throw new RuntimeException("Thread Pool Fatal", e);
         }
 
         log.info("正在启动Netty");
@@ -149,14 +156,14 @@ public class SSLNettyServer implements NetworkServer {
                             ChannelPipeline pipeline = channel.pipeline();
                             try {
                                 pipeline.addLast(
-                                        SslContextBuilder.forServer(ServerSSLPrivateKey,ServerSSLCertificate)
+                                        SslContextBuilder.forServer(ServerSSLPrivateKey, ServerSSLCertificate)
                                                 .sslProvider(SslProvider.JDK)
                                                 .clientAuth(ClientAuth.NONE)
                                                 .build()
                                                 .newHandler(channel.alloc())
                                 );
                             } catch (SSLException e) {
-                                throw new RuntimeException("SSL Context Generate Failed!",e);
+                                throw new RuntimeException("SSL Context Generate Failed!", e);
                             }
                             pipeline.addLast(new LoggingHandler(LogLevel.DEBUG));
                             pipeline.addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE));
@@ -165,10 +172,10 @@ public class SSLNettyServer implements NetworkServer {
                             pipeline.addLast(new MessageToMessageEncoder<CharSequence>() {
                                 @Override
                                 protected void encode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) {
-                                    out.add(CharBuffer.wrap(msg+"\n"));
+                                    out.add(CharBuffer.wrap(msg + "\n"));
                                 }
                             });// 每行消息添加换行符
-                            pipeline.addLast(RecvMessageThreadPool,new ServerInHandler());//JavaIM逻辑
+                            pipeline.addLast(RecvMessageThreadPool, new ServerInHandler());//JavaIM逻辑
                         }
                     });
 
@@ -180,7 +187,7 @@ public class SSLNettyServer implements NetworkServer {
             isRunning = true;
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
-            log.error("出现错误!",e);
+            log.error("出现错误!", e);
         } finally {
             RecvMessageThreadPool.shutdownGracefully();
             bossGroup.shutdownGracefully();
@@ -188,8 +195,7 @@ public class SSLNettyServer implements NetworkServer {
         }
     }
 
-    private void X509CertificateGenerate()
-    {
+    private void X509CertificateGenerate() {
         // 生成X509证书
         if (!(new File("./ServerEncryption/cert.crt").exists() &&
                 new File("./ServerEncryption/private.key").exists())) {
@@ -198,7 +204,7 @@ public class SSLNettyServer implements NetworkServer {
                     .addRDN(BCStyle.C, "CN")//证书国家代号(Country Name)
                     .addRDN(BCStyle.O, "JavaIM-Server")//证书组织名(Organization Name)
                     .addRDN(BCStyle.OU, CodeDynamicConfig.getServerName())//证书组织单位名(Organization Unit Name)
-                    .addRDN(BCStyle.CN, "JavaIM Server("+CodeDynamicConfig.getServerName()+") CA")//证书通用名(Common Name)
+                    .addRDN(BCStyle.CN, "JavaIM Server(" + CodeDynamicConfig.getServerName() + ") CA")//证书通用名(Common Name)
                     .addRDN(BCStyle.ST, "Beijing")//证书州或省份(State or Province Name);
                     .addRDN(BCStyle.L, "Beijing")//证书所属城市名(Locality Name)
                     .build();
@@ -220,7 +226,7 @@ public class SSLNettyServer implements NetworkServer {
             try {
                 FileUtils.writeStringToFile(new File("./ServerEncryption/private.key"), privateKeyContent, StandardCharsets.UTF_8);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to Write private key,Permission denied?",e);
+                throw new RuntimeException("Failed to Write private key,Permission denied?", e);
             }
             // 自签名X509证书
             long currentTimeMillis = System.currentTimeMillis();
@@ -228,7 +234,7 @@ public class SSLNettyServer implements NetworkServer {
             try {
                 signer = new JcaContentSignerBuilder("SHA256WITHRSA").build(privateKey);
             } catch (OperatorCreationException e) {
-                throw new RuntimeException("Generate Content Signer Failed!",e);
+                throw new RuntimeException("Generate Content Signer Failed!", e);
             }
             // 将证书写入文件
             try {
@@ -236,7 +242,7 @@ public class SSLNettyServer implements NetworkServer {
                         subject,//证书签发者
                         BigInteger.valueOf(currentTimeMillis),//证书序列号
                         new Date(currentTimeMillis),//证书生效时间
-                        new Date(currentTimeMillis + (long) 365*24*60*60*1000),//证书失效时间
+                        new Date(currentTimeMillis + (long) 365 * 24 * 60 * 60 * 1000),//证书失效时间
                         subject,//证书主体
                         SubjectPublicKeyInfo.getInstance(publicKey.getEncoded())//证书主体公钥
                 )
@@ -245,12 +251,12 @@ public class SSLNettyServer implements NetworkServer {
                 Certificate certificate = certHolder.toASN1Structure();
                 byte[] certificateEncode = certificate.getEncoded();
                 String certificateContent =
-                        "-----BEGIN CERTIFICATE-----\n"+
-                                lf(Base64.getEncoder().encodeToString(certificateEncode),64)+
+                        "-----BEGIN CERTIFICATE-----\n" +
+                                lf(Base64.getEncoder().encodeToString(certificateEncode), 64) +
                                 "-----END CERTIFICATE-----";
                 FileUtils.writeStringToFile(new File("./ServerEncryption/cert.crt"), certificateContent, StandardCharsets.UTF_8);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to write cert to file, Permission denied?",e);
+                throw new RuntimeException("Failed to write cert to file, Permission denied?", e);
             }
             log.info("CA证书创建完成");
             log.info("请分发ServerEncryption文件夹中的cert.crt到各个客户端");
@@ -263,18 +269,19 @@ public class SSLNettyServer implements NetworkServer {
         // 加载CA证书
         Certificate caCert;
         PrivateKey caPrivateKey;
-        try (FileInputStream stream = new FileInputStream("./ServerEncryption/cert.crt")){
-            CertificateFactory factory = CertificateFactory.getInstance("X.509","BC");
+        try (FileInputStream stream = new FileInputStream("./ServerEncryption/cert.crt")) {
+            CertificateFactory factory = CertificateFactory.getInstance("X.509", "BC");
             caCert = new JcaX509CertificateHolder((X509Certificate) factory.generateCertificate(stream)).toASN1Structure();
             caPrivateKey = KeyFactory.getInstance("RSA").generatePrivate(
                     new PKCS8EncodedKeySpec(
                             Base64.getDecoder().decode(
-                                    FileUtils.readFileToString(new File("./ServerEncryption/private.key"),StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8)
+                                    FileUtils.readFileToString(new File("./ServerEncryption/private.key"), StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8)
                             )
                     )
             );
-        } catch (CertificateException | NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
-            throw new RuntimeException("Failed to open X.509 CA Cert & X.509 RSA Private key, Permission denied?",e);
+        } catch (CertificateException | NoSuchProviderException | NoSuchAlgorithmException | InvalidKeySpecException |
+                 IOException e) {
+            throw new RuntimeException("Failed to open X.509 CA Cert & X.509 RSA Private key, Permission denied?", e);
         }
 
         // 创建终端主体
@@ -305,7 +312,7 @@ public class SSLNettyServer implements NetworkServer {
         try {
             signer = new JcaContentSignerBuilder("SHA256WITHRSA").build(caPrivateKey);
         } catch (OperatorCreationException e) {
-            throw new RuntimeException("Generate Content Signer Failed!",e);
+            throw new RuntimeException("Generate Content Signer Failed!", e);
         }
         try {
             ServerSSLCertificate = new JcaX509CertificateConverter().getCertificate(
@@ -313,7 +320,7 @@ public class SSLNettyServer implements NetworkServer {
                             caCert.getSubject(),//证书签发者
                             BigInteger.valueOf(currentTimeMillis),//证书序列号
                             new Date(currentTimeMillis),//证书生效时间
-                            new Date(currentTimeMillis + (long) 365*24*60*60*1000),//证书失效时间
+                            new Date(currentTimeMillis + (long) 365 * 24 * 60 * 60 * 1000),//证书失效时间
                             subject,//证书主体
                             SubjectPublicKeyInfo.getInstance(publicKey.getEncoded())//证书主体公钥
                     )
@@ -323,7 +330,7 @@ public class SSLNettyServer implements NetworkServer {
                             .build(signer)
             );
         } catch (CertIOException | CertificateException e) {
-            throw new RuntimeException("Generate SSL Cert Failed!",e);
+            throw new RuntimeException("Generate SSL Cert Failed!", e);
         }
         log.info("X.509 SSL 证书已经签发完成");
     }
@@ -367,18 +374,20 @@ public class SSLNettyServer implements NetworkServer {
     }
 
     private ExecutorService IOThreadPool;
+
     @Override
     public ExecutorService getIOThreadPool() {
         return IOThreadPool;
     }
 
     private class ServerInHandler extends ChannelInboundHandlerAdapter {
-        private final HashMap<Channel,NetworkClient> clientNetworkClientPair = new HashMap<>();
+        private final HashMap<Channel, NetworkClient> clientNetworkClientPair = new HashMap<>();
         private final Gson gson = new Gson();
+
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             log.info("检测到新客户端连接...");
-            log.info("此客户端IP地址：{}",ctx.channel().remoteAddress());
+            log.info("此客户端IP地址：{}", ctx.channel().remoteAddress());
             if (!ServerTools.getServerInstance().isServerCompleateStart()) {
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("Error");
@@ -392,21 +401,20 @@ public class SSLNettyServer implements NetworkServer {
                 return;
             }
             NettyUser nettyUser = new NettyUser();
-            if (!ServerTools.getServerInstanceOrThrow().RegisterUser(nettyUser))
-            {
+            if (!ServerTools.getServerInstanceOrThrow().RegisterUser(nettyUser)) {
                 ctx.channel().close();
                 return;
             }
-            NetworkClient client = new NettyNetworkClient(nettyUser,ctx.channel().remoteAddress(),ctx.channel());
+            NetworkClient client = new NettyNetworkClient(nettyUser, ctx.channel().remoteAddress(), ctx.channel());
             nettyUser.setNetworkClient(client);
-            clientNetworkClientPair.put(ctx.channel(),client);
+            clientNetworkClientPair.put(ctx.channel(), client);
             clientList.add(client);
         }
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             log.info("检测到客户端离线...");
-            log.info("此客户端IP地址：{}",ctx.channel().remoteAddress());
+            log.info("此客户端IP地址：{}", ctx.channel().remoteAddress());
             NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
             if (thisClient == null)
                 return;
@@ -421,8 +429,7 @@ public class SSLNettyServer implements NetworkServer {
                     log.info(String.format("客户端：%s 发送了非String消息：%s", ctx.channel().remoteAddress(), msg.toString()));
                     return;
                 }
-                if (Msg.isEmpty())
-                {
+                if (Msg.isEmpty()) {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("Empty Packet");
@@ -438,7 +445,7 @@ public class SSLNettyServer implements NetworkServer {
                 ServerTools.getServerInstanceOrThrow().onReceiveMessage(thisClient, Msg);
             } catch (Throwable throwable) {
                 log.warn(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
-                log.warn("错误为：",throwable);
+                log.warn("错误为：", throwable);
 
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("Error");
@@ -456,28 +463,25 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            if (cause instanceof DecoderException)
-            {
+            if (cause instanceof DecoderException) {
                 Throwable exceptionCause = cause.getCause();
-                if (exceptionCause instanceof SSLHandshakeException)
-                {
-                    log.warn(String.format("客户端：%s 因为SSL错误：%s已断开连接",ctx.channel().remoteAddress(),exceptionCause.getMessage()));
+                if (exceptionCause instanceof SSLHandshakeException) {
+                    log.warn(String.format("客户端：%s 因为SSL错误：%s已断开连接", ctx.channel().remoteAddress(), exceptionCause.getMessage()));
                     return;
                 }
             }
-            log.error("出现错误!",cause);
-            log.warn(String.format("客户端：%s 因为：%s 已经断开连接",ctx.channel().remoteAddress(),cause.getMessage()));
+            log.error("出现错误!", cause);
+            log.warn(String.format("客户端：%s 因为：%s 已经断开连接", ctx.channel().remoteAddress(), cause.getMessage()));
             ctx.channel().close();
         }
     }
 
-    private class NettyNetworkClient implements NetworkClient
-    {
+    private class NettyNetworkClient implements NetworkClient {
         private final tcpUser user;
         private final SocketAddress address;
         private final Channel channel;
-        private NettyNetworkClient(tcpUser user, SocketAddress address, Channel channel)
-        {
+
+        private NettyNetworkClient(tcpUser user, SocketAddress address, Channel channel) {
             this.user = user;
             this.address = address;
             this.channel = channel;
@@ -490,7 +494,7 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public void send(String message) throws IllegalStateException {
-            checks.checkState(!isOnline(),"This user is now offline!");
+            checks.checkState(!isOnline(), "This user is now offline!");
             channel.writeAndFlush(message);
         }
 
@@ -510,19 +514,24 @@ public class SSLNettyServer implements NetworkServer {
             return user;
         }
     }
-    private static class NettyUser extends JavaUser implements tcpUser{
+
+    private static class NettyUser extends JavaUser implements tcpUser {
         private NetworkClient client;
+
         /**
          * 设置网络层客户端
+         *
          * @param client 客户端
          */
         private void setNetworkClient(NetworkClient client) {
             this.client = client;
         }
+
         @Override
         public NetworkClient getNetworkClient() {
             return client;
         }
+
         @Override
         public boolean isServer() {
             return false;
@@ -530,7 +539,7 @@ public class SSLNettyServer implements NetworkServer {
 
         @Override
         public user onUserLogin(String UserName) {
-            log.info(String.format("用户：%s(IP地址：%s) 登录完成",UserName,getNetworkClient().getSocketAddress()));
+            log.info(String.format("用户：%s(IP地址：%s) 登录完成", UserName, getNetworkClient().getSocketAddress()));
             return super.onUserLogin(UserName);
         }
 

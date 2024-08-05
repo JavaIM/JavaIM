@@ -23,6 +23,7 @@ public enum Permission {
 
     /**
      * 由权限等级转换为权限Enum
+     *
      * @param PermissionLevel 权限等级
      * @return 权限enum
      */

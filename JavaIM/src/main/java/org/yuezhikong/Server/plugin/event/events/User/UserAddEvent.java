@@ -9,12 +9,13 @@ public class UserAddEvent implements Event, Cancellable {
 
     @Getter
     private final user User;
-    public UserAddEvent(user User)
-    {
+
+    public UserAddEvent(user User) {
         this.User = User;
     }
 
     private boolean cancel = false;
+
     @Override
     public boolean isCancelled() {
         return cancel;

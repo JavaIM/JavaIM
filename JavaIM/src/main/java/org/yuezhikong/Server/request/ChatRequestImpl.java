@@ -23,12 +23,12 @@ import org.jline.reader.Completer;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.UserData.Permission;
+import org.yuezhikong.Server.UserData.user;
 import org.yuezhikong.Server.command.InternalCommands;
 import org.yuezhikong.Server.plugin.Plugin.Plugin;
+import org.yuezhikong.Server.plugin.event.events.User.UserChatEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserCommandEvent;
 import org.yuezhikong.utils.checks;
-import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.plugin.event.events.User.UserChatEvent;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,8 +44,9 @@ public class ChatRequestImpl implements ChatRequest {
 
     /**
      * 注册指令
+     *
      * @param information 指令信息
-     * */
+     */
     @ApiStatus.Internal
     private void registerCommand0(CommandInformation information) {
         this.completer.informations.add(information);
@@ -128,24 +129,24 @@ public class ChatRequestImpl implements ChatRequest {
 
     @Override
     public void unregisterCommand(CommandInformation information) {
-        checks.checkArgument(information.plugin() == null,"can not unregister system command");
+        checks.checkArgument(information.plugin() == null, "can not unregister system command");
         completer.informations.remove(information);
     }
 
     @Override
     public void unregisterCommand(Plugin plugin) {
-        checks.checkArgument(plugin == null,"can not unregister system command");
+        checks.checkArgument(plugin == null, "can not unregister system command");
         completer.informations.removeIf((information) -> information.plugin() == plugin);
     }
 
     /**
      * 对于用户聊天信息的特别处理
-     * @param user 用户
+     *
+     * @param user    用户
      * @param message 消息
      * @return {@code true 阻止将信息发送至客户端} <p>{@code false 继续将信息发送到客户端}</p>
      */
-    public boolean UserChatRequests(@NotNull user user, @NotNull String message)
-    {
+    public boolean UserChatRequests(@NotNull user user, @NotNull String message) {
         if (message.isEmpty())
             //如果发送过来的消息是空的，就没必要再继续处理了
             return true;
@@ -158,7 +159,7 @@ public class ChatRequestImpl implements ChatRequest {
             String[] args = new String[tmp.length - 1];
             System.arraycopy(tmp, 1, args, 0, tmp.length - 1);
 
-            UserCommandEvent commandEvent = new UserCommandEvent(user,command,args);
+            UserCommandEvent commandEvent = new UserCommandEvent(user, command, args);
             instance.getPluginManager().callEvent(commandEvent);
             if (commandEvent.isCancelled())
                 return true;

@@ -15,13 +15,13 @@ public class ServerChatEvent implements Event, Cancellable {
     @Getter
     private final String ChatMessage;
 
-    public ServerChatEvent(user UserData, String ChatMessage)
-    {
+    public ServerChatEvent(user UserData, String ChatMessage) {
         this.serverUser = UserData;
         this.ChatMessage = ChatMessage;
     }
 
     private boolean cancel = false;
+
     @Override
     public boolean isCancelled() {
         return cancel;
