@@ -1,7 +1,7 @@
 package org.yuezhikong.Server.network;
 
 import org.jetbrains.annotations.Range;
-import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
+import org.yuezhikong.Server.userData.tcpUser.tcpUser;
 
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutorService;

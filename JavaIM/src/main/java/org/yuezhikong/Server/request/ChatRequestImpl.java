@@ -22,10 +22,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jline.reader.Completer;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.Server.UserData.Permission;
-import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.userData.Permission;
+import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.command.InternalCommands;
-import org.yuezhikong.Server.plugin.Plugin.Plugin;
+import org.yuezhikong.Server.plugin.plugin.Plugin;
 import org.yuezhikong.Server.plugin.event.events.User.UserChatEvent;
 import org.yuezhikong.Server.plugin.event.events.User.UserCommandEvent;
 import org.yuezhikong.utils.checks;
@@ -76,7 +76,7 @@ public class ChatRequestImpl implements ChatRequest {
             for (CommandInformation information : completer.informations) {
                 if (information.command().equals(command)) {
                     if (!information.commandInstance().execute(command, args, User)) {
-                        instance.getServerAPI().SendMessageToUser(
+                        instance.getServerAPI().sendMessageToUser(
                                 User,
                                 "语法错误! 正确的语法为：" + information.commandInstance().getUsage()
                         );
@@ -93,19 +93,19 @@ public class ChatRequestImpl implements ChatRequest {
                         String orig_Command = stringBuilder.toString();
                         String tipMessage = String.format("%s 执行了指令: %s", User.getUserName(), orig_Command);
                         log.info(tipMessage);
-                        for (user sendUser : instance.getServerAPI().GetValidClientList(true)) {
+                        for (user sendUser : instance.getServerAPI().getValidUserList(true)) {
                             if (!Permission.ADMIN.equals(sendUser.getUserPermission()))
                                 continue;
-                            instance.getServerAPI().SendMessageToUser(sendUser, tipMessage);
+                            instance.getServerAPI().sendMessageToUser(sendUser, tipMessage);
                         }
                     }
                     return;
                 }
             }
-            instance.getServerAPI().SendMessageToUser(User, "未知的命令！请输入/help查看帮助！");
+            instance.getServerAPI().sendMessageToUser(User, "未知的命令！请输入/help查看帮助！");
         } catch (Throwable t) {
             log.error("在执行{}命令时出现错误!", command, t);
-            instance.getServerAPI().SendMessageToUser(User, "在执行此命令的过程中出现未知的错误");
+            instance.getServerAPI().sendMessageToUser(User, "在执行此命令的过程中出现未知的错误");
         }
     }
 

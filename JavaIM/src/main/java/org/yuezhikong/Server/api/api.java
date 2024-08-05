@@ -18,7 +18,7 @@ package org.yuezhikong.Server.api;
 
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.userData.user;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.util.List;
@@ -31,14 +31,14 @@ public interface api {
      * @param user         发信的目标用户
      * @param inputMessage 发信的信息
      */
-    void SendMessageToUser(@NotNull user user, @NotNull @Nls String inputMessage);
+    void sendMessageToUser(@NotNull user user, @NotNull @Nls String inputMessage);
 
     /**
      * 新的向所有客户端发信api
      *
      * @param inputMessage 要发信的信息
      */
-    void SendMessageToAllClient(@NotNull @Nls String inputMessage);
+    void sendMessageToAllClient(@NotNull @Nls String inputMessage);
 
     /**
      * 获取有效的客户端列表
@@ -48,7 +48,7 @@ public interface api {
      * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      */
     @NotNull
-    List<user> GetValidClientList(boolean CheckLoginStatus);
+    List<user> getValidUserList(boolean CheckLoginStatus);
 
     /**
      * 新的获取用户User Data Class api
@@ -58,7 +58,7 @@ public interface api {
      * @throws AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
     @NotNull
-    user GetUserByUserName(@NotNull @Nls String UserName) throws AccountNotFoundException;
+    user getUserByUserName(@NotNull @Nls String UserName) throws AccountNotFoundException;
 
     /**
      * 修改用户的密码
@@ -66,7 +66,7 @@ public interface api {
      * @param User     用户
      * @param password 密码
      */
-    void ChangeUserPassword(user User, String password);
+    void changeUserPassword(user User, String password);
 
     /**
      * 直接发送信息到一个用户的函数
@@ -75,7 +75,7 @@ public interface api {
      * @param InputData    信息
      * @param ProtocolType 协议类型
      */
-    void SendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType);
+    void sendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType);
 
     /**
      * 根据用户Id获取用户
@@ -85,5 +85,5 @@ public interface api {
      * @throws AccountNotFoundException 根据Id找不到用户
      */
     @NotNull
-    user GetUserByUserId(String userId) throws AccountNotFoundException;
+    user getUserByUserId(String userId) throws AccountNotFoundException;
 }

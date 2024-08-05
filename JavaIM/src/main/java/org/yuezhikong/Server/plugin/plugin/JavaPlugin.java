@@ -1,4 +1,4 @@
-package org.yuezhikong.Server.plugin.Plugin;
+package org.yuezhikong.Server.plugin.plugin;
 
 @SuppressWarnings("unused")
 public abstract class JavaPlugin implements Plugin {

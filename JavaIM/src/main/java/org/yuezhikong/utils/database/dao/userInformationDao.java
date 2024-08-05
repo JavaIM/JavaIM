@@ -2,7 +2,7 @@ package org.yuezhikong.utils.database.dao;
 
 import org.apache.ibatis.annotations.Param;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.Server.UserData.userInformation;
+import org.yuezhikong.Server.userData.userInformation;
 
 import java.util.List;
 

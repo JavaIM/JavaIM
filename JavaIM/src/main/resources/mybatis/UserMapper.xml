@@ -5,10 +5,10 @@
 <!--namespace=绑定一个对应的Dao/Mapper接口-->
 <mapper namespace="org.yuezhikong.utils.database.dao.userInformationDao">
     <!--select查询语句-->
-    <select id="getUserList" resultType="org.yuezhikong.Server.UserData.userInformation">
+    <select id="getUserList" resultType="org.yuezhikong.Server.userData.userInformation">
         select * from UserData
     </select>
-    <select id="getUser" resultType="org.yuezhikong.Server.UserData.userInformation">
+    <select id="getUser" resultType="org.yuezhikong.Server.userData.userInformation">
         select * from UserData
         <where>
             <if test="userId != null">
@@ -26,23 +26,23 @@
         </where>
     </select>
 
-    <select id="getUserByName" parameterType="String" resultType="org.yuezhikong.Server.UserData.userInformation">
+    <select id="getUserByName" parameterType="String" resultType="org.yuezhikong.Server.userData.userInformation">
         select * from UserData where UserName = #{userName}
     </select>
 
-    <select id="getUserByToken" parameterType="String" resultType="org.yuezhikong.Server.UserData.userInformation">
+    <select id="getUserByToken" parameterType="String" resultType="org.yuezhikong.Server.userData.userInformation">
         select * from UserData where token = #{token}
     </select>
 
-    <select id="getUserBySalt" parameterType="String" resultType="org.yuezhikong.Server.UserData.userInformation">
+    <select id="getUserBySalt" parameterType="String" resultType="org.yuezhikong.Server.userData.userInformation">
         select * from UserData where salt = #{salt}
     </select>
 
-    <insert id="addUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
+    <insert id="addUser" parameterType="org.yuezhikong.Server.userData.userInformation">
         INSERT INTO `UserData` (`Permission`,`UserName`, `Passwd`,`salt`,`token`,`userId`,`avatar`) VALUES (#{Permission}, #{UserName}, #{Passwd}, #{salt}, #{token}, #{userId}, #{avatar});
     </insert>
 
-    <update id="updateUser" parameterType="org.yuezhikong.Server.UserData.userInformation">
+    <update id="updateUser" parameterType="org.yuezhikong.Server.userData.userInformation">
         UPDATE UserData SET `Permission`=#{Permission}, `Passwd`=#{Passwd}, `salt`=#{salt}, `token`=#{token}, `userId`=#{userId}, `avatar`=#{avatar} where UserName = #{UserName}
     </update>
 </mapper>

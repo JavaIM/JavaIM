@@ -1,7 +1,7 @@
-package org.yuezhikong.Server.UserData;
+package org.yuezhikong.Server.userData;
 
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
+import org.yuezhikong.Server.userData.auth.IUserAuthentication;
 
 public interface user {
 

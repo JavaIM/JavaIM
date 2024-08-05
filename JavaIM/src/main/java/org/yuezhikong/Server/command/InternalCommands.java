@@ -11,11 +11,11 @@ import org.yuezhikong.CrashReport;
 import org.yuezhikong.Main;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.Server.UserData.Permission;
-import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
-import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.UserData.userInformation;
-import org.yuezhikong.Server.UserData.userUploadFile;
+import org.yuezhikong.Server.userData.Permission;
+import org.yuezhikong.Server.userData.tcpUser.tcpUser;
+import org.yuezhikong.Server.userData.user;
+import org.yuezhikong.Server.userData.userInformation;
+import org.yuezhikong.Server.userData.userUploadFile;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.utils.Protocol.ChatProtocol;
 import org.yuezhikong.utils.SHA256;
@@ -51,11 +51,11 @@ public class InternalCommands {
             if (args.length != 0)
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
-            serverAPI.SendMessageToUser(User, "JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
-            serverAPI.SendMessageToUser(User, "主仓库于：https://github.com/JavaIM/JavaIM");
-            serverAPI.SendMessageToUser(User, "主要开发者名单：");
-            serverAPI.SendMessageToUser(User, "QiLechan（柒楽）");
-            serverAPI.SendMessageToUser(User, "AlexLiuDev233 （阿白）");
+            serverAPI.sendMessageToUser(User, "JavaIM是根据GNU General Public License v3.0开源的自由程序（开源软件）");
+            serverAPI.sendMessageToUser(User, "主仓库于：https://github.com/JavaIM/JavaIM");
+            serverAPI.sendMessageToUser(User, "主要开发者名单：");
+            serverAPI.sendMessageToUser(User, "QiLechan（柒楽）");
+            serverAPI.sendMessageToUser(User, "AlexLiuDev233 （阿白）");
             return true;
         }
 
@@ -92,7 +92,7 @@ public class InternalCommands {
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
             CrashReport.crashReport("手动崩溃", new RuntimeException("Manual crash"), Thread.currentThread());
@@ -132,9 +132,9 @@ public class InternalCommands {
                 return false;
             IServer serverInstance = ServerTools.getServerInstanceOrThrow();
             api serverAPI = serverInstance.getServerAPI();
-            serverAPI.SendMessageToUser(User, "JavaIM服务器帮助");
+            serverAPI.sendMessageToUser(User, "JavaIM服务器帮助");
             serverInstance.getRequest().getRegisterCommands().forEach(information ->
-                    serverAPI.SendMessageToUser(User, information.commandInstance().getUsage() + " " + information.commandInstance().getDescription())
+                    serverAPI.sendMessageToUser(User, information.commandInstance().getUsage() + " " + information.commandInstance().getDescription())
             );
             return true;
         }
@@ -171,11 +171,11 @@ public class InternalCommands {
             if (args.length != 0)
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
-            List<user> onlineUserList = serverAPI.GetValidClientList(true);
+            List<user> onlineUserList = serverAPI.getValidUserList(true);
             if (Permission.ADMIN.equals(User.getUserPermission()))
                 onlineUserList.forEach((user) -> {
                     if (user instanceof tcpUser)
-                        serverAPI.SendMessageToUser(User,
+                        serverAPI.sendMessageToUser(User,
                                 String.format("%s 权限：%s IP地址：%s",
                                         user.getUserName(),
                                         user.getUserPermission().toString(),
@@ -183,11 +183,11 @@ public class InternalCommands {
                                 )
                         );
                     else
-                        serverAPI.SendMessageToUser(User, String.format("%s 权限：%s", user.getUserName(), user.getUserPermission().toString()));
+                        serverAPI.sendMessageToUser(User, String.format("%s 权限：%s", user.getUserName(), user.getUserPermission().toString()));
                 });
             else
                 onlineUserList.forEach((user) ->
-                        serverAPI.SendMessageToUser(User, String.format("%s 权限：%s", user.getUserName(), user.getUserPermission().toString()))
+                        serverAPI.sendMessageToUser(User, String.format("%s 权限：%s", user.getUserName(), user.getUserPermission().toString()))
                 );
             return true;
         }
@@ -214,7 +214,7 @@ public class InternalCommands {
         public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
             List<Completers.TreeCompleter.Node> canTellUsers = new ArrayList<>();
             canTellUsers.add(node("Server", node(NullCompleter.INSTANCE)));
-            ServerTools.getServerInstanceOrThrow().getServerAPI().GetValidClientList(true).forEach((user) -> {
+            ServerTools.getServerInstanceOrThrow().getServerAPI().getValidUserList(true).forEach((user) -> {
                 if (!user.isUserLogged())
                     return;
                 canTellUsers.add(node(user.getUserName(), node(NullCompleter.INSTANCE)));
@@ -250,17 +250,17 @@ public class InternalCommands {
             if (args[0].equals("Server"))//当私聊目标为后台时
             {
                 ((CustomLogger) log).ChatMsg("[" + User.getUserName() + "]:" + ChatMessage);
-                serverAPI.SendMessageToUser(User, "你对" + args[0] + "发送了私聊：" + ChatMessage);
+                serverAPI.sendMessageToUser(User, "你对" + args[0] + "发送了私聊：" + ChatMessage);
                 return true;
             }
             try {
                 ChatProtocol chatProtocol = new ChatProtocol();
                 chatProtocol.setSourceUserName(User.getUserName());
                 chatProtocol.setMessage(ChatMessage);
-                serverAPI.SendJsonToClient(serverAPI.GetUserByUserName(args[0]), new Gson().toJson(chatProtocol), "ChatProtocol");
-                serverAPI.SendMessageToUser(User, "你对" + args[0] + "发送了私聊：" + ChatMessage);
+                serverAPI.sendJsonToClient(serverAPI.getUserByUserName(args[0]), new Gson().toJson(chatProtocol), "ChatProtocol");
+                serverAPI.sendMessageToUser(User, "你对" + args[0] + "发送了私聊：" + ChatMessage);
             } catch (AccountNotFoundException e) {
-                serverAPI.SendMessageToUser(User, "此用户不存在");
+                serverAPI.sendMessageToUser(User, "此用户不存在");
             }
             return true;
         }
@@ -286,7 +286,7 @@ public class InternalCommands {
         @Override
         public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
             List<Completers.TreeCompleter.Node> canControlUsers = new ArrayList<>();
-            ServerTools.getServerInstanceOrThrow().getServerAPI().GetValidClientList(true).forEach((user) -> {
+            ServerTools.getServerInstanceOrThrow().getServerAPI().getValidUserList(true).forEach((user) -> {
                 if (!user.isUserLogged())
                     return;
                 canControlUsers.add(node(user.getUserName(), node(NullCompleter.INSTANCE)));
@@ -306,20 +306,20 @@ public class InternalCommands {
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
             userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
-                serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                serverAPI.sendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
             }
             if (information.getPermission() != 1)
-                serverAPI.SendMessageToUser(User, "已将" + information.getUserName() + "设为服务器管理员");
+                serverAPI.sendMessageToUser(User, "已将" + information.getUserName() + "设为服务器管理员");
             else {
-                serverAPI.SendMessageToUser(User, "无法设置，对方已是管理员");
+                serverAPI.sendMessageToUser(User, "无法设置，对方已是管理员");
                 return true;
             }
 
@@ -328,11 +328,11 @@ public class InternalCommands {
 
             user targetUser;
             try {
-                targetUser = serverAPI.GetUserByUserName(args[0]);
+                targetUser = serverAPI.getUserByUserName(args[0]);
             } catch (AccountNotFoundException e) {
                 return true;
             }
-            serverAPI.SendMessageToUser(targetUser, "您已被设置为服务器管理员");
+            serverAPI.sendMessageToUser(targetUser, "您已被设置为服务器管理员");
             targetUser.SetUserPermission(1);
             return true;
         }
@@ -358,7 +358,7 @@ public class InternalCommands {
         @Override
         public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
             List<Completers.TreeCompleter.Node> canControlUsers = new ArrayList<>();
-            ServerTools.getServerInstanceOrThrow().getServerAPI().GetValidClientList(true).forEach((user) -> {
+            ServerTools.getServerInstanceOrThrow().getServerAPI().getValidUserList(true).forEach((user) -> {
                 if (!user.isUserLogged())
                     return;
                 canControlUsers.add(node(user.getUserName(), node(NullCompleter.INSTANCE)));
@@ -378,20 +378,20 @@ public class InternalCommands {
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
             userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
-                serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                serverAPI.sendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
             }
             if (information.getPermission() == 1)
-                serverAPI.SendMessageToUser(User, "已夺去" + information.getUserName() + "的管理员权限");
+                serverAPI.sendMessageToUser(User, "已夺去" + information.getUserName() + "的管理员权限");
             else {
-                serverAPI.SendMessageToUser(User, "无法夺去权限，对方不是管理员");
+                serverAPI.sendMessageToUser(User, "无法夺去权限，对方不是管理员");
                 return true;
             }
 
@@ -400,11 +400,11 @@ public class InternalCommands {
 
             user targetUser;
             try {
-                targetUser = serverAPI.GetUserByUserName(args[0]);
+                targetUser = serverAPI.getUserByUserName(args[0]);
             } catch (AccountNotFoundException e) {
                 return true;
             }
-            serverAPI.SendMessageToUser(targetUser, "您已被夺去管理员权限");
+            serverAPI.sendMessageToUser(targetUser, "您已被夺去管理员权限");
             targetUser.SetUserPermission(0);
             return true;
         }
@@ -430,7 +430,7 @@ public class InternalCommands {
         @Override
         public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
             List<Completers.TreeCompleter.Node> canControlUsers = new ArrayList<>();
-            ServerTools.getServerInstanceOrThrow().getServerAPI().GetValidClientList(true).forEach((user) -> {
+            ServerTools.getServerInstanceOrThrow().getServerAPI().getValidUserList(true).forEach((user) -> {
                 if (!user.isUserLogged())
                     return;
                 canControlUsers.add(node(user.getUserName(), node(NullCompleter.INSTANCE)));
@@ -450,14 +450,14 @@ public class InternalCommands {
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
             userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
-                serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                serverAPI.sendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
             }
             information.setPermission(-1);
@@ -465,11 +465,11 @@ public class InternalCommands {
 
             user kickUser;
             try {
-                kickUser = serverAPI.GetUserByUserName(args[0]);
+                kickUser = serverAPI.getUserByUserName(args[0]);
             } catch (AccountNotFoundException e) {
                 return true;
             }
-            serverAPI.SendMessageToUser(kickUser, "您已被封禁");
+            serverAPI.sendMessageToUser(kickUser, "您已被封禁");
             kickUser.UserDisconnect();
             return true;
         }
@@ -495,7 +495,7 @@ public class InternalCommands {
         @Override
         public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
             List<Completers.TreeCompleter.Node> canControlUsers = new ArrayList<>();
-            ServerTools.getServerInstanceOrThrow().getServerAPI().GetValidClientList(true).forEach((user) -> {
+            ServerTools.getServerInstanceOrThrow().getServerAPI().getValidUserList(true).forEach((user) -> {
                 if (!user.isUserLogged())
                     return;
                 canControlUsers.add(node(user.getUserName(), node(NullCompleter.INSTANCE)));
@@ -515,14 +515,14 @@ public class InternalCommands {
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
             userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
-                serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                serverAPI.sendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
             }
             information.setPermission(0);
@@ -564,7 +564,7 @@ public class InternalCommands {
             IServer serverInstance = ServerTools.getServerInstanceOrThrow();
             api serverAPI = serverInstance.getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
             serverInstance.stop();
@@ -592,7 +592,7 @@ public class InternalCommands {
         @Override
         public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
             List<Completers.TreeCompleter.Node> canControlUsers = new ArrayList<>();
-            ServerTools.getServerInstanceOrThrow().getServerAPI().GetValidClientList(true).forEach((user) -> {
+            ServerTools.getServerInstanceOrThrow().getServerAPI().getValidUserList(true).forEach((user) -> {
                 if (!user.isUserLogged())
                     return;
                 canControlUsers.add(node(user.getUserName(), node(NullCompleter.INSTANCE)));
@@ -612,19 +612,19 @@ public class InternalCommands {
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
 
             userInformationDao mapper = ServerTools.getServerInstanceOrThrow().getSqlSession().getMapper(userInformationDao.class);
             userInformation information = mapper.getUser(null, args[0], null, null);
             if (information == null) {
-                serverAPI.SendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
+                serverAPI.sendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
             }
             information.setPasswd(SHA256.sha256(args[1]));
             mapper.updateUser(information);
-            serverAPI.SendMessageToUser(User, "操作成功完成。");
+            serverAPI.sendMessageToUser(User, "操作成功完成。");
             return true;
         }
 
@@ -649,7 +649,7 @@ public class InternalCommands {
         @Override
         public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
             List<Completers.TreeCompleter.Node> canControlUsers = new ArrayList<>();
-            ServerTools.getServerInstanceOrThrow().getServerAPI().GetValidClientList(true).forEach((user) -> {
+            ServerTools.getServerInstanceOrThrow().getServerAPI().getValidUserList(true).forEach((user) -> {
                 if (!user.isUserLogged())
                     return;
                 canControlUsers.add(node(user.getUserName(), node(NullCompleter.INSTANCE)));
@@ -669,21 +669,21 @@ public class InternalCommands {
                 return false;
             api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
 
             user kickUser;
             try {
-                kickUser = serverAPI.GetUserByUserName(args[0]);
+                kickUser = serverAPI.getUserByUserName(args[0]);
             } catch (AccountNotFoundException e) {
-                serverAPI.SendMessageToUser(User, "此用户不存在");
+                serverAPI.sendMessageToUser(User, "此用户不存在");
                 return true;
             }
-            serverAPI.SendMessageToUser(kickUser, "您已被踢出此服务器");
+            serverAPI.sendMessageToUser(kickUser, "您已被踢出此服务器");
             String UserName = kickUser.getUserName();
             kickUser.UserDisconnect();
-            serverAPI.SendMessageToUser(User, "已成功踢出用户：" + UserName);
+            serverAPI.sendMessageToUser(User, "已成功踢出用户：" + UserName);
             return true;
         }
 
@@ -721,25 +721,25 @@ public class InternalCommands {
             IServer instance = ServerTools.getServerInstanceOrThrow();
             api serverAPI = instance.getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
 
             userUploadFileDao mapper = instance.getSqlSession().getMapper(userUploadFileDao.class);
             List<userUploadFile> uploadFiles = mapper.getUploadFiles();
             if (uploadFiles == null || uploadFiles.isEmpty()) {
-                serverAPI.SendMessageToUser(User, "没有上传的文件");
+                serverAPI.sendMessageToUser(User, "没有上传的文件");
                 return true;
             }
             uploadFiles.forEach((uploadFile) -> {
                 try {
-                    serverAPI.SendMessageToUser(User, String.format("文件Id: %s, 用户Id: %s(用户名：%s)，文件名：%s",
+                    serverAPI.sendMessageToUser(User, String.format("文件Id: %s, 用户Id: %s(用户名：%s)，文件名：%s",
                             uploadFile.getOwnFile(),
                             uploadFile.getUserId(),
-                            serverAPI.GetUserByUserId(uploadFile.getUserId()).getUserName(),
+                            serverAPI.getUserByUserId(uploadFile.getUserId()).getUserName(),
                             uploadFile.getOrigFileName()));
                 } catch (AccountNotFoundException e) {
-                    serverAPI.SendMessageToUser(User, String.format("文件Id: %s, 用户Id: %s，文件名：%s",
+                    serverAPI.sendMessageToUser(User, String.format("文件Id: %s, 用户Id: %s，文件名：%s",
                             uploadFile.getOwnFile(),
                             uploadFile.getUserId(),
                             uploadFile.getOrigFileName()));
@@ -780,7 +780,7 @@ public class InternalCommands {
             if (args.length != 0)
                 return false;
             if (!User.isServer()) {
-                ServerTools.getServerInstanceOrThrow().getServerAPI().SendMessageToUser(User, "此命令只能由服务端执行！");
+                ServerTools.getServerInstanceOrThrow().getServerAPI().sendMessageToUser(User, "此命令只能由服务端执行！");
                 return true;
             }
 
@@ -841,28 +841,28 @@ public class InternalCommands {
             IServer server = ServerTools.getServerInstanceOrThrow();
             api serverAPI = server.getServerAPI();
             if (!(Permission.ADMIN.equals(User.getUserPermission()))) {
-                serverAPI.SendMessageToUser(User, "你没有权限这样做");
+                serverAPI.sendMessageToUser(User, "你没有权限这样做");
                 return true;
             }
 
             userUploadFileDao mapper = server.getSqlSession().getMapper(userUploadFileDao.class);
             userUploadFile uploadFile = mapper.getUploadFileByFileId(args[0]);
             if (uploadFile == null) {
-                serverAPI.SendMessageToUser(User, "文件不存在");
+                serverAPI.sendMessageToUser(User, "文件不存在");
                 return true;
             }
 
             File file = new File("./uploadFiles", uploadFile.getOwnFile());
             if (!file.delete()) {
-                serverAPI.SendMessageToUser(User, "出现错误，访问被拒绝或不存在");
+                serverAPI.sendMessageToUser(User, "出现错误，访问被拒绝或不存在");
                 return true;
             }
 
             if (!mapper.deleteFile(uploadFile)) {
-                serverAPI.SendMessageToUser(User, "出现错误，访问被拒绝或不存在");
+                serverAPI.sendMessageToUser(User, "出现错误，访问被拒绝或不存在");
                 return true;
             }
-            serverAPI.SendMessageToUser(User, "操作成功完成。");
+            serverAPI.sendMessageToUser(User, "操作成功完成。");
             return true;
         }
 

@@ -4,4 +4,4 @@
  * @version 1.4
  * @author AlexLiuDev233
  */
-package org.yuezhikong.Server.UserData;
+package org.yuezhikong.Server.userData;

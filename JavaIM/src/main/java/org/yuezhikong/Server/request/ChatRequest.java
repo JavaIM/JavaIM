@@ -1,8 +1,8 @@
 package org.yuezhikong.Server.request;
 
-import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.command.Command;
-import org.yuezhikong.Server.plugin.Plugin.Plugin;
+import org.yuezhikong.Server.plugin.plugin.Plugin;
 
 import java.util.List;
 

@@ -5,25 +5,25 @@
 <!--namespace=绑定一个对应的Dao/Mapper接口-->
 <mapper namespace="org.yuezhikong.utils.database.dao.userUploadFileDao">
     <!--select查询语句-->
-    <select id="getUploadFilesByUserId" resultType="org.yuezhikong.Server.UserData.userUploadFile">
+    <select id="getUploadFilesByUserId" resultType="org.yuezhikong.Server.userData.userUploadFile">
         select * from FileOwner where userId = #{userId}
     </select>
 
-    <select id="getUploadFiles" resultType="org.yuezhikong.Server.UserData.userUploadFile">
+    <select id="getUploadFiles" resultType="org.yuezhikong.Server.userData.userUploadFile">
         select * from FileOwner
     </select>
-    <select id="getUploadFileByFileId" resultType="org.yuezhikong.Server.UserData.userUploadFile">
+    <select id="getUploadFileByFileId" resultType="org.yuezhikong.Server.userData.userUploadFile">
         select * from FileOwner where ownFile = #{ownFile}
     </select>
 
-    <delete id="deleteFile" parameterType="org.yuezhikong.Server.UserData.userUploadFile">
+    <delete id="deleteFile" parameterType="org.yuezhikong.Server.userData.userUploadFile">
         delete from FileOwner where ownFile = #{ownFile}
     </delete>
-    <insert id="addFile" parameterType="org.yuezhikong.Server.UserData.userUploadFile">
+    <insert id="addFile" parameterType="org.yuezhikong.Server.userData.userUploadFile">
         INSERT INTO `FileOwner` (`userId`,`ownFile`, `origFileName`) VALUES (#{userId}, #{ownFile}, #{origFileName});
     </insert>
 
-    <update id="updateFile" parameterType="org.yuezhikong.Server.UserData.userUploadFile">
+    <update id="updateFile" parameterType="org.yuezhikong.Server.userData.userUploadFile">
         UPDATE UserData SET `ownFile`=#{ownFile}, `origFileName`=#{origFileName} where userId = #{userId}
     </update>
 </mapper>

@@ -1,4 +1,4 @@
-package org.yuezhikong.Server.UserData.Authentication;
+package org.yuezhikong.Server.userData.auth;
 
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
@@ -6,9 +6,9 @@ import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.Server.UserData.Permission;
-import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.UserData.userInformation;
+import org.yuezhikong.Server.userData.Permission;
+import org.yuezhikong.Server.userData.user;
+import org.yuezhikong.Server.userData.userInformation;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
@@ -65,7 +65,7 @@ public final class UserAuthentication implements IUserAuthentication {
             return true;
         } catch (Throwable throwable) {
             log.error("用户登录流程出错，出现异常", throwable);
-            serverAPI.SendMessageToUser(User, "执行登录时出现内部错误，当前Unix时间：" + System.currentTimeMillis() + "请联系服务器管理员");
+            serverAPI.sendMessageToUser(User, "执行登录时出现内部错误，当前Unix时间：" + System.currentTimeMillis() + "请联系服务器管理员");
             return false;
         }
     }
@@ -78,14 +78,14 @@ public final class UserAuthentication implements IUserAuthentication {
             if (information != null) {
                 UserName = information.getUserName();
                 try {
-                    serverAPI.GetUserByUserName(UserName);
+                    serverAPI.getUserByUserName(UserName);
                     //说明目前是已经有同一名字的用户登录了
                     //因此，禁止登录
                     SystemProtocol protocol = new SystemProtocol();
                     protocol.setType("Login");
                     protocol.setMessage("Already Logged");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+                    serverAPI.sendJsonToClient(User, json, "SystemProtocol");
                     return false;
                 } catch (AccountNotFoundException ignored) {
                 }
@@ -102,7 +102,7 @@ public final class UserAuthentication implements IUserAuthentication {
                     protocol.setType("Login");
                     protocol.setMessage("Authentication Failed");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+                    serverAPI.sendJsonToClient(User, json, "SystemProtocol");
                     return false;
                 }
                 UserLogged = true;
@@ -113,10 +113,10 @@ public final class UserAuthentication implements IUserAuthentication {
                 protocol.setType("Login");
                 protocol.setMessage("Success");
                 String json = new Gson().toJson(protocol);
-                serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+                serverAPI.sendJsonToClient(User, json, "SystemProtocol");
 
                 if (User.getUserPermission().equals(Permission.BAN)) {
-                    serverAPI.SendMessageToUser(User, "登录失败，此用户已被永久封禁");
+                    serverAPI.sendMessageToUser(User, "登录失败，此用户已被永久封禁");
                     return false;
                 }
                 return true;
@@ -125,7 +125,7 @@ public final class UserAuthentication implements IUserAuthentication {
                 protocol.setType("Login");
                 protocol.setMessage("Authentication Failed");
                 String json = new Gson().toJson(protocol);
-                serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+                serverAPI.sendJsonToClient(User, json, "SystemProtocol");
                 return false;
             }
         } catch (Throwable t) {
@@ -134,7 +134,7 @@ public final class UserAuthentication implements IUserAuthentication {
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+            serverAPI.sendJsonToClient(User, json, "SystemProtocol");
             return false;
         }
     }
@@ -142,7 +142,7 @@ public final class UserAuthentication implements IUserAuthentication {
     private boolean PostUserNameAndPasswordLogin(String UserName, userInformation information) {
         this.UserName = UserName;
         if (Permission.ToPermission(information.getPermission()).equals(Permission.BAN)) {
-            serverAPI.SendMessageToUser(User, "登录失败，此用户已被永久封禁");
+            serverAPI.sendMessageToUser(User, "登录失败，此用户已被永久封禁");
             return false;
         }
         SqlSession sqlSession = ServerTools.getServerInstance().getSqlSession();
@@ -167,7 +167,7 @@ public final class UserAuthentication implements IUserAuthentication {
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+            serverAPI.sendJsonToClient(User, json, "SystemProtocol");
             return false;
         }
 
@@ -176,7 +176,7 @@ public final class UserAuthentication implements IUserAuthentication {
         protocolData.setType("Login");
         protocolData.setMessage(token);
         String json = new Gson().toJson(protocolData);
-        serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+        serverAPI.sendJsonToClient(User, json, "SystemProtocol");
         //设置登录成功
         UserLogged = true;
         User.onUserLogin(UserName);
@@ -185,32 +185,32 @@ public final class UserAuthentication implements IUserAuthentication {
 
     private boolean DoPasswordLogin0(String UserName, String Password) {
         if ("Server".equals(UserName)) {
-            serverAPI.SendMessageToUser(User, "禁止使用受保护的用户名：Server");
+            serverAPI.sendMessageToUser(User, "禁止使用受保护的用户名：Server");
             SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+            serverAPI.sendJsonToClient(User, json, "SystemProtocol");
             return false;
         }
         if (UserName == null || Password == null || UserName.isEmpty() || Password.isEmpty()) {
-            serverAPI.SendMessageToUser(User, "禁止使用空字符串！");
+            serverAPI.sendMessageToUser(User, "禁止使用空字符串！");
             SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+            serverAPI.sendJsonToClient(User, json, "SystemProtocol");
             return false;
         }
         try {
-            serverAPI.GetUserByUserName(UserName);
+            serverAPI.getUserByUserName(UserName);
             //说明目前是已经有同一名字的用户登录了
             //因此，禁止登录
             SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Already Logged");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+            serverAPI.sendJsonToClient(User, json, "SystemProtocol");
             return false;
         } catch (AccountNotFoundException ignored) {
         }
@@ -230,12 +230,12 @@ public final class UserAuthentication implements IUserAuthentication {
                     CheckDatabaseUpgrade(mapper, userInformation);
                     return PostUserNameAndPasswordLogin(UserName, userInformation);
                 } else {
-                    serverAPI.SendMessageToUser(User, "登录失败，用户名或密码错误");
+                    serverAPI.sendMessageToUser(User, "登录失败，用户名或密码错误");
                     SystemProtocol protocol = new SystemProtocol();
                     protocol.setType("Login");
                     protocol.setMessage("Authentication Failed");
                     String json = new Gson().toJson(protocol);
-                    serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+                    serverAPI.sendJsonToClient(User, json, "SystemProtocol");
                     return false;
                 }
             } else {
@@ -268,7 +268,7 @@ public final class UserAuthentication implements IUserAuthentication {
             protocol.setType("Login");
             protocol.setMessage("Authentication Failed");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(User, json, "SystemProtocol");
+            serverAPI.sendJsonToClient(User, json, "SystemProtocol");
             return false;
         }
     }
@@ -314,7 +314,7 @@ public final class UserAuthentication implements IUserAuthentication {
             return true;
         } catch (Throwable throwable) {
             log.error("用户登录流程出错，出现异常", throwable);
-            serverAPI.SendMessageToUser(User, "执行登录时出现内部错误，当前Unix时间：" + System.currentTimeMillis() + "请联系服务器管理员");
+            serverAPI.sendMessageToUser(User, "执行登录时出现内部错误，当前Unix时间：" + System.currentTimeMillis() + "请联系服务器管理员");
             return false;
         }
     }

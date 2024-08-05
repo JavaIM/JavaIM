@@ -4,7 +4,7 @@ import org.apache.ibatis.annotations.Param;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.Server.UserData.userUploadFile;
+import org.yuezhikong.Server.userData.userUploadFile;
 
 import java.util.List;
 

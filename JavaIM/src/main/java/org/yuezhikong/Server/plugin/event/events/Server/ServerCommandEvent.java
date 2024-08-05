@@ -1,7 +1,7 @@
 package org.yuezhikong.Server.plugin.event.events.Server;
 
 import lombok.Getter;
-import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.plugin.event.Cancellable;
 import org.yuezhikong.Server.plugin.event.events.Event;
 

@@ -1,6 +1,6 @@
 package org.yuezhikong.Server.plugin.userData;
 
-import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.userData.user;
 
 public interface PluginUser extends user {
 

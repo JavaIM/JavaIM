@@ -15,9 +15,9 @@ import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Main;
-import org.yuezhikong.Server.UserData.Authentication.UserAuthentication;
-import org.yuezhikong.Server.UserData.*;
-import org.yuezhikong.Server.UserData.tcpUser.tcpUser;
+import org.yuezhikong.Server.userData.auth.UserAuthentication;
+import org.yuezhikong.Server.userData.*;
+import org.yuezhikong.Server.userData.tcpUser.tcpUser;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
@@ -134,7 +134,7 @@ public final class Server implements IServer {
 
         serverAPI = new SingleAPI(this) {
             @Override
-            public void SendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType) {
+            public void sendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType) {
                 GeneralProtocol protocol = new GeneralProtocol();
                 protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
                 protocol.setProtocolName(ProtocolType);
@@ -214,8 +214,8 @@ public final class Server implements IServer {
                             chatProtocol.setSourceUserName("Server");
                             chatProtocol.setMessage(line);
                             String SendProtocolData = gson.toJson(chatProtocol);
-                            serverAPI.GetValidClientList(true).forEach((user) ->
-                                    serverAPI.SendJsonToClient(user, SendProtocolData, "ChatProtocol"));
+                            serverAPI.getValidUserList(true).forEach((user) ->
+                                    serverAPI.sendJsonToClient(user, SendProtocolData, "ChatProtocol"));
                             continue;
                         }
                         List<String> tmp = reader.getParsedLine().words();
@@ -296,8 +296,8 @@ public final class Server implements IServer {
     @Override
     public void stop() {
         log.info("JavaIM服务器正在关闭...");
-        getServerAPI().SendMessageToAllClient("服务器已关闭");
-        for (user requestUser : getServerAPI().GetValidClientList(false)) {
+        getServerAPI().sendMessageToAllClient("服务器已关闭");
+        for (user requestUser : getServerAPI().getValidUserList(false)) {
             requestUser.UserDisconnect();
         }
         users.clear();
@@ -321,7 +321,7 @@ public final class Server implements IServer {
      */
     private void HandleChatProtocol(final ChatProtocol protocol, final tcpUser user) {
         if (!user.isUserLogged()) {
-            getServerAPI().SendMessageToUser(user, "请先登录");
+            getServerAPI().sendMessageToUser(user, "请先登录");
             return;
         }
         if (!request.UserChatRequests(user, protocol.getMessage())) {
@@ -331,8 +331,8 @@ public final class Server implements IServer {
             chatProtocol.setSourceUserName(user.getUserName());
             chatProtocol.setMessage(protocol.getMessage());
             String SendProtocolData = gson.toJson(chatProtocol);
-            serverAPI.GetValidClientList(true).forEach((forEachUser) ->
-                    serverAPI.SendJsonToClient(forEachUser, SendProtocolData, "ChatProtocol"));
+            serverAPI.getValidUserList(true).forEach((forEachUser) ->
+                    serverAPI.sendJsonToClient(forEachUser, SendProtocolData, "ChatProtocol"));
         }
     }
 
@@ -362,7 +362,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverApi.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverApi.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
@@ -380,7 +380,7 @@ public final class Server implements IServer {
                 transferProtocol.getTransferProtocolBody().add(fileNameBean);
                 transferProtocol.getTransferProtocolBody().add(fileContentBean);
 
-                serverApi.SendJsonToClient(user, gson.toJson(transferProtocol), "TransferProtocol");
+                serverApi.sendJsonToClient(user, gson.toJson(transferProtocol), "TransferProtocol");
             }
 
             /**
@@ -397,14 +397,14 @@ public final class Server implements IServer {
         switch (protocol.getType()) {
             case "ChangePassword" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
-                getServerAPI().ChangeUserPassword(user, protocol.getMessage());
+                getServerAPI().changeUserPassword(user, protocol.getMessage());
             }
             case "DownloadOwnFileByFileName" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
                 List<userUploadFile> uploadFiles = utils.getFileByUserId(sqlSession, user);
@@ -412,7 +412,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
@@ -427,7 +427,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
@@ -435,7 +435,7 @@ public final class Server implements IServer {
             }
             case "DownloadFileByFileId" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
                 userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
@@ -444,14 +444,14 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
                 utils.sendFile(uploadFile.getOwnFile(), user, serverAPI, gson, uploadFile.getOrigFileName());
             }
             case "DeleteUploadFileByFileId" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
                 userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
@@ -460,7 +460,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
@@ -469,7 +469,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("Permission denied");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
@@ -478,7 +478,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("Permission denied by platform");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
@@ -486,14 +486,14 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("Permission denied by platform");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
-                serverAPI.SendMessageToUser(user, "操作成功完成。");
+                serverAPI.sendMessageToUser(user, "操作成功完成。");
             }
             case "GetFileIdByFileName" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
                 userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
@@ -502,7 +502,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
                 userUploadFile uploadFile = null;
@@ -516,7 +516,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
@@ -524,11 +524,11 @@ public final class Server implements IServer {
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("GetFileIdByFileNameResult");
                 systemProtocol.setMessage(FileId);
-                serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             }
             case "GetFileNameByFileId" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
                 userUploadFileDao mapper = sqlSession.getMapper(userUploadFileDao.class);
@@ -537,18 +537,18 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
                 String FileName = uploadFile.getOrigFileName();
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("GetFileNameByFileIdResult");
                 systemProtocol.setMessage(FileName);
-                serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             }
             case "GetUploadFileList" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
                 List<userUploadFile> uploadFiles = utils.getFileByUserId(sqlSession, user);
@@ -556,7 +556,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
@@ -571,11 +571,11 @@ public final class Server implements IServer {
                     bodyBean.setData(file.getOrigFileName());
                     transferProtocol.getTransferProtocolBody().add(bodyBean);
                 }));
-                serverAPI.SendJsonToClient(user, gson.toJson(transferProtocol), "TransferProtocol");
+                serverAPI.sendJsonToClient(user, gson.toJson(transferProtocol), "TransferProtocol");
             }
             case "SetAvatarId" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
                 // 检测是否存在
@@ -585,7 +585,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
                 // 如果存在，设置
@@ -593,7 +593,7 @@ public final class Server implements IServer {
             }
             case "GetAvatarIdByUserName" -> {
                 if (!user.isUserLogged()) {
-                    getServerAPI().SendMessageToUser(user, "请先登录");
+                    getServerAPI().sendMessageToUser(user, "请先登录");
                     return;
                 }
                 userInformationDao informationDao = sqlSession.getMapper(userInformationDao.class);
@@ -602,22 +602,22 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("User Not Found");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
 
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("GetAvatarIdByUserNameResult");
                 systemProtocol.setMessage(information.getAvatar());
-                serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             }
             case "Login", "Error", "DisplayMessage" -> {
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("Error");
                 systemProtocol.setMessage("Invalid Protocol Type, Please Check it");
-                getServerAPI().SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                getServerAPI().sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             }
-            default -> getServerAPI().SendMessageToUser(user, "暂不支持此消息类型");
+            default -> getServerAPI().sendMessageToUser(user, "暂不支持此消息类型");
         }
     }
 
@@ -629,18 +629,18 @@ public final class Server implements IServer {
      */
     private void HandleTransferProtocol(final TransferProtocol protocol, final tcpUser user) {
         if (!user.isUserLogged()) {
-            getServerAPI().SendMessageToUser(user, "请先登录");
+            getServerAPI().sendMessageToUser(user, "请先登录");
             return;
         }
         if (protocol.getTransferProtocolHead() == null || protocol.getTransferProtocolBody() == null) {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Invalid Packet");
-            serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+            serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             return;
         }
         if (!"upload".equals(protocol.getTransferProtocolHead().getType())) {
-            serverAPI.SendMessageToUser(user, "正在开发中");
+            serverAPI.sendMessageToUser(user, "正在开发中");
             return;
         }
 
@@ -649,7 +649,7 @@ public final class Server implements IServer {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Invalid Packet");
-            serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+            serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             return;
         }
         String fileName = data.get(0).getData();
@@ -662,7 +662,7 @@ public final class Server implements IServer {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Already Exists");
-                    serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+                    serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
             }
@@ -674,7 +674,7 @@ public final class Server implements IServer {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Invalid Packet");
-            serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+            serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             return;
         }
 
@@ -701,7 +701,7 @@ public final class Server implements IServer {
         } catch (IOException e) {
             throw new RuntimeException("write File Failed", e);
         }
-        serverAPI.SendMessageToUser(user, "操作成功完成。");
+        serverAPI.sendMessageToUser(user, "操作成功完成。");
     }
 
     /**
@@ -712,19 +712,19 @@ public final class Server implements IServer {
      */
     private void HandleLoginProtocol(final LoginProtocol loginProtocol, final tcpUser user) {
         if (user.isUserLogged()) {
-            serverAPI.SendMessageToUser(user, "您已经登录过了");
+            serverAPI.sendMessageToUser(user, "您已经登录过了");
             SystemProtocol protocol = new SystemProtocol();
             protocol.setType("Login");
             protocol.setMessage("Already Logged");
             String json = new Gson().toJson(protocol);
-            serverAPI.SendJsonToClient(user, json, "SystemProtocol");
+            serverAPI.sendJsonToClient(user, json, "SystemProtocol");
             return;
         }
         if (loginProtocol.getLoginPacketHead() == null || loginProtocol.getLoginPacketBody() == null) {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Invalid Packet");
-            serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+            serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             return;
         }
         if ("token".equals(loginProtocol.getLoginPacketHead().getType())) {
@@ -735,7 +735,7 @@ public final class Server implements IServer {
             if (loginProtocol.getLoginPacketBody().getNormalLogin().getUserName() == null ||
                     loginProtocol.getLoginPacketBody().getNormalLogin().getUserName().contains("\n") ||
                     loginProtocol.getLoginPacketBody().getNormalLogin().getUserName().contains("\r")) {
-                getServerAPI().SendMessageToUser(user, "用户名中出现非法字符");
+                getServerAPI().sendMessageToUser(user, "用户名中出现非法字符");
                 user.UserDisconnect();
                 return;
             }
@@ -760,14 +760,14 @@ public final class Server implements IServer {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Protocol analysis failed");
-            serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+            serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             return;
         }
         if (protocol.getProtocolVersion() != CodeDynamicConfig.getProtocolVersion()) {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Protocol version not support");
-            serverAPI.SendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
+            serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             return;
         }
 
@@ -780,7 +780,7 @@ public final class Server implements IServer {
                     HandleChatProtocol(gson.fromJson(protocol.getProtocolData(), ChatProtocol.class), user);
             case "TransferProtocol" ->
                     HandleTransferProtocol(gson.fromJson(protocol.getProtocolData(), TransferProtocol.class), user);
-            default -> getServerAPI().SendMessageToUser(user, "暂不支持此协议");
+            default -> getServerAPI().sendMessageToUser(user, "暂不支持此协议");
         }
     }
 

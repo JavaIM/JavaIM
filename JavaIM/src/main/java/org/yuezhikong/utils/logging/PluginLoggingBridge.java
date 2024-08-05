@@ -1,6 +1,6 @@
 package org.yuezhikong.utils.logging;
 
-import org.yuezhikong.Server.plugin.Plugin.Plugin;
+import org.yuezhikong.Server.plugin.plugin.Plugin;
 import org.yuezhikong.utils.checks;
 
 import java.util.concurrent.ConcurrentHashMap;

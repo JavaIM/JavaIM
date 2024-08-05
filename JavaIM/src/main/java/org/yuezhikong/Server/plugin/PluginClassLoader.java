@@ -1,6 +1,6 @@
 package org.yuezhikong.Server.plugin;
 
-import org.yuezhikong.Server.plugin.Plugin.PluginData;
+import org.yuezhikong.Server.plugin.plugin.PluginData;
 
 import java.net.URL;
 import java.net.URLClassLoader;

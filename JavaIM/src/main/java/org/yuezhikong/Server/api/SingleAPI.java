@@ -21,8 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.IServer;
-import org.yuezhikong.Server.UserData.user;
-import org.yuezhikong.Server.UserData.userInformation;
+import org.yuezhikong.Server.userData.user;
+import org.yuezhikong.Server.userData.userInformation;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
 
@@ -50,7 +50,7 @@ public abstract class SingleAPI implements api {
      * @param inputMessage 发信的信息
      */
     @Override
-    public void SendMessageToUser(@NotNull user user, @NotNull @Nls String inputMessage) {
+    public void sendMessageToUser(@NotNull user user, @NotNull @Nls String inputMessage) {
         if (user.isServer()) {
             log.info(inputMessage);
             return;
@@ -62,7 +62,7 @@ public abstract class SingleAPI implements api {
             protocolData.setType("DisplayMessage");
             protocolData.setMessage(input);
             String Message = gson.toJson(protocolData);
-            SendJsonToClient(user, Message, "SystemProtocol");
+            sendJsonToClient(user, Message, "SystemProtocol");
         }
     }
 
@@ -72,12 +72,12 @@ public abstract class SingleAPI implements api {
      * @param inputMessage 要发信的信息
      */
     @Override
-    public void SendMessageToAllClient(@NotNull @Nls String inputMessage) {
-        List<user> ValidClientList = GetValidClientList(true);
+    public void sendMessageToAllClient(@NotNull @Nls String inputMessage) {
+        List<user> ValidClientList = getValidUserList(true);
         String[] inputs = inputMessage.replaceAll("\r", "").split("\n");
         for (String input : inputs) {
             for (user User : ValidClientList) {
-                SendMessageToUser(User, input);
+                sendMessageToUser(User, input);
             }
         }
     }
@@ -89,7 +89,7 @@ public abstract class SingleAPI implements api {
      * @apiNote 用户列表更新后，您获取到的list不会被更新！请勿长时间保存此数据，长时间保存将变成过期数据
      */
     @Override
-    public @NotNull List<user> GetValidClientList(boolean CheckLoginStatus) {
+    public @NotNull List<user> getValidUserList(boolean CheckLoginStatus) {
         List<user> AllClientList = ServerInstance.getUsers();
         List<user> ValidClientList = new ArrayList<>();
         for (user User : AllClientList) {
@@ -112,8 +112,8 @@ public abstract class SingleAPI implements api {
      * @throws AccountNotFoundException 无法根据指定的用户名找到用户时抛出此异常
      */
     @Override
-    public @NotNull user GetUserByUserName(@NotNull @Nls String UserName) throws AccountNotFoundException {
-        List<user> ValidClientList = GetValidClientList(true);
+    public @NotNull user getUserByUserName(@NotNull @Nls String UserName) throws AccountNotFoundException {
+        List<user> ValidClientList = getValidUserList(true);
         for (user User : ValidClientList) {
             if (User.getUserName().equals(UserName)) {
                 return User;
@@ -123,15 +123,15 @@ public abstract class SingleAPI implements api {
     }
 
     @Override
-    public void ChangeUserPassword(user User, String password) {
+    public void changeUserPassword(user User, String password) {
         userInformation information = User.getUserInformation();
         information.setPasswd(SHA256.sha256(password + information.getSalt()));
         User.setUserInformation(information);
     }
 
     @Override
-    public @NotNull user GetUserByUserId(String userId) throws AccountNotFoundException {
-        for (user User : GetValidClientList(true)) {
+    public @NotNull user getUserByUserId(String userId) throws AccountNotFoundException {
+        for (user User : getValidUserList(true)) {
             if (User.getUserInformation().getUserId().equals(userId)) {
                 return User;
             }

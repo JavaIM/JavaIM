@@ -1,6 +1,6 @@
-package org.yuezhikong.Server.UserData.Authentication;
+package org.yuezhikong.Server.userData.auth;
 
-import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.userData.user;
 
 public interface IUserAuthentication {
 

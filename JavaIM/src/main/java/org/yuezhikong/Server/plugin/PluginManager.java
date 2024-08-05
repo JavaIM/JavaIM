@@ -18,8 +18,8 @@ package org.yuezhikong.Server.plugin;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.Server.plugin.Plugin.Plugin;
-import org.yuezhikong.Server.plugin.Plugin.PluginData;
+import org.yuezhikong.Server.plugin.plugin.Plugin;
+import org.yuezhikong.Server.plugin.plugin.PluginData;
 import org.yuezhikong.Server.plugin.event.Listener;
 import org.yuezhikong.Server.plugin.event.events.Event;
 

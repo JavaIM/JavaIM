@@ -1,4 +1,4 @@
-package org.yuezhikong.Server.UserData;
+package org.yuezhikong.Server.userData;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

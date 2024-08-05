@@ -4,7 +4,7 @@ import org.jline.reader.Candidate;
 import org.jline.reader.Completer;
 import org.jline.reader.LineReader;
 import org.jline.reader.ParsedLine;
-import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.userData.user;
 
 import java.util.List;
 

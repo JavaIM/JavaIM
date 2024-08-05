@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.Server.plugin.Plugin.Plugin;
+import org.yuezhikong.Server.plugin.plugin.Plugin;
 
 import java.io.File;
 import java.io.FileInputStream;

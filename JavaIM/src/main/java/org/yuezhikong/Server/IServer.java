@@ -17,7 +17,7 @@
 package org.yuezhikong.Server;
 
 import org.apache.ibatis.session.SqlSession;
-import org.yuezhikong.Server.UserData.user;
+import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.plugin.PluginManager;

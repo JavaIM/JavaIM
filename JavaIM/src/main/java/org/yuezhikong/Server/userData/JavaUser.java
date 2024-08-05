@@ -1,11 +1,11 @@
-package org.yuezhikong.Server.UserData;
+package org.yuezhikong.Server.userData;
 
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.Server.UserData.Authentication.IUserAuthentication;
+import org.yuezhikong.Server.userData.auth.IUserAuthentication;
 import org.yuezhikong.Server.plugin.event.events.User.auth.UserLoginEvent;
 import org.yuezhikong.utils.database.dao.userInformationDao;
 
