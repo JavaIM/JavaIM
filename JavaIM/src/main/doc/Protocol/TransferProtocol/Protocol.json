@@ -1,9 +1,0 @@
-{
-  "TransferProtocolHead" : {
-    "TargetUserName": "",
-    "Type": ""
-  },
-  "TransferProtocolBody": [{
-    "Data": ""
-  }]
-}

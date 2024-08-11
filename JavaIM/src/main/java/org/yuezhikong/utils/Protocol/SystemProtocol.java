@@ -18,6 +18,11 @@ package org.yuezhikong.utils.Protocol;
 
 import lombok.Data;
 
+/**
+ * type代表消息类型
+ * DisplayMessage代表显示数据(单向，仅 Server -> Client)，Login代表登录数据包(单向，仅 Server -> Client)，ChangePassword代表更改密码，Error表示出错(单向，仅 Server -> Client)
+ * MessageBody中的Message在Chat模式下，为聊天信息
+ */
 @Data
 public class SystemProtocol {
     private String type;

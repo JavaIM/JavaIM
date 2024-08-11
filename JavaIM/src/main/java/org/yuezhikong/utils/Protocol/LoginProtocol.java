@@ -18,6 +18,9 @@ package org.yuezhikong.utils.Protocol;
 
 import lombok.Data;
 
+/**
+ * Head中的type有两个，一个是token（刷新登录），一个是passwd（用户名密码）
+ */
 @Data
 public class LoginProtocol {
     private LoginPacketHeadBean LoginPacketHead;
