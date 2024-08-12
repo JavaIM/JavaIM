@@ -204,7 +204,7 @@ public class SSLNettyServer implements NetworkServer {
                     .addRDN(BCStyle.C, "CN")//证书国家代号(Country Name)
                     .addRDN(BCStyle.O, "JavaIM-Server")//证书组织名(Organization Name)
                     .addRDN(BCStyle.OU, CodeDynamicConfig.getServerName())//证书组织单位名(Organization Unit Name)
-                    .addRDN(BCStyle.CN, "JavaIM Server(" + CodeDynamicConfig.getServerName() + ") CA")//证书通用名(Common Name)
+                    .addRDN(BCStyle.CN, CodeDynamicConfig.getServerName())//证书通用名(Common Name)
                     .addRDN(BCStyle.ST, "Beijing")//证书州或省份(State or Province Name);
                     .addRDN(BCStyle.L, "Beijing")//证书所属城市名(Locality Name)
                     .build();
@@ -242,7 +242,7 @@ public class SSLNettyServer implements NetworkServer {
                         subject,//证书签发者
                         BigInteger.valueOf(currentTimeMillis),//证书序列号
                         new Date(currentTimeMillis),//证书生效时间
-                        new Date(currentTimeMillis + (long) 365 * 24 * 60 * 60 * 1000),//证书失效时间
+                        new Date(currentTimeMillis + TimeUnit.DAYS.toMillis(365 * 10)),//证书失效时间
                         subject,//证书主体
                         SubjectPublicKeyInfo.getInstance(publicKey.getEncoded())//证书主体公钥
                 )
@@ -320,7 +320,7 @@ public class SSLNettyServer implements NetworkServer {
                             caCert.getSubject(),//证书签发者
                             BigInteger.valueOf(currentTimeMillis),//证书序列号
                             new Date(currentTimeMillis),//证书生效时间
-                            new Date(currentTimeMillis + (long) 365 * 24 * 60 * 60 * 1000),//证书失效时间
+                            new Date(currentTimeMillis + TimeUnit.DAYS.toMillis(90)),//证书失效时间
                             subject,//证书主体
                             SubjectPublicKeyInfo.getInstance(publicKey.getEncoded())//证书主体公钥
                     )
