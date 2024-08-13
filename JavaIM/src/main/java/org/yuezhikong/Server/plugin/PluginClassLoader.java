@@ -25,12 +25,12 @@ public class PluginClassLoader extends URLClassLoader {
             throw new ClassNotFoundException(name);
         //未在父类找到(意味着JavaIM主程序与插件本身均未找到插件，应试图前去其他插件加载)
         for (PluginData data : manager.getPluginDataList()) {
-            data.getStaticData().PluginClassLoader().setNoRecursion(true);
+            data.getStaticData().classLoader().setNoRecursion(true);
             try {
-                return data.getStaticData().PluginClassLoader().loadClass(name);
+                return data.getStaticData().classLoader().loadClass(name);
             } catch (ClassNotFoundException ignored) {
             } finally {
-                data.getStaticData().PluginClassLoader().setNoRecursion(false);
+                data.getStaticData().classLoader().setNoRecursion(false);
             }
         }
         throw new ClassNotFoundException(name);

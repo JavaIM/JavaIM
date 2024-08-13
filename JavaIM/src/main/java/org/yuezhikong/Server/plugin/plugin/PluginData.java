@@ -29,8 +29,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class PluginData {
 
-    public record staticData(Plugin plugin, String PluginName, String PluginVersion, String PluginAuthor,
-                             PluginClassLoader PluginClassLoader, File PluginMainFile, boolean loaded) {
+    public record staticData(Plugin plugin, String name, String version, String author,
+                             PluginClassLoader classLoader, File mainFile, boolean loaded) {
     }
 
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();

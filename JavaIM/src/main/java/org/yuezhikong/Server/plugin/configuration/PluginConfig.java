@@ -34,7 +34,7 @@ public class PluginConfig {
      * @param FileName 文件名
      */
     public static void saveDefaultConfiguration(Plugin plugin, String FileName) {
-        File PluginDirectory = new File("./plugins/" + plugin.getPluginData().getStaticData().PluginName());
+        File PluginDirectory = new File("./plugins/" + plugin.getPluginData().getStaticData().name());
         if (PluginDirectory.exists() && PluginDirectory.isFile()) {
             if ((!PluginDirectory.delete()) || (!PluginDirectory.mkdirs()))
                 return;
@@ -47,7 +47,7 @@ public class PluginConfig {
         try {
             if (!ConfigurationFile.createNewFile())
                 return;
-            InputStream inputStream = plugin.getPluginData().getStaticData().PluginClassLoader().getResourceAsStream(FileName);
+            InputStream inputStream = plugin.getPluginData().getStaticData().classLoader().getResourceAsStream(FileName);
             if (inputStream == null) {
                 return;
             }
@@ -74,7 +74,7 @@ public class PluginConfig {
      * @param FileName 文件名
      */
     public static void saveConfiguration(Plugin plugin, String FileName) {
-        File PluginDirectory = new File("./plugins/" + plugin.getPluginData().getStaticData().PluginName());
+        File PluginDirectory = new File("./plugins/" + plugin.getPluginData().getStaticData().name());
         if (PluginDirectory.exists() && PluginDirectory.isFile()) {
             if ((!PluginDirectory.delete()) || (!PluginDirectory.mkdirs())) {
                 return;
@@ -86,7 +86,7 @@ public class PluginConfig {
         try {
             if (!ConfigurationFile.createNewFile())
                 return;
-            InputStream inputStream = plugin.getPluginData().getStaticData().PluginClassLoader().getResourceAsStream(FileName);
+            InputStream inputStream = plugin.getPluginData().getStaticData().classLoader().getResourceAsStream(FileName);
             if (inputStream == null) {
                 return;
             }
@@ -118,7 +118,7 @@ public class PluginConfig {
      */
     @Contract(pure = true, value = "null,null -> fail; null,_ -> fail; _,null -> fail")
     public static @Nullable Properties getConfiguration(Plugin plugin, String FileName) {
-        File ConfigurationFile = new File("./plugins/" + plugin.getPluginData().getStaticData().PluginName() + "/" + FileName);
+        File ConfigurationFile = new File("./plugins/" + plugin.getPluginData().getStaticData().name() + "/" + FileName);
         if (!ConfigurationFile.exists())
             return null;
         if (!ConfigurationFile.isFile())
