@@ -13,6 +13,7 @@ import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
+import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Main;
 import org.yuezhikong.Server.userData.auth.UserAuthentication;
@@ -842,6 +843,10 @@ public final class Server implements IServer {
     @SuppressWarnings("removal")
     @Override
     public CustomLogger getLogger() {
-        return (CustomLogger) log;
+        try {
+            return (CustomLogger) LoggerFactory.getLogger(Class.forName(new Throwable().getStackTrace()[1].getClassName()));
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Compatibility failed",e);
+        }
     }
 }
