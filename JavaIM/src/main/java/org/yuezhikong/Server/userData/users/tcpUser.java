@@ -1,7 +1,7 @@
-package org.yuezhikong.Server.userData.tcpUser;
+package org.yuezhikong.Server.userData.users;
 
-import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.network.NetworkServer;
+import org.yuezhikong.Server.userData.user;
 
 public interface tcpUser extends user {
     /**

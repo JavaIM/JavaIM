@@ -28,339 +28,339 @@ public abstract class Logger implements CustomLogger {
      * @param params 请求参数
      */
     // 为插件等预留的方法
-    protected abstract void CustomLoggerRequest(String format, Object... params);
+    protected abstract void customLoggerRequest(String format, Object... params);
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(String msg) {
-        CustomLoggerRequest(msg);
+        customLoggerRequest(msg);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(String format, Object arg) {
-        CustomLoggerRequest(format, arg);
+        customLoggerRequest(format, arg);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(String format, Object arg1, Object arg2) {
-        CustomLoggerRequest(format, arg1, arg2);
+        customLoggerRequest(format, arg1, arg2);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(String format, Object... arguments) {
-        CustomLoggerRequest(format, arguments);
+        customLoggerRequest(format, arguments);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(String msg, Throwable t) {
         if (t == null) {
-            CustomLoggerRequest(msg);
+            customLoggerRequest(msg);
             return;
         }
-        CustomLoggerRequest(msg, t);
+        customLoggerRequest(msg, t);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(Marker marker, String msg) {
-        CustomLoggerRequest(msg);
+        customLoggerRequest(msg);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(Marker marker, String format, Object arg1, Object arg2) {
-        CustomLoggerRequest(format, arg1, arg2);
+        customLoggerRequest(format, arg1, arg2);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(Marker marker, String format, Object arg) {
-        CustomLoggerRequest(format, arg);
+        customLoggerRequest(format, arg);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(Marker marker, String format, Object... argArray) {
-        CustomLoggerRequest(format, argArray);
+        customLoggerRequest(format, argArray);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void trace(Marker marker, String msg, Throwable t) {
         if (t == null) {
-            CustomLoggerRequest(msg);
+            customLoggerRequest(msg);
             return;
         }
-        CustomLoggerRequest(msg, t);
+        customLoggerRequest(msg, t);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void debug(String s, Object o, Object o1) {
-        CustomLoggerRequest(s, o, o1);
+        customLoggerRequest(s, o, o1);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void debug(String s, Object... objects) {
-        CustomLoggerRequest(s, objects);
+        customLoggerRequest(s, objects);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void debug(String s, Throwable throwable) {
         if (throwable == null) {
-            CustomLoggerRequest(s);
+            customLoggerRequest(s);
             return;
         }
-        CustomLoggerRequest(s, throwable);
+        customLoggerRequest(s, throwable);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void debug(Marker marker, String s) {
-        CustomLoggerRequest(s);
+        customLoggerRequest(s);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Object o) {
-        CustomLoggerRequest(s, o);
+        customLoggerRequest(s, o);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Object o, Object o1) {
-        CustomLoggerRequest(s, o1);
+        customLoggerRequest(s, o1);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Object... objects) {
-        CustomLoggerRequest(s, objects);
+        customLoggerRequest(s, objects);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void debug(Marker marker, String s, Throwable throwable) {
         if (throwable == null) {
-            CustomLoggerRequest(s);
+            customLoggerRequest(s);
             return;
         }
-        CustomLoggerRequest(s, throwable);
+        customLoggerRequest(s, throwable);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(String s) {
-        CustomLoggerRequest(s);
+        customLoggerRequest(s);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(String s, Object o) {
-        CustomLoggerRequest(s, o);
+        customLoggerRequest(s, o);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(String s, Object o, Object o1) {
-        CustomLoggerRequest(s, o, o1);
+        customLoggerRequest(s, o, o1);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(String s, Object... objects) {
-        CustomLoggerRequest(s, objects);
+        customLoggerRequest(s, objects);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(String s, Throwable throwable) {
         if (throwable == null) {
-            CustomLoggerRequest(s);
+            customLoggerRequest(s);
             return;
         }
-        CustomLoggerRequest(s, throwable);
+        customLoggerRequest(s, throwable);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(Marker marker, String s) {
-        CustomLoggerRequest(s);
+        customLoggerRequest(s);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Object o) {
-        CustomLoggerRequest(s, o);
+        customLoggerRequest(s, o);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Object o, Object o1) {
-        CustomLoggerRequest(s, o, o1);
+        customLoggerRequest(s, o, o1);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Object... objects) {
-        CustomLoggerRequest(s, objects);
+        customLoggerRequest(s, objects);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void info(Marker marker, String s, Throwable throwable) {
         if (throwable == null) {
-            CustomLoggerRequest(s);
+            customLoggerRequest(s);
             return;
         }
-        CustomLoggerRequest(s, throwable);
+        customLoggerRequest(s, throwable);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(String s) {
-        CustomLoggerRequest(s);
+        customLoggerRequest(s);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(String s, Object o) {
-        CustomLoggerRequest(s, o);
+        customLoggerRequest(s, o);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(String s, Object... objects) {
-        CustomLoggerRequest(s, objects);
+        customLoggerRequest(s, objects);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(String s, Object o, Object o1) {
-        CustomLoggerRequest(s, o, o1);
+        customLoggerRequest(s, o, o1);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(String s, Throwable throwable) {
         if (throwable == null) {
-            CustomLoggerRequest(s);
+            customLoggerRequest(s);
             return;
         }
-        CustomLoggerRequest(s, throwable);
+        customLoggerRequest(s, throwable);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(Marker marker, String s) {
-        CustomLoggerRequest(s);
+        customLoggerRequest(s);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Object o) {
-        CustomLoggerRequest(s, o);
+        customLoggerRequest(s, o);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Object o, Object o1) {
-        CustomLoggerRequest(s, o, o1);
+        customLoggerRequest(s, o, o1);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Object... objects) {
-        CustomLoggerRequest(s, objects);
+        customLoggerRequest(s, objects);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void warn(Marker marker, String s, Throwable throwable) {
         if (throwable == null) {
-            CustomLoggerRequest(s);
+            customLoggerRequest(s);
             return;
         }
-        CustomLoggerRequest(s, throwable);
+        customLoggerRequest(s, throwable);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(String s) {
-        CustomLoggerRequest(s);
+        customLoggerRequest(s);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(String s, Object o) {
-        CustomLoggerRequest(s, o);
+        customLoggerRequest(s, o);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(String s, Object o, Object o1) {
-        CustomLoggerRequest(s, o, o1);
+        customLoggerRequest(s, o, o1);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(String s, Object... objects) {
-        CustomLoggerRequest(s, objects);
+        customLoggerRequest(s, objects);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(String s, Throwable throwable) {
         if (throwable == null) {
-            CustomLoggerRequest(s);
+            customLoggerRequest(s);
             return;
         }
-        CustomLoggerRequest(s, throwable);
+        customLoggerRequest(s, throwable);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(Marker marker, String s) {
-        CustomLoggerRequest(s);
+        customLoggerRequest(s);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Object o) {
-        CustomLoggerRequest(s, o);
+        customLoggerRequest(s, o);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Object o, Object o1) {
-        CustomLoggerRequest(s, o, o1);
+        customLoggerRequest(s, o, o1);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Object... objects) {
-        CustomLoggerRequest(s, objects);
+        customLoggerRequest(s, objects);
     }
 
     @Override
     @MustBeInvokedByOverriders
     public void error(Marker marker, String s, Throwable throwable) {
         if (throwable == null) {
-            CustomLoggerRequest(s);
+            customLoggerRequest(s);
             return;
         }
-        CustomLoggerRequest(s, throwable);
+        customLoggerRequest(s, throwable);
     }
 
     @Override
     @MustBeInvokedByOverriders
-    public void ChatMsg(String msg) {
-        CustomLoggerRequest(msg);
+    public void chatMsg(String msg) {
+        customLoggerRequest(msg);
     }
 }

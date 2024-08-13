@@ -49,7 +49,7 @@ public final class UserAuthentication implements IUserAuthentication {
     }
 
     @Override
-    public boolean DoLogin(String Token) {
+    public boolean doLogin(String Token) {
         try {
             if (!DoTokenLogin0(Token))
                 return false;
@@ -141,7 +141,7 @@ public final class UserAuthentication implements IUserAuthentication {
 
     private boolean PostUserNameAndPasswordLogin(String UserName, userInformation information) {
         this.UserName = UserName;
-        if (Permission.ToPermission(information.getPermission()).equals(Permission.BAN)) {
+        if (Permission.toPermission(information.getPermission()).equals(Permission.BAN)) {
             serverAPI.sendMessageToUser(User, "登录失败，此用户已被永久封禁");
             return false;
         }
@@ -298,7 +298,7 @@ public final class UserAuthentication implements IUserAuthentication {
     }
 
     @Override
-    public boolean DoLogin(String UserName, String Password) {
+    public boolean doLogin(String UserName, String Password) {
         try {
             if (!DoPasswordLogin0(UserName, Password))
                 return false;
@@ -326,7 +326,7 @@ public final class UserAuthentication implements IUserAuthentication {
     }
 
     @Override
-    public void RegisterLoginRecall(UserRecall runnable) {
+    public void registerLoginRecall(UserRecall runnable) {
         if (!UserLogged) {
             synchronized (LoginRecallLock) {
                 if (!UserLogged) {
@@ -348,7 +348,7 @@ public final class UserAuthentication implements IUserAuthentication {
     private final Object DisconnectRecallLock = new Object();
 
     @Override
-    public void RegisterLogoutRecall(UserRecall runnable) {
+    public void registerLogoutRecall(UserRecall runnable) {
         if (!Logouted) {
             synchronized (DisconnectRecallLock) {
                 if (!Logouted) {
@@ -361,7 +361,7 @@ public final class UserAuthentication implements IUserAuthentication {
     }
 
     @Override
-    public boolean DoLogout() {
+    public boolean doLogout() {
         if (!UserLogged || Logouted) {
             return false;
         }

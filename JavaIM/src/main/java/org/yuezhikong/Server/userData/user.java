@@ -30,7 +30,7 @@ public interface user {
     /**
      * 使用户离线（踢出用户）
      */
-    user UserDisconnect();
+    user disconnect();
 
     /**
      * 设置用户权限级别
@@ -38,7 +38,7 @@ public interface user {
      * @param permissionLevel 权限级别
      * @apiNote 如果是刷新权限，权限信息将不会记录到数据库中
      */
-    user SetUserPermission(int permissionLevel);
+    user setUserPermission(int permissionLevel);
 
     /**
      * 获取用户的权限级别

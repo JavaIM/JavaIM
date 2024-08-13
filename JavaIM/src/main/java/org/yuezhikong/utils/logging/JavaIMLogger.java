@@ -33,14 +33,14 @@ class JavaIMLogger extends Logger {
     }
 
     @Override
-    public void ChatMsg(String msg) {
-        super.ChatMsg(msg);
-        loggers.forEach(logger -> logger.ChatMsg(msg));
+    public void chatMsg(String msg) {
+        super.chatMsg(msg);
+        loggers.forEach(logger -> logger.chatMsg(msg));
         orig_logger.info(msg);
     }
 
     @Override
-    protected void CustomLoggerRequest(String format, Object... params) {
+    protected void customLoggerRequest(String format, Object... params) {
 
     }
 

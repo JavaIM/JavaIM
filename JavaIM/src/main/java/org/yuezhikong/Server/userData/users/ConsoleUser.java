@@ -1,8 +1,11 @@
-package org.yuezhikong.Server.userData;
+package org.yuezhikong.Server.userData.users;
 
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.Server.IServer;
+import org.yuezhikong.Server.userData.Permission;
 import org.yuezhikong.Server.userData.auth.IUserAuthentication;
+import org.yuezhikong.Server.userData.user;
+import org.yuezhikong.Server.userData.userInformation;
 
 public class ConsoleUser implements user {
 
@@ -30,12 +33,12 @@ public class ConsoleUser implements user {
     }
 
     @Override
-    public user UserDisconnect() {
+    public user disconnect() {
         throw new UnsupportedOperationException("Server can not disconnect");
     }
 
     @Override
-    public user SetUserPermission(int permissionLevel) {
+    public user setUserPermission(int permissionLevel) {
         throw new UnsupportedOperationException("Server can not set permission");
     }
 

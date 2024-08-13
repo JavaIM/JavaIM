@@ -18,7 +18,8 @@ import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Main;
 import org.yuezhikong.Server.userData.auth.UserAuthentication;
 import org.yuezhikong.Server.userData.*;
-import org.yuezhikong.Server.userData.tcpUser.tcpUser;
+import org.yuezhikong.Server.userData.users.ConsoleUser;
+import org.yuezhikong.Server.userData.users.tcpUser;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
@@ -144,7 +145,7 @@ public final class Server implements IServer {
                 String SendData = gson.toJson(protocol);
                 if (User instanceof PluginUser)
                     //如果是插件用户，则直接调用插件用户中的方法
-                    ((PluginUser) User).WriteData(SendData);
+                    ((PluginUser) User).writeData(SendData);
                 else if (User instanceof ConsoleUser)
                     log.info(SendData);
                 else if (User instanceof tcpUser)
@@ -210,7 +211,7 @@ public final class Server implements IServer {
                             if (chatEvent.isCancelled())
                                 continue;
                             //格式化&发送
-                            ((CustomLogger) log).ChatMsg("[Server]:" + line);
+                            ((CustomLogger) log).chatMsg("[Server]:" + line);
                             ChatProtocol chatProtocol = new ChatProtocol();
                             chatProtocol.setSourceUserName("Server");
                             chatProtocol.setMessage(line);
@@ -299,7 +300,7 @@ public final class Server implements IServer {
         log.info("JavaIM服务器正在关闭...");
         getServerAPI().sendMessageToAllClient("服务器已关闭");
         for (user requestUser : getServerAPI().getValidUserList(false)) {
-            requestUser.UserDisconnect();
+            requestUser.disconnect();
         }
         users.clear();
         pluginManager.callEvent(new ServerStopEvent());
@@ -325,8 +326,8 @@ public final class Server implements IServer {
             getServerAPI().sendMessageToUser(user, "请先登录");
             return;
         }
-        if (!request.UserChatRequests(user, protocol.getMessage())) {
-            ((CustomLogger) log).ChatMsg("[" + user.getUserName() + "]:" + protocol.getMessage());
+        if (!request.userChatRequests(user, protocol.getMessage())) {
+            ((CustomLogger) log).chatMsg("[" + user.getUserName() + "]:" + protocol.getMessage());
 
             ChatProtocol chatProtocol = new ChatProtocol();
             chatProtocol.setSourceUserName(user.getUserName());
@@ -730,23 +731,23 @@ public final class Server implements IServer {
         }
         if ("token".equals(loginProtocol.getLoginPacketHead().getType())) {
             if (!Objects.requireNonNull(user.getUserAuthentication()).
-                    DoLogin(loginProtocol.getLoginPacketBody().getReLogin().getToken()))
-                user.UserDisconnect();
+                    doLogin(loginProtocol.getLoginPacketBody().getReLogin().getToken()))
+                user.disconnect();
         } else if ("passwd".equals(loginProtocol.getLoginPacketHead().getType())) {
             if (loginProtocol.getLoginPacketBody().getNormalLogin().getUserName() == null ||
                     loginProtocol.getLoginPacketBody().getNormalLogin().getUserName().contains("\n") ||
                     loginProtocol.getLoginPacketBody().getNormalLogin().getUserName().contains("\r")) {
                 getServerAPI().sendMessageToUser(user, "用户名中出现非法字符");
-                user.UserDisconnect();
+                user.disconnect();
                 return;
             }
             if (!Objects.requireNonNull(user.getUserAuthentication()).
-                    DoLogin(loginProtocol.getLoginPacketBody().getNormalLogin().getUserName(),
+                    doLogin(loginProtocol.getLoginPacketBody().getNormalLogin().getUserName(),
                             loginProtocol.getLoginPacketBody().getNormalLogin().getPasswd())) {
-                user.UserDisconnect();
+                user.disconnect();
             }
         } else
-            user.UserDisconnect();
+            user.disconnect();
     }
 
     @Override
@@ -796,7 +797,7 @@ public final class Server implements IServer {
     }
 
     @Override
-    public boolean RegisterUser(user User) {
+    public boolean registerUser(user User) {
         UserAddEvent addEvent = new UserAddEvent(User);
         getPluginManager().callEvent(addEvent);
         if (addEvent.isCancelled())
@@ -814,7 +815,7 @@ public final class Server implements IServer {
      * @param User 用户
      */
     @Override
-    public void UnRegisterUser(user User) {
+    public void unRegisterUser(user User) {
         UserRemoveEvent removeEvent = new UserRemoveEvent(User);
         getPluginManager().callEvent(removeEvent);
         users.remove(User);

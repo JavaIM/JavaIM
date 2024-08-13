@@ -1,16 +1,19 @@
-package org.yuezhikong.Server.userData;
+package org.yuezhikong.Server.userData.users;
 
 import org.apache.ibatis.session.SqlSession;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.Server.ServerTools;
+import org.yuezhikong.Server.userData.Permission;
 import org.yuezhikong.Server.userData.auth.IUserAuthentication;
 import org.yuezhikong.Server.plugin.event.events.User.auth.UserLoginEvent;
+import org.yuezhikong.Server.userData.user;
+import org.yuezhikong.Server.userData.userInformation;
 import org.yuezhikong.utils.database.dao.userInformationDao;
 
 public abstract class JavaUser implements user {
-    private userInformation userInformation;
+    private org.yuezhikong.Server.userData.userInformation userInformation;
     private IUserAuthentication authentication;
     private static final Logger logger = LoggerFactory.getLogger(JavaUser.class);
 
@@ -32,13 +35,13 @@ public abstract class JavaUser implements user {
     }
 
     @Override
-    public user UserDisconnect() {
-        ServerTools.getServerInstanceOrThrow().UnRegisterUser(this);
+    public user disconnect() {
+        ServerTools.getServerInstanceOrThrow().unRegisterUser(this);
         return this;
     }
 
     @Override
-    public user SetUserPermission(int permissionLevel) {
+    public user setUserPermission(int permissionLevel) {
         userInformation information = getUserInformation();
         information.setPermission(permissionLevel);
         setUserInformation(information);
@@ -48,18 +51,18 @@ public abstract class JavaUser implements user {
 
     @Override
     public Permission getUserPermission() {
-        return Permission.ToPermission(getUserInformation().getPermission());
+        return Permission.toPermission(getUserInformation().getPermission());
     }
 
     @Override
     public user addLoginRecall(IUserAuthentication.UserRecall code) {
-        authentication.RegisterLoginRecall(code);
+        authentication.registerLoginRecall(code);
         return this;
     }
 
     @Override
     public user addDisconnectRecall(IUserAuthentication.UserRecall code) {
-        authentication.RegisterLogoutRecall(code);
+        authentication.registerLogoutRecall(code);
         return this;
     }
 

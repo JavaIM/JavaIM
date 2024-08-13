@@ -36,8 +36,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.ServerTools;
-import org.yuezhikong.Server.userData.JavaUser;
-import org.yuezhikong.Server.userData.tcpUser.tcpUser;
+import org.yuezhikong.Server.userData.users.JavaUser;
+import org.yuezhikong.Server.userData.users.tcpUser;
 import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
@@ -401,7 +401,7 @@ public class SSLNettyServer implements NetworkServer {
                 return;
             }
             NettyUser nettyUser = new NettyUser();
-            if (!ServerTools.getServerInstanceOrThrow().RegisterUser(nettyUser)) {
+            if (!ServerTools.getServerInstanceOrThrow().registerUser(nettyUser)) {
                 ctx.channel().close();
                 return;
             }
@@ -418,7 +418,7 @@ public class SSLNettyServer implements NetworkServer {
             NetworkClient thisClient = clientNetworkClientPair.remove(ctx.channel());
             if (thisClient == null)
                 return;
-            ServerTools.getServerInstanceOrThrow().UnRegisterUser(thisClient.getUser());
+            ServerTools.getServerInstanceOrThrow().unRegisterUser(thisClient.getUser());
             clientList.remove(thisClient);
         }
 
@@ -544,9 +544,9 @@ public class SSLNettyServer implements NetworkServer {
         }
 
         @Override
-        public user UserDisconnect() {
+        public user disconnect() {
             getNetworkClient().disconnect();
-            return super.UserDisconnect();
+            return super.disconnect();
         }
 
         @Override

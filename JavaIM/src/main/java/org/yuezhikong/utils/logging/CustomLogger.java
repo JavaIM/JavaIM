@@ -8,5 +8,5 @@ public interface CustomLogger extends Logger {
      *
      * @param msg 消息
      */
-    void ChatMsg(String msg);
+    void chatMsg(String msg);
 }

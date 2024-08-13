@@ -21,27 +21,27 @@ public class PluginClassLoader extends URLClassLoader {
         } catch (ClassNotFoundException ignored) {
         }
 
-        if (check)
+        if (noRecursion)
             throw new ClassNotFoundException(name);
         //未在父类找到(意味着JavaIM主程序与插件本身均未找到插件，应试图前去其他插件加载)
         for (PluginData data : manager.getPluginDataList()) {
-            data.getStaticData().PluginClassLoader().setOtherPluginCheckClass(true);
+            data.getStaticData().PluginClassLoader().setNoRecursion(true);
             try {
                 return data.getStaticData().PluginClassLoader().loadClass(name);
             } catch (ClassNotFoundException ignored) {
             } finally {
-                data.getStaticData().PluginClassLoader().setOtherPluginCheckClass(false);
+                data.getStaticData().PluginClassLoader().setNoRecursion(false);
             }
         }
         throw new ClassNotFoundException(name);
     }
 
-    private boolean check;
+    private boolean noRecursion;
 
     /**
-     * 设置是否为其他插件正在尝试本插件
+     * 设置是否禁止递归
      */
-    private void setOtherPluginCheckClass(boolean check) {
-        this.check = check;
+    private void setNoRecursion(boolean noRecursion) {
+        this.noRecursion = noRecursion;
     }
 }

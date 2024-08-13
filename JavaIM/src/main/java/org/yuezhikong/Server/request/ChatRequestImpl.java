@@ -146,7 +146,7 @@ public class ChatRequestImpl implements ChatRequest {
      * @param message 消息
      * @return {@code true 阻止将信息发送至客户端} <p>{@code false 继续将信息发送到客户端}</p>
      */
-    public boolean UserChatRequests(@NotNull user user, @NotNull String message) {
+    public boolean userChatRequests(@NotNull user user, @NotNull String message) {
         if (message.isEmpty())
             //如果发送过来的消息是空的，就没必要再继续处理了
             return true;

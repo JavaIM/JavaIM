@@ -12,7 +12,7 @@ import org.yuezhikong.Main;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.userData.Permission;
-import org.yuezhikong.Server.userData.tcpUser.tcpUser;
+import org.yuezhikong.Server.userData.users.tcpUser;
 import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.userData.userInformation;
 import org.yuezhikong.Server.userData.userUploadFile;
@@ -249,7 +249,7 @@ public class InternalCommands {
 
             if (args[0].equals("Server"))//当私聊目标为后台时
             {
-                ((CustomLogger) log).ChatMsg("[" + User.getUserName() + "]:" + ChatMessage);
+                ((CustomLogger) log).chatMsg("[" + User.getUserName() + "]:" + ChatMessage);
                 serverAPI.sendMessageToUser(User, "你对" + args[0] + "发送了私聊：" + ChatMessage);
                 return true;
             }
@@ -333,7 +333,7 @@ public class InternalCommands {
                 return true;
             }
             serverAPI.sendMessageToUser(targetUser, "您已被设置为服务器管理员");
-            targetUser.SetUserPermission(1);
+            targetUser.setUserPermission(1);
             return true;
         }
 
@@ -405,7 +405,7 @@ public class InternalCommands {
                 return true;
             }
             serverAPI.sendMessageToUser(targetUser, "您已被夺去管理员权限");
-            targetUser.SetUserPermission(0);
+            targetUser.setUserPermission(0);
             return true;
         }
 
@@ -470,7 +470,7 @@ public class InternalCommands {
                 return true;
             }
             serverAPI.sendMessageToUser(kickUser, "您已被封禁");
-            kickUser.UserDisconnect();
+            kickUser.disconnect();
             return true;
         }
 
@@ -682,7 +682,7 @@ public class InternalCommands {
             }
             serverAPI.sendMessageToUser(kickUser, "您已被踢出此服务器");
             String UserName = kickUser.getUserName();
-            kickUser.UserDisconnect();
+            kickUser.disconnect();
             serverAPI.sendMessageToUser(User, "已成功踢出用户：" + UserName);
             return true;
         }

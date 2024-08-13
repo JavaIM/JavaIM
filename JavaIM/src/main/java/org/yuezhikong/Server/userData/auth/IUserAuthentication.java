@@ -14,7 +14,7 @@ public interface IUserAuthentication {
      * @param Token Token令牌
      * @return True为成功登录，False为登录失败
      */
-    boolean DoLogin(String Token);
+    boolean doLogin(String Token);
 
     /**
      * 尝试通过 用户名与密码 进行登录
@@ -23,7 +23,7 @@ public interface IUserAuthentication {
      * @param Password 密码
      * @return True为成功登录，False为登录失败
      */
-    boolean DoLogin(String UserName, String Password);
+    boolean doLogin(String UserName, String Password);
 
 
     /**
@@ -39,7 +39,7 @@ public interface IUserAuthentication {
      * @param runnable 回调函数
      * @apiNote 如果用户已经登录，则代码将会被立刻执行
      */
-    void RegisterLoginRecall(UserRecall runnable);
+    void registerLoginRecall(UserRecall runnable);
 
     /**
      * 获取用户的用户名
@@ -54,12 +54,12 @@ public interface IUserAuthentication {
      * @param runnable 回调函数
      * @apiNote 如果用户已经退出登录，则代码将会被立刻执行
      */
-    void RegisterLogoutRecall(UserRecall runnable);
+    void registerLogoutRecall(UserRecall runnable);
 
     /**
      * 将客户端退出登录
      *
      * @return True说明已经成功退出，False说明本身就未登录或已经退出登录
      */
-    boolean DoLogout();
+    boolean doLogout();
 }

@@ -27,7 +27,7 @@ public enum Permission {
      * @param PermissionLevel 权限等级
      * @return 权限enum
      */
-    public static Permission ToPermission(int PermissionLevel) {
+    public static Permission toPermission(int PermissionLevel) {
         if (PermissionLevel == 1)
             return Permission.ADMIN;
         if (PermissionLevel == 0)

@@ -9,7 +9,7 @@ public interface PluginUser extends user {
      *
      * @param data 信息
      */
-    void WriteData(String data);
+    void writeData(String data);
 
     // 部分方法的默认处理程序
     @Override
