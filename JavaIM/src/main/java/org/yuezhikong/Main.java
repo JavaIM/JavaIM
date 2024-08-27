@@ -108,8 +108,8 @@ public class Main {
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
+        // 设定默认的未捕获异常处理器
         Thread.setDefaultUncaughtExceptionHandler(CrashReport.getCrashReport());
-        new Notice();
         // 初始化Shutdown Hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -132,6 +132,7 @@ public class Main {
         if (!(new File("server.properties").exists())) {
             log.info("目录下没有检测到服务端配置文件，判断为第一次进入");
             ConfigFileManager.createServerConfig();
+            Notice.displayEula();
             firstStart(reader);
         } else
             ConfigFileManager.reloadServerConfig();
