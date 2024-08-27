@@ -47,6 +47,7 @@ public class Main {
 
     static {
         System.out.println("正在初始化JavaIM...");
+        System.out.println("正在初始化Slf4j...");
         // Slf4j Logger加载
         log = LoggerFactory.getLogger(Main.class);
         // 安装 JUL to slf4j
@@ -55,6 +56,7 @@ public class Main {
         if (log.isTraceEnabled())
             java.util.logging.Logger.getLogger("").setLevel(Level.FINEST);
         // 初始化 JLine Terminal
+        log.info("正在初始化Jline...");
         Terminal terminal1;
         try {
             if (System.console() != null) {
@@ -64,10 +66,11 @@ public class Main {
                 terminal1 = TerminalBuilder.builder().system(true).exec(false).ffm(false).jna(false).dumb(true).build();
         } catch (IOException e) {
             terminal1 = null;
-            AnsiConsole.sysErr().println("JavaIM 初始化失败");
+            log.error("JavaIM 初始化失败");
             System.exit(1);
         }
         terminal = terminal1;
+        log.info("JavaIM初始化完成");
     }
 
     public static void ConsoleMain(Map<String, String> commandLineArgs, LineReader lineReader) {
