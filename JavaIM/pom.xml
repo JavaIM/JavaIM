@@ -102,6 +102,13 @@
             </exclusions>
         </dependency>
 
+        <!-- TOTP -->
+        <dependency>
+            <groupId>dev.samstevens.totp</groupId>
+            <artifactId>totp</artifactId>
+            <version>1.7.1</version>
+        </dependency>
+
         <!-- Jetbrains annotations -->
         <dependency>
             <groupId>org.jetbrains</groupId>

@@ -404,6 +404,17 @@ public final class Server implements IServer {
                 }
                 getServerAPI().changeUserPassword(user, protocol.getMessage());
             }
+            case "TOTP" -> {
+                if (user.isUserLogged()) {
+                    getServerAPI().sendMessageToUser(user, "你已经登录过了!");
+                    return;
+                }
+                try {
+                    Objects.requireNonNull(user.getUserAuthentication()).extendSecurity(protocol.getMessage());
+                } catch (IllegalStateException e) {
+                    getServerAPI().sendMessageToUser(user, "没有请求增强安全性");
+                }
+            }
             case "DownloadOwnFileByFileName" -> {
                 if (!user.isUserLogged()) {
                     getServerAPI().sendMessageToUser(user, "请先登录");

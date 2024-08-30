@@ -25,7 +25,7 @@ public final class CodeDynamicConfig {
     //静态区，不允许修改
     //协议版本
     @Getter
-    private static final int ProtocolVersion = 11;
+    private static final int ProtocolVersion = 12;
     //本程序版本：
     @Getter
     private static final String Version = "InDev";

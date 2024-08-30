@@ -67,6 +67,8 @@ public class DatabaseHelper {
                             " Passwd varchar(255)," +       //密码
                             " salt varchar(255)," +         //密码加盐加的盐
                             " token varchar(255)," +         //Login Token
+                            " totpSecret varchar(255)," +     //TOTP密钥
+                            " totpRecoveryCode varchar(255)," +     //TOTP恢复代码
                             " avatar varchar(255)" +         //头像Id
                             " );");
             connection.createStatement().executeUpdate(
@@ -162,5 +164,13 @@ public class DatabaseHelper {
         if (!CheckColumnsExist("userId", "UserData", DatabaseConnection))
             //不存在时，添加“userId”列
             DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN userId VARCHAR(255) NOT NULL DEFAULT '';");
+
+        if (!CheckColumnsExist("totpSecret", "UserData", DatabaseConnection))
+            //不存在时，添加“totpSecret”列
+            DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN totpSecret VARCHAR(255) NOT NULL DEFAULT '';");
+
+        if (!CheckColumnsExist("totpRecoveryCode", "UserData", DatabaseConnection))
+            //不存在时，添加“totpRecoveryCode”列
+            DatabaseConnection.createStatement().executeUpdate("ALTER TABLE UserData ADD COLUMN totpRecoveryCode VARCHAR(255) NOT NULL DEFAULT '';");
     }
 }

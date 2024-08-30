@@ -15,4 +15,6 @@ public class userInformation {
     private String token;
     private String userId;
     private String avatar;
+    private String totpSecret;
+    private String totpRecoveryCode;
 }

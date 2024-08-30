@@ -62,4 +62,11 @@ public interface IUserAuthentication {
      * @return True说明已经成功退出，False说明本身就未登录或已经退出登录
      */
     boolean doLogout();
+
+    /**
+     * 扩展安全性
+     * @param totpCode TOTP一次性代码
+     * @throws IllegalStateException 已经登录/未要求增强安全
+     */
+    void extendSecurity(String totpCode) throws IllegalStateException;
 }
