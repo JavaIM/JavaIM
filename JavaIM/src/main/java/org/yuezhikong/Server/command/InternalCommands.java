@@ -22,6 +22,8 @@ import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.database.dao.userInformationDao;
 import org.yuezhikong.utils.database.dao.userUploadFileDao;
 import org.yuezhikong.utils.logging.CustomLogger;
+import org.yuezhikong.utils.totp.RecoveryCode;
+import org.yuezhikong.utils.totp.TOTPCode;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.io.File;
@@ -881,4 +883,94 @@ public class InternalCommands {
             return true;
         }
     }
+
+    public static class InitTOTPCommand implements Command {
+
+        @Override
+        public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
+            new Completers.TreeCompleter(
+                    node("/initTOTP",
+                            node(NullCompleter.INSTANCE)
+                    )
+            ).complete(reader, line, candidates);
+        }
+
+        @Override
+        public boolean execute(String command, String[] args, user User) {
+            api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
+            if (User.isServer()) {
+                serverAPI.sendMessageToUser(User,"只有用户才可以执行此指令");
+                return true;
+            }
+            TOTPCode.generateTOTPSecret(User);
+            RecoveryCode.generateRecoveryCode(User);
+            serverAPI.sendMessageToUser(User, "初始化成功");
+            return true;
+        }
+
+        @Override
+        public String getDescription() {
+            return "初始化TOTP secret和恢复代码";
+        }
+
+        @Override
+        public String getUsage() {
+            return "/initTOTP";
+        }
+
+        @Override
+        public boolean isAllowBroadcastCommandRunning() {
+            return false;
+        }
+    }
+
+    public static class TestTOTPCommand implements Command {
+
+        @Override
+        public void complete(LineReader reader, ParsedLine line, List<Candidate> candidates) {
+            new Completers.TreeCompleter(
+                    node("/testTOTP",
+                            node(NullCompleter.INSTANCE)
+                    )
+            ).complete(reader, line, candidates);
+        }
+
+        @Override
+        public boolean execute(String command, String[] args, user User) {
+            api serverAPI = ServerTools.getServerInstanceOrThrow().getServerAPI();
+            if (User.isServer()) {
+                serverAPI.sendMessageToUser(User, "只有用户才可以执行此指令");
+                return true;
+            }
+            if (args.length != 1)
+                return false;
+            if (TOTPCode.verifyTOTPCode(User, args[0])) {
+                serverAPI.sendMessageToUser(User, "TOTP一次性代码验证成功");
+                return true;
+            }
+            if (RecoveryCode.verifyRecoveryCode(args[0], User)) {
+                serverAPI.sendMessageToUser(User, "恢复代码验证成功");
+                serverAPI.sendMessageToUser(User, "此恢复代码已失效");
+                return true;
+            }
+            serverAPI.sendMessageToUser(User, "无效的一次性代码/恢复代码");
+            return true;
+        }
+
+        @Override
+        public String getDescription() {
+            return "测试TOTP生成";
+        }
+
+        @Override
+        public String getUsage() {
+            return "/testTOTP <一次性密码或恢复代码>";
+        }
+
+        @Override
+        public boolean isAllowBroadcastCommandRunning() {
+            return false;
+        }
+    }
+
 }

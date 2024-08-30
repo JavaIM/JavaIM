@@ -14,7 +14,10 @@ import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
+import org.yuezhikong.utils.checks;
 import org.yuezhikong.utils.database.dao.userInformationDao;
+import org.yuezhikong.utils.totp.RecoveryCode;
+import org.yuezhikong.utils.totp.TOTPCode;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.util.ArrayList;
@@ -35,6 +38,7 @@ public final class UserAuthentication implements IUserAuthentication {
 
     private final PluginManager pluginManager;
     private final api serverAPI;
+    private boolean requiredExtendLoginInformation = false;
 
     /**
      * 实例化用户Auth实现
@@ -148,16 +152,6 @@ public final class UserAuthentication implements IUserAuthentication {
         SqlSession sqlSession = ServerTools.getServerInstance().getSqlSession();
         userInformationDao mapper = sqlSession.getMapper(userInformationDao.class);
 
-        String token;
-        userInformation tempInformation;
-        do {
-            //寻找一个安全的，不重复的token
-            token = UUID.randomUUID().toString();
-            tempInformation = mapper.getUser(null, null, token, null);
-        } while (tempInformation != null);
-        information.setToken(token);
-        User.setUserInformation(information);
-
         //插件处理
         PreLoginEvent event = new PreLoginEvent(UserName, false);
         pluginManager.callEvent(event);
@@ -169,6 +163,29 @@ public final class UserAuthentication implements IUserAuthentication {
             String json = new Gson().toJson(protocol);
             serverAPI.sendJsonToClient(User, json, "SystemProtocol");
             return false;
+        }
+
+        String token;
+        userInformation tempInformation;
+        do {
+            //寻找一个安全的，不重复的token
+            token = UUID.randomUUID().toString();
+            tempInformation = mapper.getUser(null, null, token, null);
+        } while (tempInformation != null);
+        information.setToken(token);
+        User.setUserInformation(information);
+
+        String totpSecret = User.getUserInformation().getTotpSecret();
+        if (totpSecret != null && !totpSecret.isEmpty()) {
+            // TOTP 2fa 增强安全性
+            //发送给用户
+            SystemProtocol protocolData = new SystemProtocol();
+            protocolData.setType("TOTP");
+            protocolData.setMessage("Require TOTP Code");
+            String json = new Gson().toJson(protocolData);
+            serverAPI.sendJsonToClient(User, json, "SystemProtocol");
+            requiredExtendLoginInformation = true;
+            return true;
         }
 
         //发送给用户
@@ -378,5 +395,31 @@ public final class UserAuthentication implements IUserAuthentication {
         Logouted = true;
         UserLogged = false;
         return true;
+    }
+
+    @Override
+    public void extendSecurity(String totpCode) throws IllegalStateException {
+        checks.checkState(UserLogged, "user already logged!");
+        checks.checkState(!requiredExtendLoginInformation, "Not required extend login information!");
+        requiredExtendLoginInformation = false;
+        if (TOTPCode.verifyTOTPCode(User, totpCode)) {
+            serverAPI.sendMessageToUser(User, "TOTP一次性代码验证成功");
+        }
+        else if (RecoveryCode.verifyRecoveryCode(totpCode, User)) {
+            serverAPI.sendMessageToUser(User, "恢复代码验证成功");
+            serverAPI.sendMessageToUser(User, "此恢复代码已失效");
+        }
+        else {
+            serverAPI.sendMessageToUser(User, "无效的一次性代码/恢复代码");
+            User.disconnect();
+        }
+        SystemProtocol protocolData = new SystemProtocol();
+        protocolData.setType("Login");
+        protocolData.setMessage(User.getUserInformation().getToken());
+        String json = new Gson().toJson(protocolData);
+        serverAPI.sendJsonToClient(User, json, "SystemProtocol");
+        //设置登录成功
+        UserLogged = true;
+        User.onUserLogin(UserName);
     }
 }

@@ -43,6 +43,6 @@
     </insert>
 
     <update id="updateUser" parameterType="org.yuezhikong.Server.userData.userInformation">
-        UPDATE UserData SET `Permission`=#{Permission}, `Passwd`=#{Passwd}, `salt`=#{salt}, `token`=#{token}, `userId`=#{userId}, `avatar`=#{avatar} where UserName = #{UserName}
+        UPDATE UserData SET `Permission`=#{Permission}, `Passwd`=#{Passwd}, `salt`=#{salt}, `token`=#{token}, `userId`=#{userId}, `avatar`=#{avatar}, `totpSecret`=#{totpSecret}, `totpRecoveryCode`=#{totpRecoveryCode} where UserName = #{UserName}
     </update>
 </mapper>

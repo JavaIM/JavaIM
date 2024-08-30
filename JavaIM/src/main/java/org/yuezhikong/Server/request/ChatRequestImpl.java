@@ -68,6 +68,8 @@ public class ChatRequestImpl implements ChatRequest {
         registerCommand0(new CommandInformation(null, new InternalCommands.GetUploadFilesCommand(), "getUploadFiles"));
         registerCommand0(new CommandInformation(null, new InternalCommands.RunGCCommand(), "runGC"));
         registerCommand0(new CommandInformation(null, new InternalCommands.DeleteFileByFileIdCommand(), "deleteFileByFileId"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.InitTOTPCommand(), "initTOTP"));
+        registerCommand0(new CommandInformation(null, new InternalCommands.TestTOTPCommand(), "testTOTP"));
     }
 
     @Override

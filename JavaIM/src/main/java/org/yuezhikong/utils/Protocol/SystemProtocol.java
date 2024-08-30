@@ -20,7 +20,7 @@ import lombok.Data;
 
 /**
  * type代表消息类型
- * DisplayMessage代表显示数据(单向，仅 Server -> Client)，Login代表登录数据包(单向，仅 Server -> Client)，ChangePassword代表更改密码，Error表示出错(单向，仅 Server -> Client)
+ * DisplayMessage代表显示数据(单向，仅 Server -> Client)，Login代表登录数据包(单向，仅 Server -> Client)，ChangePassword代表更改密码，Error表示出错(单向，仅 Server -> Client) TOTPCode代表TOTP验证码(双向，服务端发送给客户端，相当于请求输入)
  * MessageBody中的Message在Chat模式下，为聊天信息
  */
 @Data
