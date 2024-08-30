@@ -624,7 +624,7 @@ public class InternalCommands {
                 serverAPI.sendMessageToUser(User, "您所操作的用户从来没有来到过本服务器");
                 return true;
             }
-            information.setPasswd(SHA256.sha256(args[1]));
+            information.setPasswd(SHA256.sha256(args[1] + information.getSalt()));
             mapper.updateUser(information);
             serverAPI.sendMessageToUser(User, "操作成功完成。");
             return true;
