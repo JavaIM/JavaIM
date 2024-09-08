@@ -62,7 +62,7 @@ public class SimplePluginManager implements PluginManager {
             //读取插件清单
             Properties properties = new Properties();
             properties.load(classLoader.getResourceAsStream("PluginManifest.properties"));//打开插件清单文件
-            if (Boolean.parseBoolean(properties.getProperty("doNotHotLoad", "false")) && serverInstance.isServerCompleateStart())
+            if (Boolean.parseBoolean(properties.getProperty("doNotHotLoad", "false")) && serverInstance.isServerCompleteStart())
                 throw new UnsupportedOperationException("This plugin unsupported hot load");
             final String Name = properties.getProperty("Plugin-Name");
             final String Version = properties.getProperty("Plugin-Version");

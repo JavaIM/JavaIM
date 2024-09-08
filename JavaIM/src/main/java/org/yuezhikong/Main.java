@@ -113,7 +113,7 @@ public class Main {
         // 初始化Shutdown Hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                if (ServerTools.getServerInstance() == null || !ServerTools.getServerInstance().isServerCompleateStart())
+                if (ServerTools.getServerInstance() == null || !ServerTools.getServerInstance().isServerCompleteStart())
                     return;
                 try {
                     ServerTools.getServerInstance().stop();

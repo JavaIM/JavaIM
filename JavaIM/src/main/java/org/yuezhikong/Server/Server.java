@@ -104,7 +104,7 @@ public final class Server implements IServer {
     boolean startSuccessful = false;
 
     @Override
-    public boolean isServerCompleateStart() {
+    public boolean isServerCompleteStart() {
         return startSuccessful;
     }
 

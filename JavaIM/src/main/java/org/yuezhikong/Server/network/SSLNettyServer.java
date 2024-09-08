@@ -388,7 +388,7 @@ public class SSLNettyServer implements NetworkServer {
         public void channelActive(ChannelHandlerContext ctx) {
             log.info("检测到新客户端连接...");
             log.info("此客户端IP地址：{}", ctx.channel().remoteAddress());
-            if (!ServerTools.getServerInstance().isServerCompleateStart()) {
+            if (!ServerTools.getServerInstance().isServerCompleteStart()) {
                 SystemProtocol systemProtocol = new SystemProtocol();
                 systemProtocol.setType("Error");
                 systemProtocol.setMessage("Server is not start completely");

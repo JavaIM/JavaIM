@@ -126,5 +126,5 @@ public interface IServer {
      *
      * @return 是/否
      */
-    boolean isServerCompleateStart();
+    boolean isServerCompleteStart();
 }
