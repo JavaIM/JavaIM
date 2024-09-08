@@ -16,6 +16,7 @@
  */
 package org.yuezhikong.Server;
 
+import com.google.gson.Gson;
 import org.apache.ibatis.session.SqlSession;
 import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.api.api;
@@ -127,4 +128,10 @@ public interface IServer {
      * @return 是/否
      */
     boolean isServerCompleteStart();
+
+    /**
+     * 获取 JSON 解析器
+     * @return 解析器
+     */
+    Gson getGson();
 }

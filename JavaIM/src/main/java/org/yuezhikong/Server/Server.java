@@ -80,6 +80,7 @@ public final class Server implements IServer {
     /**
      * Gson
      */
+    @Getter
     private final Gson gson = new Gson();
 
     /**
