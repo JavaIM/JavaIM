@@ -180,8 +180,8 @@ public class SSLNettyServer implements NetworkServer {
 
             future = bootstrap.bind(ListenPort).sync();
             log.info("JavaIM网络层启动完成");
-            synchronized (SSLNettyServer.class) {
-                SSLNettyServer.class.notifyAll();
+            synchronized (NetworkServer.class) {
+                NetworkServer.class.notifyAll();
             }
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {

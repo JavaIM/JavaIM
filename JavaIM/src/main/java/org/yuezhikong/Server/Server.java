@@ -15,6 +15,7 @@ import org.jline.terminal.Terminal;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Main;
+import org.yuezhikong.Server.network.SSLNettyServer;
 import org.yuezhikong.Server.protocolHandler.ProtocolHandler;
 import org.yuezhikong.Server.protocolHandler.handlers.*;
 import org.yuezhikong.Server.userData.auth.UserAuthentication;
@@ -24,7 +25,6 @@ import org.yuezhikong.Server.userData.users.tcpUser;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
-import org.yuezhikong.Server.network.SSLNettyServer;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.SimplePluginManager;
 import org.yuezhikong.Server.plugin.event.events.Server.ServerChatEvent;
@@ -37,6 +37,7 @@ import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.Server.request.ChatRequest;
 import org.yuezhikong.Server.request.ChatRequestImpl;
 import org.yuezhikong.utils.Protocol.*;
+import org.yuezhikong.utils.checks;
 import org.yuezhikong.utils.database.DatabaseHelper;
 import org.yuezhikong.utils.logging.CustomLogger;
 import org.yuezhikong.utils.logging.PluginLoggingBridge;
@@ -88,9 +89,14 @@ public final class Server implements IServer {
      */
     private api serverAPI;
     /**
-     * 网络层服务器
+     * 网络层服务器列表
      */
-    private NetworkServer networkServer;
+    private final List<NetworkServer> networkServerList = new ArrayList<>();
+
+    /**
+     * 默认网络层服务器列表
+     */
+    private NetworkServer defaultNetworkServer;
 
     /**
      * Mybatis会话
@@ -109,12 +115,25 @@ public final class Server implements IServer {
         return startSuccessful;
     }
 
+    @Override
+    public void registerNetworkServer(NetworkServer server) {
+        networkServerList.add(server);
+    }
+
     /**
      * 启动JavaIM服务端
-     *
-     * @param ListenPort 监听的端口
+     * @param serverPort    服务器端口
+     * @param defaultServer 默认网络层服务器
      */
-    public void start(@Range(from = 1, to = 65535) int ListenPort) {
+    public void start(
+            @Range(from = 1, to = 65535) int serverPort,
+            NetworkServer defaultServer
+    ) {
+        checks.checkArgument(defaultServer == null, "Network Server can not be null!");
+        checks.checkState(startSuccessful,"JavaIM Server is already running.");
+        registerNetworkServer(defaultServer);
+        defaultNetworkServer = defaultServer;
+
         long startUnix = System.currentTimeMillis();
         log.info("正在启动JavaIM");
         if (Instance != null)
@@ -155,7 +174,6 @@ public final class Server implements IServer {
         };// 初始化Server API
         request = new ChatRequestImpl();
 
-        networkServer = new SSLNettyServer();
         new Thread(() -> {
             Future<?> DatabaseStartTask = StartUpThreadPool.submit(() -> {
                 log.info("正在处理数据库");
@@ -165,11 +183,11 @@ public final class Server implements IServer {
                     JDBCUrl = DatabaseHelper.InitDataBase();
                 } catch (Throwable throwable) {
                     log.error("数据库启动失败", throwable);
-                    if (!networkServer.isRunning()) {
-                        synchronized (SSLNettyServer.class) {
-                            if (!networkServer.isRunning()) {
+                    if (!defaultNetworkServer.isRunning()) {
+                        synchronized (NetworkServer.class) {
+                            if (!defaultNetworkServer.isRunning()) {
                                 try {
-                                    SSLNettyServer.class.wait();
+                                    NetworkServer.class.wait();
                                 } catch (InterruptedException ignored) {
 
                                 }
@@ -260,11 +278,11 @@ public final class Server implements IServer {
                 }
             }, "User Command Thread");
             log.info("正在等待网络层启动完成");
-            if (!networkServer.isRunning()) {
-                synchronized (SSLNettyServer.class) {
-                    if (!networkServer.isRunning()) {
+            if (!defaultNetworkServer.isRunning()) {
+                synchronized (NetworkServer.class) {
+                    if (!defaultNetworkServer.isRunning()) {
                         try {
-                            SSLNettyServer.class.wait();
+                            NetworkServer.class.wait();
                         } catch (InterruptedException ignored) {
 
                         }
@@ -294,15 +312,15 @@ public final class Server implements IServer {
         }, "Server Thread").start();
 
         Thread.currentThread().setName("Network Thread");
-        networkServer.start(ListenPort, StartUpThreadPool);
+        defaultNetworkServer.start(serverPort, StartUpThreadPool);
     }
 
     @Getter
     private static Server Instance;
 
     @Override
-    public NetworkServer getNetwork() {
-        return networkServer;
+    public NetworkServer[] getNetworkServers() {
+        return networkServerList.toArray(new NetworkServer[0]);
     }
 
     @Override
@@ -319,7 +337,9 @@ public final class Server implements IServer {
         } catch (Throwable ignored) {
         }
         System.gc();
-        getNetwork().stop();
+        for (NetworkServer networkServer : networkServerList) {
+            networkServer.stop();
+        }
         Instance = null;
         sqlSession.close();
         log.info("JavaIM服务器已关闭");
@@ -358,7 +378,7 @@ public final class Server implements IServer {
 
     @Override
     public ExecutorService getIOThreadPool() {
-        return getNetwork().getIOThreadPool();
+        return defaultNetworkServer.getIOThreadPool();
     }
 
     @Override

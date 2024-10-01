@@ -109,7 +109,7 @@ public interface IServer {
     /**
      * 获取网络层服务器
      */
-    NetworkServer getNetwork();
+    NetworkServer[] getNetworkServers();
 
     /**
      * 关闭服务器
@@ -134,4 +134,10 @@ public interface IServer {
      * @return 解析器
      */
     Gson getGson();
+
+    /**
+     * 注册网络层服务器
+     * @param server 网络层服务器
+     */
+    void registerNetworkServer(NetworkServer server);
 }
