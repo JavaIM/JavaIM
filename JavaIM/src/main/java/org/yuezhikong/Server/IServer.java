@@ -140,4 +140,15 @@ public interface IServer {
      * @param server 网络层服务器
      */
     void registerNetworkServer(NetworkServer server);
+
+    /**
+     * 获取服务器线程组
+     * @return 线程组
+     */
+    ThreadGroup getServerThreadGroup();
+
+    /**
+     * 判断服务器是否已停止
+     */
+    boolean isStopped();
 }

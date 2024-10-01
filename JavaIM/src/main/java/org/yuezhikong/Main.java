@@ -89,9 +89,26 @@ public class Main {
         ThreadGroup serverGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(), "serverGroup");
         try {
             new Thread(serverGroup, "Server Thread") {
+
+                @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
                 @Override
                 public void run() {
-                    new Server().start(serverPort, new SSLNettyServer());
+                    Server server = new Server();
+                    server.start(serverPort, new SSLNettyServer());
+                    this.setName("Server Daemon");
+                    if (server.isStopped())
+                        return;
+                    synchronized (server) {
+                        while (true) {
+                            if (server.isStopped())
+                                return;
+
+                            try {
+                                server.wait();
+                            } catch (InterruptedException ignored) {
+                            }
+                        }
+                    }
                 }
 
                 public Thread start2() {

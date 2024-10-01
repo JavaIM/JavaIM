@@ -68,11 +68,13 @@ public class SSLNettyServer implements NetworkServer {
     private PrivateKey ServerSSLPrivateKey;
     private X509Certificate ServerSSLCertificate;
     private ChannelFuture future;
+    private EventLoopGroup bossGroup, workerGroup;
+    private DefaultEventLoopGroup RecvMessageThreadPool;
 
     private boolean isRunning = false;
 
     @Override
-    public void start(@Range(from = 1, to = 65535) int ListenPort, ExecutorService StartUpThreadPool) throws IllegalStateException {
+    public void start(@Range(from = 1, to = 65535) int ListenPort, ExecutorService IOThreadPool, ExecutorService StartUpThreadPool) throws IllegalStateException {
         if (isRunning)
             throw new IllegalStateException("The Server is already running!");
         isRunning = true;
@@ -83,28 +85,17 @@ public class SSLNettyServer implements NetworkServer {
             X509CertificateGenerate();
         });
 
-
         record NettyThreadPoolTaskReturn(EventLoopGroup bossGroup, EventLoopGroup workerGroup,
                                          DefaultEventLoopGroup RecvMessageThreadPool) {
         }
         Future<?> NettyThreadPoolTask = StartUpThreadPool.submit(() -> {
             log.info("正在创建各线程池");
-            ThreadGroup IOThreadGroup = new ThreadGroup("JavaIM IO Thread");
-            IOThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
-                private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-                @Override
-                public Thread newThread(@NotNull Runnable r) {
-                    return new Thread(IOThreadGroup,
-                            r, "IO Thread #" + threadNumber.getAndIncrement());
-                }
-            });
             EventLoopGroup bossGroup = new NioEventLoopGroup(2, new ThreadFactory() {
                 private final AtomicInteger threadNumber = new AtomicInteger(1);
 
                 @Override
                 public Thread newThread(@NotNull Runnable r) {
-                    return new Thread(IOThreadGroup,
+                    return new Thread(ServerTools.getServerInstanceOrThrow().getServerThreadGroup(),
                             r, "Netty Boss Thread #" + threadNumber.getAndIncrement());
                 }
             });
@@ -113,7 +104,7 @@ public class SSLNettyServer implements NetworkServer {
 
                 @Override
                 public Thread newThread(@NotNull Runnable r) {
-                    return new Thread(IOThreadGroup,
+                    return new Thread(ServerTools.getServerInstanceOrThrow().getServerThreadGroup(),
                             r, "Netty Worker Thread #" + threadNumber.getAndIncrement());
                 }
             });
@@ -122,7 +113,7 @@ public class SSLNettyServer implements NetworkServer {
 
                 @Override
                 public Thread newThread(@NotNull Runnable r) {
-                    Thread t = new Thread(new ThreadGroup(Thread.currentThread().getThreadGroup(), "Recv Message Thread Group"),
+                    Thread t = new Thread(ServerTools.getServerInstanceOrThrow().getServerThreadGroup(),
                             r, "Recv Message Thread #" + threadNumber.getAndIncrement());
                     t.setUncaughtExceptionHandler(null);
                     return t;
@@ -131,10 +122,7 @@ public class SSLNettyServer implements NetworkServer {
             return new NettyThreadPoolTaskReturn(bossGroup, workerGroup, RecvMessageThreadPool);
         });
 
-        EventLoopGroup bossGroup, workerGroup;
-        DefaultEventLoopGroup RecvMessageThreadPool;
         try {
-            CACertTask.get();
             NettyThreadPoolTaskReturn taskReturn = (NettyThreadPoolTaskReturn) NettyThreadPoolTask.get();
             bossGroup = taskReturn.bossGroup();
             workerGroup = taskReturn.workerGroup();
@@ -154,6 +142,7 @@ public class SSLNettyServer implements NetworkServer {
                         public void initChannel(SocketChannel channel) {
                             ChannelPipeline pipeline = channel.pipeline();
                             try {
+                                CACertTask.get();
                                 pipeline.addLast(
                                         SslContextBuilder.forServer(ServerSSLPrivateKey, ServerSSLCertificate)
                                                 .sslProvider(SslProvider.JDK)
@@ -161,7 +150,7 @@ public class SSLNettyServer implements NetworkServer {
                                                 .build()
                                                 .newHandler(channel.alloc())
                                 );
-                            } catch (SSLException e) {
+                            } catch (SSLException | InterruptedException | ExecutionException e) {
                                 throw new RuntimeException("SSL Context Generate Failed!", e);
                             }
                             pipeline.addLast(new LoggingHandler(LogLevel.DEBUG));
@@ -183,13 +172,8 @@ public class SSLNettyServer implements NetworkServer {
             synchronized (NetworkServer.class) {
                 NetworkServer.class.notifyAll();
             }
-            future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             log.error("出现错误!", e);
-        } finally {
-            RecvMessageThreadPool.shutdownGracefully();
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
         }
     }
 
@@ -368,15 +352,12 @@ public class SSLNettyServer implements NetworkServer {
         }
         log.info("JavaIM 网络层正在关闭...");
         future.channel().close();
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
+        RecvMessageThreadPool.shutdownGracefully();
         log.info("服务器关闭完成");
     }
 
-    private ExecutorService IOThreadPool;
-
-    @Override
-    public ExecutorService getIOThreadPool() {
-        return IOThreadPool;
-    }
 
     private class ServerInHandler extends ChannelInboundHandlerAdapter {
         private final HashMap<Channel, NetworkClient> clientNetworkClientPair = new HashMap<>();

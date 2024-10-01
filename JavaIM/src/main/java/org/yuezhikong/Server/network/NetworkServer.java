@@ -48,11 +48,11 @@ public interface NetworkServer {
      * 启动服务器
      *
      * @param ListenPort        监听端口
+     * @param IOThreadPool      IO线程池
      * @param StartUpThreadPool 用于启动网络层的线程池
      * @throws IllegalStateException 服务器已经启动
-     * @apiNote 堵塞函数
      */
-    void start(@Range(from = 1, to = 65535) int ListenPort, ExecutorService StartUpThreadPool) throws IllegalStateException;
+    void start(@Range(from = 1, to = 65535) int ListenPort, ExecutorService IOThreadPool, ExecutorService StartUpThreadPool) throws IllegalStateException;
 
     /**
      * 获取在线客户端列表
@@ -70,11 +70,4 @@ public interface NetworkServer {
      * @throws IllegalStateException 服务器未启动
      */
     void stop() throws IllegalStateException;
-
-    /**
-     * 获取网络层IO线程池
-     *
-     * @return IO线程池
-     */
-    ExecutorService getIOThreadPool();
 }
