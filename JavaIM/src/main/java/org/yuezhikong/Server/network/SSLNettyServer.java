@@ -70,13 +70,12 @@ public class SSLNettyServer implements NetworkServer {
     private ChannelFuture future;
 
     private boolean isRunning = false;
-    private boolean run = false;
 
     @Override
     public void start(@Range(from = 1, to = 65535) int ListenPort, ExecutorService StartUpThreadPool) throws IllegalStateException {
-        if (run)
+        if (isRunning)
             throw new IllegalStateException("The Server is already running!");
-        run = true;
+        isRunning = true;
         log.info("正在启动网络层 JavaIM...");
 
         Future<?> CACertTask = StartUpThreadPool.submit(() -> {
@@ -184,7 +183,6 @@ public class SSLNettyServer implements NetworkServer {
             synchronized (SSLNettyServer.class) {
                 SSLNettyServer.class.notifyAll();
             }
-            isRunning = true;
             future.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             log.error("出现错误!", e);
