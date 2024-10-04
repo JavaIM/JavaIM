@@ -15,6 +15,7 @@ import org.jline.terminal.Terminal;
 import org.slf4j.LoggerFactory;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Main;
+import org.yuezhikong.Server.network.ExitWatchdog;
 import org.yuezhikong.Server.protocolHandler.ProtocolHandler;
 import org.yuezhikong.Server.protocolHandler.handlers.*;
 import org.yuezhikong.Server.userData.auth.UserAuthentication;
@@ -127,6 +128,11 @@ public final class Server implements IServer {
     @Override
     public void registerNetworkServer(NetworkServer server) {
         networkServerList.add(server);
+    }
+
+    @Override
+    public void unregisterNetworkServer(NetworkServer server) {
+        networkServerList.remove(server);
     }
 
     private boolean beginRun = false;
@@ -355,9 +361,9 @@ public final class Server implements IServer {
         }
         Instance = null;
         sqlSession.close();
-        synchronized (this) {
-            notifyAll();
-        }
+        try {
+            ExitWatchdog.getInstance().onJavaIMExit();
+        } catch (IllegalStateException ignored) {}
         log.info("JavaIM服务器已关闭");
     }
 

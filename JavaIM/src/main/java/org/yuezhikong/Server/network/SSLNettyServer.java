@@ -350,12 +350,15 @@ public class SSLNettyServer implements NetworkServer {
         if (!isRunning()) {
             throw new IllegalStateException("Server is not running");
         }
-        log.info("JavaIM 网络层正在关闭...");
-        future.channel().close();
-        bossGroup.shutdownGracefully();
-        workerGroup.shutdownGracefully();
-        RecvMessageThreadPool.shutdownGracefully();
-        log.info("服务器关闭完成");
+        isRunning = false;
+        ExitWatchdog.getInstance().addExitTask(() -> {
+            log.info("JavaIM 网络层正在关闭...");
+            future.channel().close();
+            bossGroup.shutdownGracefully();
+            workerGroup.shutdownGracefully();
+            RecvMessageThreadPool.shutdownGracefully();
+            log.info("JavaIM 网络层关闭完成");
+        },this);
     }
 
 

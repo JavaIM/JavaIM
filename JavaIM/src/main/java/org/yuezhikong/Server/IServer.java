@@ -151,4 +151,10 @@ public interface IServer {
      * 判断服务器是否已停止
      */
     boolean isStopped();
+
+    /**
+     * 取消注册网络层服务器
+     * @param server 网络层服务器
+     */
+    void unregisterNetworkServer(NetworkServer server);
 }

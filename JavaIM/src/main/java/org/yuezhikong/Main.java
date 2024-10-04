@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.yuezhikong.Server.Server;
 import org.yuezhikong.Server.ServerTools;
+import org.yuezhikong.Server.network.ExitWatchdog;
 import org.yuezhikong.Server.network.SSLNettyServer;
 import org.yuezhikong.utils.ConfigFileManager;
 import org.yuezhikong.utils.ConsoleCommandRequest;
@@ -89,26 +90,14 @@ public class Main {
         ThreadGroup serverGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(), "serverGroup");
         try {
             new Thread(serverGroup, "Server Thread") {
-
-                @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
                 @Override
                 public void run() {
                     Server server = new Server();
                     server.start(serverPort, new SSLNettyServer());
-                    this.setName("Server Daemon");
+                    this.setName("NetworkServer Watchdog");
                     if (server.isStopped())
                         return;
-                    synchronized (server) {
-                        while (true) {
-                            if (server.isStopped())
-                                return;
-
-                            try {
-                                server.wait();
-                            } catch (InterruptedException ignored) {
-                            }
-                        }
-                    }
+                    ExitWatchdog.initInstance();
                 }
 
                 public Thread start2() {
