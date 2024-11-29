@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Range;
 import org.yuezhikong.CodeDynamicConfig;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.userData.users.JavaUser;
-import org.yuezhikong.Server.userData.users.tcpUser;
+import org.yuezhikong.Server.userData.users.NetworkUser;
 import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.utils.Protocol.GeneralProtocol;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
@@ -459,11 +459,11 @@ public class SSLNettyServer implements NetworkServer {
     }
 
     private class NettyNetworkClient implements NetworkClient {
-        private final tcpUser user;
+        private final NetworkUser user;
         private final SocketAddress address;
         private final Channel channel;
 
-        private NettyNetworkClient(tcpUser user, SocketAddress address, Channel channel) {
+        private NettyNetworkClient(NetworkUser user, SocketAddress address, Channel channel) {
             this.user = user;
             this.address = address;
             this.channel = channel;
@@ -492,12 +492,12 @@ public class SSLNettyServer implements NetworkServer {
         }
 
         @Override
-        public tcpUser getUser() {
+        public NetworkUser getUser() {
             return user;
         }
     }
 
-    private static class NettyUser extends JavaUser implements tcpUser {
+    private static class NettyUser extends JavaUser implements NetworkUser {
         private NetworkClient client;
 
         /**

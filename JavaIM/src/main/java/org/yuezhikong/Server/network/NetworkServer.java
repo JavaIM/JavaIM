@@ -1,7 +1,7 @@
 package org.yuezhikong.Server.network;
 
 import org.jetbrains.annotations.Range;
-import org.yuezhikong.Server.userData.users.tcpUser;
+import org.yuezhikong.Server.userData.users.NetworkUser;
 
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutorService;
@@ -41,7 +41,7 @@ public interface NetworkServer {
         /**
          * 获取user
          */
-        tcpUser getUser();
+        NetworkUser getUser();
     }
 
     /**

@@ -12,7 +12,7 @@ import org.yuezhikong.Main;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.userData.Permission;
-import org.yuezhikong.Server.userData.users.tcpUser;
+import org.yuezhikong.Server.userData.users.NetworkUser;
 import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.userData.userInformation;
 import org.yuezhikong.Server.userData.userUploadFile;
@@ -176,12 +176,12 @@ public class InternalCommands {
             List<user> onlineUserList = serverAPI.getValidUserList(true);
             if (Permission.ADMIN.equals(User.getUserPermission()))
                 onlineUserList.forEach((user) -> {
-                    if (user instanceof tcpUser)
+                    if (user instanceof NetworkUser)
                         serverAPI.sendMessageToUser(User,
                                 String.format("%s 权限：%s IP地址：%s",
                                         user.getUserName(),
                                         user.getUserPermission().toString(),
-                                        ((tcpUser) user).getNetworkClient().getSocketAddress()
+                                        ((NetworkUser) user).getNetworkClient().getSocketAddress()
                                 )
                         );
                     else

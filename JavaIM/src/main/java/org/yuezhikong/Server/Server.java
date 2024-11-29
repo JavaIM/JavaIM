@@ -21,7 +21,7 @@ import org.yuezhikong.Server.protocolHandler.handlers.*;
 import org.yuezhikong.Server.userData.auth.UserAuthentication;
 import org.yuezhikong.Server.userData.*;
 import org.yuezhikong.Server.userData.users.ConsoleUser;
-import org.yuezhikong.Server.userData.users.tcpUser;
+import org.yuezhikong.Server.userData.users.NetworkUser;
 import org.yuezhikong.Server.api.SingleAPI;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.network.NetworkServer;
@@ -187,8 +187,8 @@ public final class Server implements IServer {
                     ((PluginUser) User).writeData(SendData);
                 else if (User instanceof ConsoleUser)
                     log.info(SendData);
-                else if (User instanceof tcpUser)
-                    ((tcpUser) User).getNetworkClient().send(SendData);
+                else if (User instanceof NetworkUser)
+                    ((NetworkUser) User).getNetworkClient().send(SendData);
             }
         };// 初始化Server API
         request = new ChatRequestImpl();
@@ -369,7 +369,7 @@ public final class Server implements IServer {
 
     @Override
     public void onReceiveMessage(NetworkServer.NetworkClient client, String message) {
-        tcpUser user = client.getUser();
+        NetworkUser user = client.getUser();
         if (user.getUserAuthentication() == null)
             user.setUserAuthentication(new UserAuthentication(user, this));
         GeneralProtocol protocol;
