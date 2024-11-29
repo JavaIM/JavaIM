@@ -424,7 +424,7 @@ public class SSLNettyServer implements NetworkServer {
                     return;
                 }
                 NetworkClient thisClient = clientNetworkClientPair.get(ctx.channel());
-                ServerTools.getServerInstanceOrThrow().onReceiveMessage(thisClient, Msg);
+                ServerTools.getServerInstanceOrThrow().onReceiveMessage(thisClient.getUser(), Msg);
             } catch (Throwable throwable) {
                 log.warn(String.format("客户端：%s 处理程序出错！", ctx.channel().remoteAddress()));
                 log.warn("错误为：", throwable);

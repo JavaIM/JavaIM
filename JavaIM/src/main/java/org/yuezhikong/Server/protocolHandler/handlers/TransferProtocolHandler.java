@@ -3,8 +3,8 @@ package org.yuezhikong.Server.protocolHandler.handlers;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.IServer;
-import org.yuezhikong.Server.network.NetworkServer;
 import org.yuezhikong.Server.protocolHandler.ProtocolHandler;
+import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.userData.userUploadFile;
 import org.yuezhikong.utils.Protocol.SystemProtocol;
 import org.yuezhikong.utils.Protocol.TransferProtocol;
@@ -21,44 +21,44 @@ import java.util.UUID;
 
 public class TransferProtocolHandler implements ProtocolHandler {
     @Override
-    public void handleProtocol(@NotNull IServer server, @NotNull String protocolData, NetworkServer.@NotNull NetworkClient client) {
-        if (!client.getUser().isUserLogged()) { // 检查登录状态
-            server.getServerAPI().sendMessageToUser(client.getUser(), "请先登录");
+    public void handleProtocol(@NotNull IServer server, @NotNull String protocolData, user user) {
+        if (!user.isUserLogged()) { // 检查登录状态
+            server.getServerAPI().sendMessageToUser(user, "请先登录");
             return;
         }
         TransferProtocol protocol = server.getGson().fromJson(protocolData, TransferProtocol.class);// 反序列化 json 到 object
         if (protocol.getTransferProtocolHead().getType().equals("upload")) // 判断模式
-            handleUpload(server, protocol, client);
+            handleUpload(server, protocol, user);
         else
-            server.getServerAPI().sendMessageToUser(client.getUser(), "暂不支持此模式");
+            server.getServerAPI().sendMessageToUser(user, "暂不支持此模式");
     }
 
     /**
      * 处理上传文件请求
      * @param server    服务器实例
      * @param protocol  协议 json 数据
-     * @param client    客户端
+     * @param user      用户
      */
-    private void handleUpload(IServer server, TransferProtocol protocol, NetworkServer.NetworkClient client) {
+    private void handleUpload(IServer server, TransferProtocol protocol, user user) {
         List<TransferProtocol.TransferProtocolBodyBean> data = protocol.getTransferProtocolBody();// 读取列表
         if (data.size() != 2 || data.get(0).getData() == null || data.get(1).getData() == null) {// 不符合规定返回无效数据包错误给客户端
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Invalid Packet");
-            server.getServerAPI().sendJsonToClient(client.getUser(), server.getGson().toJson(systemProtocol), "SystemProtocol");
+            server.getServerAPI().sendJsonToClient(user, server.getGson().toJson(systemProtocol), "SystemProtocol");
             return;
         }
         String fileName = data.get(0).getData();// 读取出文件名
 
         userUploadFileDao uploadFileDao = server.getSqlSession().getMapper(userUploadFileDao.class);// 读取数据库，查询同一用户下是否有重名文件
-        List<userUploadFile> uploadFiles = uploadFileDao.getUploadFilesByUserId(client.getUser().getUserInformation().getUserId());
+        List<userUploadFile> uploadFiles = uploadFileDao.getUploadFilesByUserId(user.getUserInformation().getUserId());
         if (uploadFiles != null)
             for (userUploadFile uploadFile : uploadFiles) {
                 if (uploadFile.getOrigFileName().equals(fileName)) {
                     SystemProtocol systemProtocol = new SystemProtocol();
                     systemProtocol.setType("Error");
                     systemProtocol.setMessage("File Already Exists");
-                    server.getServerAPI().sendJsonToClient(client.getUser(), server.getGson().toJson(systemProtocol), "SystemProtocol");
+                    server.getServerAPI().sendJsonToClient(user, server.getGson().toJson(systemProtocol), "SystemProtocol");
                     return;
                 }
             }
@@ -70,7 +70,7 @@ public class TransferProtocolHandler implements ProtocolHandler {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Invalid Packet");
-            server.getServerAPI().sendJsonToClient(client.getUser(), server.getGson().toJson(systemProtocol), "SystemProtocol");
+            server.getServerAPI().sendJsonToClient(user, server.getGson().toJson(systemProtocol), "SystemProtocol");
             return;
         }
 
@@ -82,7 +82,7 @@ public class TransferProtocolHandler implements ProtocolHandler {
                 break;
             }
         } while (true);
-        uploadFileDao.addFile(new userUploadFile(client.getUser().getUserInformation().getUserId(), fileId, fileName));// 写入文件
+        uploadFileDao.addFile(new userUploadFile(user.getUserInformation().getUserId(), fileId, fileName));// 写入文件
 
         File uploadFileDirectory = new File("./uploadFiles");
         File uploadFile = new File(uploadFileDirectory, fileId);
@@ -97,6 +97,6 @@ public class TransferProtocolHandler implements ProtocolHandler {
         } catch (IOException e) {
             throw new RuntimeException("write File Failed", e);
         }
-        server.getServerAPI().sendMessageToUser(client.getUser(), "操作成功完成。");// 提示用户
+        server.getServerAPI().sendMessageToUser(user, "操作成功完成。");// 提示用户
     }
 }

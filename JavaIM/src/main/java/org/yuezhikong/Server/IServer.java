@@ -118,9 +118,8 @@ public interface IServer {
 
     /**
      * 用户接收到消息处理
-     * 警告，请最好不要使用此方法来模拟用户的消息，此方法设计仅用作网络层调用
      */
-    void onReceiveMessage(NetworkServer.NetworkClient client, String message);
+    void onReceiveMessage(user user, String message);
 
     /**
      * 服务器是否启动完成

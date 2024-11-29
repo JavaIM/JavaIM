@@ -368,8 +368,7 @@ public final class Server implements IServer {
     }
 
     @Override
-    public void onReceiveMessage(NetworkServer.NetworkClient client, String message) {
-        NetworkUser user = client.getUser();
+    public void onReceiveMessage(user user, String message) {
         if (user.getUserAuthentication() == null)
             user.setUserAuthentication(new UserAuthentication(user, this));
         GeneralProtocol protocol;
@@ -395,7 +394,7 @@ public final class Server implements IServer {
             log.warn("客户端发送了未知协议:{}", protocol.getProtocolName());
             return;
         }
-        handler.handleProtocol(this, protocol.getProtocolData(), client);
+        handler.handleProtocol(this, protocol.getProtocolData(), user);
     }
 
     @Override
