@@ -84,7 +84,7 @@ public class CrashReport implements Thread.UncaughtExceptionHandler {
                 FileUtils.writeStringToFile(crashReport, "可能导致崩溃的模块: 服务端插件" + "\n", StandardCharsets.UTF_8, true);
             else
                 FileUtils.writeStringToFile(crashReport, "可能导致崩溃的模块: JavaIM" + "\n", StandardCharsets.UTF_8, true);
-            FileUtils.writeStringToFile(crashReport, "JavaIM版本: " + CodeDynamicConfig.getVersion() + "\n", StandardCharsets.UTF_8, true);
+            FileUtils.writeStringToFile(crashReport, "JavaIM版本: " + SystemConfig.getVersion() + "\n", StandardCharsets.UTF_8, true);
             FileUtils.writeStringToFile(crashReport, "出错的线程: " + t.getName() + "\n", StandardCharsets.UTF_8, true);
             FileUtils.writeStringToFile(crashReport, "\n", StandardCharsets.UTF_8, true);
             FileUtils.writeStringToFile(crashReport, stackTrace + "\n", StandardCharsets.UTF_8, true);

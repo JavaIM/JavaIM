@@ -5,7 +5,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.SystemConfig;
 
 import java.io.*;
 import java.net.http.HttpClient;
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class MultiThreadDownloadManager implements AutoCloseable {
 
-    private final ExecutorService threadPool = Executors.newFixedThreadPool(CodeDynamicConfig.getDownloadParts(), new ThreadFactory() {
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(SystemConfig.getDownloadParts(), new ThreadFactory() {
         private final AtomicInteger threadNumber = new AtomicInteger(1);
 
         @Override
@@ -136,16 +136,16 @@ public class MultiThreadDownloadManager implements AutoCloseable {
         onDownloadInit(requestBuilder, fileSize, false);
         List<Future<Boolean>> futures = new ArrayList<>();
         // 计算每个部分的大小
-        long partSize = fileSize / CodeDynamicConfig.getDownloadParts();
-        long remainingBytes = fileSize % CodeDynamicConfig.getDownloadParts();
+        long partSize = fileSize / SystemConfig.getDownloadParts();
+        long remainingBytes = fileSize % SystemConfig.getDownloadParts();
 
-        for (int i = 0; i < CodeDynamicConfig.getDownloadParts(); i++) {
+        for (int i = 0; i < SystemConfig.getDownloadParts(); i++) {
             // 计算当前部分的起始和结束字节
             long start = i * partSize;
-            long end = (i == CodeDynamicConfig.getDownloadParts() - 1) ? fileSize - 1 : start + partSize - 1;
+            long end = (i == SystemConfig.getDownloadParts() - 1) ? fileSize - 1 : start + partSize - 1;
 
             // 如果当前部分不是最后一部分，并且剩余字节大于0，将部分大小增加1，直到剩余字节为0
-            if (i < remainingBytes && i < CodeDynamicConfig.getDownloadParts() - 1) {
+            if (i < remainingBytes && i < SystemConfig.getDownloadParts() - 1) {
                 end++;
                 remainingBytes--;
             }

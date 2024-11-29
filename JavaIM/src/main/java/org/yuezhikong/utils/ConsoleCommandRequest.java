@@ -18,7 +18,7 @@ package org.yuezhikong.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.*;
-import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.SystemConfig;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -74,7 +74,7 @@ public class ConsoleCommandRequest {
             }
 
             if (cmd.hasOption("v")) {
-                log.info("JavaIM v{}", CodeDynamicConfig.getVersion());
+                log.info("JavaIM v{}", SystemConfig.getVersion());
                 System.exit(0);
             }
 

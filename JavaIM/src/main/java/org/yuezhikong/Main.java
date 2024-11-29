@@ -76,7 +76,7 @@ public class Main {
     }
 
     public static void ConsoleMain(Map<String, String> commandLineArgs, LineReader lineReader) {
-        log.info("欢迎来到JavaIM！版本：{}", CodeDynamicConfig.getVersion());
+        log.info("欢迎来到JavaIM！版本：{}", SystemConfig.getVersion());
         log.info("正在启动服务端...");
 
         int serverPort;

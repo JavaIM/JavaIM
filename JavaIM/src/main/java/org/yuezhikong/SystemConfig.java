@@ -21,7 +21,7 @@ import lombok.Getter;
 import static org.yuezhikong.utils.ConfigFileManager.getServerConfig;
 
 
-public final class CodeDynamicConfig {
+public final class SystemConfig {
     //静态区，不允许修改
     //协议版本
     @Getter
@@ -58,6 +58,6 @@ public final class CodeDynamicConfig {
     /**
      * Static Config不得被实例化
      */
-    private CodeDynamicConfig() {
+    private SystemConfig() {
     }
 }

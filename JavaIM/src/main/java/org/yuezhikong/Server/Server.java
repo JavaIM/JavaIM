@@ -13,7 +13,7 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
 import org.slf4j.LoggerFactory;
-import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.SystemConfig;
 import org.yuezhikong.Main;
 import org.yuezhikong.Server.network.ExitWatchdog;
 import org.yuezhikong.Server.protocolHandler.ProtocolHandler;
@@ -177,7 +177,7 @@ public final class Server implements IServer {
             @Override
             public void sendJsonToClient(@NotNull user User, @NotNull String InputData, @NotNull String ProtocolType) {
                 GeneralProtocol protocol = new GeneralProtocol();
-                protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
+                protocol.setProtocolVersion(SystemConfig.getProtocolVersion());
                 protocol.setProtocolName(ProtocolType);
                 protocol.setProtocolData(InputData);
 
@@ -381,7 +381,7 @@ public final class Server implements IServer {
             serverAPI.sendJsonToClient(user, gson.toJson(systemProtocol), "SystemProtocol");
             return;
         }
-        if (protocol.getProtocolVersion() != CodeDynamicConfig.getProtocolVersion()) {
+        if (protocol.getProtocolVersion() != SystemConfig.getProtocolVersion()) {
             SystemProtocol systemProtocol = new SystemProtocol();
             systemProtocol.setType("Error");
             systemProtocol.setMessage("Protocol version not support");

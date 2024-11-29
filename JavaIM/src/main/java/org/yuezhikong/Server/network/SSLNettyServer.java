@@ -34,7 +34,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
-import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.SystemConfig;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.userData.users.JavaUser;
 import org.yuezhikong.Server.userData.users.NetworkUser;
@@ -185,8 +185,8 @@ public class SSLNettyServer implements NetworkServer {
             X500Name subject = new X500NameBuilder()
                     .addRDN(BCStyle.C, "CN")//证书国家代号(Country Name)
                     .addRDN(BCStyle.O, "JavaIM-Server")//证书组织名(Organization Name)
-                    .addRDN(BCStyle.OU, CodeDynamicConfig.getServerName())//证书组织单位名(Organization Unit Name)
-                    .addRDN(BCStyle.CN, CodeDynamicConfig.getServerName())//证书通用名(Common Name)
+                    .addRDN(BCStyle.OU, SystemConfig.getServerName())//证书组织单位名(Organization Unit Name)
+                    .addRDN(BCStyle.CN, SystemConfig.getServerName())//证书通用名(Common Name)
                     .addRDN(BCStyle.ST, "Beijing")//证书州或省份(State or Province Name);
                     .addRDN(BCStyle.L, "Beijing")//证书所属城市名(Locality Name)
                     .build();
@@ -270,7 +270,7 @@ public class SSLNettyServer implements NetworkServer {
         X500Name subject = new X500NameBuilder()
                 .addRDN(BCStyle.C, "CN")//证书国家代号(Country Name)
                 .addRDN(BCStyle.O, "JavaIM-Server")//证书组织名(Organization Name)
-                .addRDN(BCStyle.OU, CodeDynamicConfig.getServerName())//证书组织单位名(Organization Unit Name)
+                .addRDN(BCStyle.OU, SystemConfig.getServerName())//证书组织单位名(Organization Unit Name)
                 .addRDN(BCStyle.CN, "JavaIM Server Encryption")//证书通用名(Common Name)
                 .addRDN(BCStyle.ST, "Shanghai")//证书州或省份(State or Province Name)
                 .addRDN(BCStyle.L, "Shanghai")//证书所属城市名(Locality Name)
@@ -376,7 +376,7 @@ public class SSLNettyServer implements NetworkServer {
                 systemProtocol.setMessage("Server is not start completely");
 
                 GeneralProtocol protocol = new GeneralProtocol();
-                protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
+                protocol.setProtocolVersion(SystemConfig.getProtocolVersion());
                 protocol.setProtocolName("SystemProtocol");
                 protocol.setProtocolData(gson.toJson(systemProtocol));
                 ctx.writeAndFlush(gson.toJson(protocol));
@@ -417,7 +417,7 @@ public class SSLNettyServer implements NetworkServer {
                     systemProtocol.setMessage("Empty Packet");
 
                     GeneralProtocol protocol = new GeneralProtocol();
-                    protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
+                    protocol.setProtocolVersion(SystemConfig.getProtocolVersion());
                     protocol.setProtocolName("SystemProtocol");
                     protocol.setProtocolData(gson.toJson(systemProtocol));
                     ctx.writeAndFlush(gson.toJson(protocol));
@@ -434,7 +434,7 @@ public class SSLNettyServer implements NetworkServer {
                 systemProtocol.setMessage("uncaught exception");
 
                 GeneralProtocol protocol = new GeneralProtocol();
-                protocol.setProtocolVersion(CodeDynamicConfig.getProtocolVersion());
+                protocol.setProtocolVersion(SystemConfig.getProtocolVersion());
                 protocol.setProtocolName("SystemProtocol");
                 protocol.setProtocolData(gson.toJson(systemProtocol));
                 ctx.writeAndFlush(gson.toJson(protocol));

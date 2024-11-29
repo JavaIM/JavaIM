@@ -22,7 +22,7 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
-import org.yuezhikong.CodeDynamicConfig;
+import org.yuezhikong.SystemConfig;
 import org.yuezhikong.utils.checks;
 
 import java.io.IOException;
@@ -45,12 +45,12 @@ public class DatabaseHelper {
         Connection connection = null;
         String JDBCUrl;
         try {
-            if (!CodeDynamicConfig.isUse_SQLITE_Mode()) {
-                JDBCUrl = "jdbc:mysql://" + CodeDynamicConfig.getMySQLDataBaseHost()
-                        + ":" + CodeDynamicConfig.getMySQLDataBasePort() + "/" + CodeDynamicConfig.getMySQLDataBaseName()
+            if (!SystemConfig.isUse_SQLITE_Mode()) {
+                JDBCUrl = "jdbc:mysql://" + SystemConfig.getMySQLDataBaseHost()
+                        + ":" + SystemConfig.getMySQLDataBasePort() + "/" + SystemConfig.getMySQLDataBaseName()
                         + "?failOverReadOnly=false&maxReconnects=1000&serverTimezone=Asia/Shanghai&initialTimeout=1&autoReconnect=true";
                 Class.forName("com.mysql.cj.jdbc.Driver");
-                connection = DriverManager.getConnection(JDBCUrl, CodeDynamicConfig.getMySQLDataBaseUser(), CodeDynamicConfig.getMySQLDataBasePasswd());
+                connection = DriverManager.getConnection(JDBCUrl, SystemConfig.getMySQLDataBaseUser(), SystemConfig.getMySQLDataBasePasswd());
             } else {
                 Class.forName("org.sqlite.JDBC");
                 JDBCUrl = "jdbc:sqlite:data.db";
@@ -102,14 +102,14 @@ public class DatabaseHelper {
         checks.checkArgument(JDBCUrl == null, "JDBC Url can not be null!");
         Properties MybatisConfig = new Properties();
         MybatisConfig.setProperty("jdbc.url", JDBCUrl);
-        if (CodeDynamicConfig.isUse_SQLITE_Mode()) {
+        if (SystemConfig.isUse_SQLITE_Mode()) {
             MybatisConfig.setProperty("jdbc.driver", "org.sqlite.JDBC");
             MybatisConfig.setProperty("jdbc.username", "");
             MybatisConfig.setProperty("jdbc.password", "");
         } else {
             MybatisConfig.setProperty("jdbc.driver", "com.mysql.cj.jdbc.Driver");
-            MybatisConfig.setProperty("jdbc.username", CodeDynamicConfig.getMySQLDataBaseUser());
-            MybatisConfig.setProperty("jdbc.password", CodeDynamicConfig.getMySQLDataBasePasswd());
+            MybatisConfig.setProperty("jdbc.username", SystemConfig.getMySQLDataBaseUser());
+            MybatisConfig.setProperty("jdbc.password", SystemConfig.getMySQLDataBasePasswd());
         }
         try {
             return new SqlSessionFactoryBuilder().build(Resources.getResourceAsStream("mybatis-config.xml"), MybatisConfig).openSession(true);
@@ -130,7 +130,7 @@ public class DatabaseHelper {
      */
     @ApiStatus.Internal
     private static boolean CheckColumnsExist(String Columns, String TableName, @NotNull Connection DatabaseConnection) throws SQLException {
-        if (CodeDynamicConfig.isUse_SQLITE_Mode()) {
+        if (SystemConfig.isUse_SQLITE_Mode()) {
             ResultSet rs = DatabaseConnection.createStatement().executeQuery("PRAGMA table_info (" + TableName + ")");
             while (rs.next()) {
                 //查看此列名
