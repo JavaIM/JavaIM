@@ -1,4 +1,4 @@
-package org.yuezhikong.utils.Protocol;
+package org.yuezhikong.utils.protocol;
 
 import lombok.Data;
 

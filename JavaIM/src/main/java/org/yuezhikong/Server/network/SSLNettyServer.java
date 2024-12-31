@@ -39,8 +39,8 @@ import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.userData.users.JavaUser;
 import org.yuezhikong.Server.userData.users.NetworkUser;
 import org.yuezhikong.Server.userData.user;
-import org.yuezhikong.utils.Protocol.GeneralProtocol;
-import org.yuezhikong.utils.Protocol.SystemProtocol;
+import org.yuezhikong.utils.protocol.GeneralProtocol;
+import org.yuezhikong.utils.protocol.SystemProtocol;
 import org.yuezhikong.utils.checks;
 
 import javax.net.ssl.SSLException;

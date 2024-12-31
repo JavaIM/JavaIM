@@ -12,7 +12,7 @@ import org.yuezhikong.Server.userData.userInformation;
 import org.yuezhikong.Server.api.api;
 import org.yuezhikong.Server.plugin.PluginManager;
 import org.yuezhikong.Server.plugin.event.events.User.auth.PreLoginEvent;
-import org.yuezhikong.utils.Protocol.SystemProtocol;
+import org.yuezhikong.utils.protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.checks;
 import org.yuezhikong.utils.database.dao.userInformationDao;

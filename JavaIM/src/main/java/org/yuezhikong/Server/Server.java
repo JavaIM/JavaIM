@@ -36,7 +36,7 @@ import org.yuezhikong.Server.plugin.event.events.User.UserRemoveEvent;
 import org.yuezhikong.Server.plugin.userData.PluginUser;
 import org.yuezhikong.Server.request.ChatRequest;
 import org.yuezhikong.Server.request.ChatRequestImpl;
-import org.yuezhikong.utils.Protocol.*;
+import org.yuezhikong.utils.protocol.*;
 import org.yuezhikong.utils.checks;
 import org.yuezhikong.utils.database.DatabaseHelper;
 import org.yuezhikong.utils.logging.CustomLogger;

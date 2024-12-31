@@ -8,8 +8,8 @@ import org.yuezhikong.Server.userData.Permission;
 import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.userData.userInformation;
 import org.yuezhikong.Server.userData.userUploadFile;
-import org.yuezhikong.utils.Protocol.SystemProtocol;
-import org.yuezhikong.utils.Protocol.TransferProtocol;
+import org.yuezhikong.utils.protocol.SystemProtocol;
+import org.yuezhikong.utils.protocol.TransferProtocol;
 import org.yuezhikong.utils.database.dao.userInformationDao;
 import org.yuezhikong.utils.database.dao.userUploadFileDao;
 

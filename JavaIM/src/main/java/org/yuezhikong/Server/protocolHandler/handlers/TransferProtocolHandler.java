@@ -6,8 +6,8 @@ import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.protocolHandler.ProtocolHandler;
 import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.userData.userUploadFile;
-import org.yuezhikong.utils.Protocol.SystemProtocol;
-import org.yuezhikong.utils.Protocol.TransferProtocol;
+import org.yuezhikong.utils.protocol.SystemProtocol;
+import org.yuezhikong.utils.protocol.TransferProtocol;
 import org.yuezhikong.utils.database.dao.userUploadFileDao;
 
 import java.io.File;

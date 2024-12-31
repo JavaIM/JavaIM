@@ -5,8 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.protocolHandler.ProtocolHandler;
 import org.yuezhikong.Server.userData.user;
-import org.yuezhikong.utils.Protocol.LoginProtocol;
-import org.yuezhikong.utils.Protocol.SystemProtocol;
+import org.yuezhikong.utils.protocol.LoginProtocol;
+import org.yuezhikong.utils.protocol.SystemProtocol;
 
 import java.util.Objects;
 

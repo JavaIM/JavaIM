@@ -13,7 +13,7 @@ import dev.samstevens.totp.time.SystemTimeProvider;
 import org.apache.commons.codec.binary.Base64;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.userData.user;
-import org.yuezhikong.utils.Protocol.TransferProtocol;
+import org.yuezhikong.utils.protocol.TransferProtocol;
 
 import java.util.ArrayList;
 

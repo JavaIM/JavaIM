@@ -17,7 +17,7 @@ import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.userData.userInformation;
 import org.yuezhikong.Server.userData.userUploadFile;
 import org.yuezhikong.Server.api.api;
-import org.yuezhikong.utils.Protocol.ChatProtocol;
+import org.yuezhikong.utils.protocol.ChatProtocol;
 import org.yuezhikong.utils.SHA256;
 import org.yuezhikong.utils.database.dao.userInformationDao;
 import org.yuezhikong.utils.database.dao.userUploadFileDao;

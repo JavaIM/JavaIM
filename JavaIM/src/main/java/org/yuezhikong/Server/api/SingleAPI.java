@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.userData.user;
 import org.yuezhikong.Server.userData.userInformation;
-import org.yuezhikong.utils.Protocol.SystemProtocol;
+import org.yuezhikong.utils.protocol.SystemProtocol;
 import org.yuezhikong.utils.SHA256;
 
 import javax.security.auth.login.AccountNotFoundException;

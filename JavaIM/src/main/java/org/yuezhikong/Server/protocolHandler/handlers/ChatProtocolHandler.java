@@ -6,7 +6,7 @@ import org.yuezhikong.Server.IServer;
 import org.yuezhikong.Server.protocolHandler.ProtocolHandler;
 import org.yuezhikong.Server.request.ChatRequestImpl;
 import org.yuezhikong.Server.userData.user;
-import org.yuezhikong.utils.Protocol.ChatProtocol;
+import org.yuezhikong.utils.protocol.ChatProtocol;
 import org.yuezhikong.utils.logging.CustomLogger;
 
 @Slf4j
