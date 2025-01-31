@@ -36,7 +36,6 @@
     <packaging>pom</packaging>
     <description>基于 Java 的加密通讯软件</description>
     <modules>
-        <module>LibraryTransformers</module>
         <module>JavaIM</module>
     </modules>
 
