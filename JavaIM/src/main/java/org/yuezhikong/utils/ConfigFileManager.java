@@ -43,6 +43,7 @@ public class ConfigFileManager {
             prop.setProperty("mysqlDBName", "JavaIM");
             prop.setProperty("mysqlUser", "JavaIM");
             prop.setProperty("mysqlPasswd", "JavaIM");
+            prop.setProperty("mavenCenterRepo", "https://repo1.maven.org/maven2");
             prop.store(fos, "JavaIM Configuration");
         } catch (IOException ex) {
             log.error("出现错误!", ex);

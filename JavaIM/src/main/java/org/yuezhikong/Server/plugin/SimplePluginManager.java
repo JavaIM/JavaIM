@@ -17,6 +17,7 @@
 package org.yuezhikong.Server.plugin;
 
 import lombok.extern.slf4j.Slf4j;
+import me.tongfei.progressbar.ProgressBar;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yuezhikong.Server.IServer;
@@ -25,6 +26,9 @@ import org.yuezhikong.Server.plugin.plugin.PluginData;
 import org.yuezhikong.Server.plugin.event.EventHandler;
 import org.yuezhikong.Server.plugin.event.Listener;
 import org.yuezhikong.Server.plugin.event.events.Event;
+import org.yuezhikong.SystemConfig;
+import org.yuezhikong.utils.MultiThreadDownloadManager;
+import org.yuezhikong.utils.ProgressBarUtils;
 import org.yuezhikong.utils.checks;
 import org.yuezhikong.utils.logging.PluginLoggingBridge;
 
@@ -32,18 +36,25 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpRequest;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class SimplePluginManager implements PluginManager {
 
     private final IServer serverInstance;
+    private final ExecutorService librariesDownloadThreadPool = Executors.newCachedThreadPool(new ThreadFactory() {
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+        @Override
+        public Thread newThread(@NotNull Runnable r) {
+            return new Thread(r,"Plugin libraries download thread #"+threadNumber.getAndIncrement());
+        }
+    });
 
     public SimplePluginManager(IServer ServerInstance) {
         serverInstance = ServerInstance;
@@ -69,16 +80,89 @@ public class SimplePluginManager implements PluginManager {
             final String Author = properties.getProperty("Plugin-Author");
             if (Name == null || Version == null || Author == null) {
                 log.error("文件：{} 加载失败，插件清单文件错误", PluginFile.getName());
-                return;
+                throw new IllegalStateException("Plugin manifest failed");
             }
             log.info("正在加载插件 {}", Name);
             for (Plugin plugin : pluginList) {
                 PluginData data = plugin.getPluginData();
                 if (Name.equals(data.getStaticData().name())) {
                     log.info("无法加载插件 {} 因为已安装了同名插件", Name);
-                    return;
+                    throw new IllegalStateException("duplicate plugin name");
                 }
             }
+
+            List<String> libraries = new ArrayList<>();//读取需动态下载的库
+            int index = 0;
+            while (true) {
+                String value = properties.getProperty("libraries[" + index + "]");
+                if (value == null) break; // 无更多元素时退出
+                libraries.add(value);
+                index++;
+            }
+
+            try (ProgressBarUtils.ProgressBarDownloadManager downloadManager = new ProgressBarUtils.ProgressBarDownloadManager()) {
+                List<Future<Boolean>> librariesFutureList = new ArrayList<>();
+                List<URL> libraryFiles = new CopyOnWriteArrayList<>();
+                for (String lib : libraries) {
+                    librariesFutureList.add(librariesDownloadThreadPool.submit(() -> {
+                        String[] split = lib.split(":");
+                        if (split.length != 3) {
+                            log.error("无法解析插件{}的依赖项{},终止此插件加载!",Name,lib);
+                            return false;
+                        }
+                        String pkg = split[0];
+                        String artifact = split[1];
+                        String version = split[2];
+
+                        File libraryFile = new File(new File("."),"libraries");
+                        StringBuilder mavenRepo = new StringBuilder("/");
+                        for (String directory : pkg.split("\\.")) {
+                            libraryFile = new File(libraryFile,directory);
+                            mavenRepo.append(directory).append("/");
+                        }
+
+                        libraryFile = new File(libraryFile,artifact);
+                        mavenRepo.append(artifact).append("/");
+                        libraryFile = new File(libraryFile,version);
+                        mavenRepo.append(version).append("/");
+                        mavenRepo.append(artifact).append("-").append(version).append(".jar");
+                        if (!libraryFile.mkdirs()) {
+                            // 创建失败
+                            log.error("无法下载依赖，文件夹创建失败!");
+                            log.error("无法解析插件{}的依赖项{},终止此插件加载!",Name,lib);
+                            return false;
+                        }
+
+                        libraryFiles.add(libraryFile.toURI().toURL());
+                        if (libraryFile.exists()) {
+                            // 已存在 跳过下载
+                            return true;
+                        }
+                        return downloadManager.downloadFile(
+                                HttpRequest.newBuilder(URI.create(SystemConfig.getMavenCenterRepository() + "/" + mavenRepo)),
+                                libraryFile,
+                                "下载插件依赖:" + lib
+                        );
+                    }));
+                }
+                // 等待下载完毕
+                boolean fileDownloadFailed = false;
+                for (Future<Boolean> future : librariesFutureList) {
+                    if (!future.get())
+                        // 文件下载失败
+                        fileDownloadFailed = true;
+                }
+                // 开始加载
+                if (fileDownloadFailed) {
+                    log.error("有依赖下载失败");
+                    log.error("取消插件加载!");
+                    throw new IllegalStateException("libraries download failed");
+                }
+
+                LibraryClassLoader libraryClassLoader = new LibraryClassLoader(libraryFiles.toArray(new URL[0]));
+                classLoader.setLibraryClassLoader(libraryClassLoader);
+            }
+
             //获取插件主类的Class
             Class<?> jarClass = Class.forName(properties.getProperty("Main-Class"), true, classLoader);
             //检测插件主类是否实现了Plugin接口
@@ -92,7 +176,7 @@ public class SimplePluginManager implements PluginManager {
             plugin.setPluginData(pluginData);
             if (plugin.getPluginData() == null) {
                 log.info("无法加载插件 {} 因为他的getPluginData方法返回null", Name);
-                return;
+                throw new IllegalStateException("getPluginData method failed");
             }
             //调用插件的onPreload方法
             plugin.onPreload();
@@ -100,7 +184,21 @@ public class SimplePluginManager implements PluginManager {
             pluginList.add(plugin);
             pluginDataList.add(pluginData);
             log.info("插件 {} 预加载成功", Name);
-        } catch (Throwable e) {
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("出现错误!", e);
+            log.error("插件加载失败：{}", PluginFile.getName());
+            try {
+                classLoader.close();
+            } catch (IOException ignored) {
+            }
+            throw new RuntimeException(e);
+        } catch (IllegalStateException e) {
+            try {
+                classLoader.close();
+            } catch (IOException ignored) {
+            }
+        }
+        catch (Throwable e) {
             log.error("出现错误!", e);
             log.error("插件加载失败：{}", PluginFile.getName());
             try {

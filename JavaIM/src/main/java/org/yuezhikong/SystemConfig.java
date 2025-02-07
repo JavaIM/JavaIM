@@ -22,7 +22,6 @@ import static org.yuezhikong.utils.ConfigFileManager.getServerConfig;
 
 
 public final class SystemConfig {
-    //静态区，不允许修改
     //协议版本
     @Getter
     private static final int ProtocolVersion = 12;
@@ -54,6 +53,9 @@ public final class SystemConfig {
     //MySQL数据库密码
     @Getter
     private final static String MySQLDataBasePasswd = getServerConfig("mysqlPasswd");
+    //Maven中心仓库地址(此项配置用来设置镜像地址)
+    @Getter
+    private final static String MavenCenterRepository = getServerConfig("mavenCenterRepo");
 
     /**
      * Static Config不得被实例化

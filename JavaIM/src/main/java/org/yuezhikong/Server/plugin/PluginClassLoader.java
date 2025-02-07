@@ -14,10 +14,21 @@ public class PluginClassLoader extends URLClassLoader {
         this.manager = manager;
     }
 
+    private LibraryClassLoader libraryClassLoader;
+
+    void setLibraryClassLoader(LibraryClassLoader libraryClassLoader) {
+        this.libraryClassLoader = libraryClassLoader;
+    }
+
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         try {
             return super.loadClass(name, resolve);
+        } catch (ClassNotFoundException ignored) {
+        }
+        // 尝试插件动态加载的library
+        try {
+            return libraryClassLoader.loadClass(name, resolve);
         } catch (ClassNotFoundException ignored) {
         }
 
