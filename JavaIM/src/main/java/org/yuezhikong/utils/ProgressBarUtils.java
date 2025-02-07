@@ -52,35 +52,18 @@ public class ProgressBarUtils {
         }
     }
 
-    private static class ProgressBarDownloadManager extends MultiThreadDownloadManager {
+    public static class ProgressBarDownloadManager extends MultiThreadDownloadManager {
         private record request(@Nullable ProgressBar progressBar, boolean singleThread) {
         }
 
         private final Map<HttpRequest.Builder, request> requestMap = new HashMap<>();
-
-        private final boolean givenProgressBar;
-        private final ProgressBar progressBar;
-        private final String taskName;
-
-        public ProgressBarDownloadManager(@NotNull ProgressBar updateProgressBar) {
-            givenProgressBar = true;
-            progressBar = updateProgressBar;
-            taskName = null;
-        }
-
-        public ProgressBarDownloadManager(String taskName) {
-            givenProgressBar = false;
-            progressBar = null;
-            this.taskName = taskName;
-        }
+        private final Map<HttpRequest.Builder, String> requestTaskNameBind = new HashMap<>();
 
         @Override
         protected void onDownloadInit(HttpRequest.Builder requestBuilder, Long fileSize, boolean singleThread) {
-            if (givenProgressBar)
-                return;
             ProgressBar pb;
             if (fileSize != null)
-                pb = new ProgressBar(taskName, fileSize);
+                pb = new ProgressBar(requestTaskNameBind.remove(requestBuilder), fileSize);
             else
                 pb = null;
             requestMap.put(requestBuilder, new request(pb, singleThread));
@@ -88,8 +71,6 @@ public class ProgressBarUtils {
 
         @Override
         protected void onDownloadComplete(HttpRequest.Builder requestBuilder) {
-            if (givenProgressBar)
-                return;
             request req = requestMap.remove(requestBuilder);
             if (req == null)
                 return;
@@ -100,13 +81,18 @@ public class ProgressBarUtils {
         }
 
         @Override
+        public final boolean downloadFile(HttpRequest.Builder requestBuilder, File file) throws IllegalStateException, IOException, InterruptedException {
+            return downloadFile(requestBuilder, file, "下载文件 "+file.getName());
+        }
+
+        public boolean downloadFile(HttpRequest.Builder requestBuilder, File file, String taskName) throws IllegalStateException, IOException, InterruptedException {
+            requestTaskNameBind.put(requestBuilder, taskName);
+            return super.downloadFile(requestBuilder, file);
+        }
+
+        @Override
         protected boolean copyStreamToFile(HttpRequest.Builder requestBuilder, InputStream is, DataOutput dataOutput) throws IOException {
-            ProgressBar progressBar;
-            if (givenProgressBar) {
-                progressBar = this.progressBar;
-            } else {
-                progressBar = requestMap.get(requestBuilder).progressBar();
-            }
+            ProgressBar progressBar = requestMap.get(requestBuilder).progressBar();
             if (progressBar == null)
                 return super.copyStreamToFile(requestBuilder, is, dataOutput);
             ProgressBarUtils.copyStreamOnlyUpdateProgress(progressBar, is, dataOutput);
@@ -126,27 +112,8 @@ public class ProgressBarUtils {
      */
     @Contract(pure = true)
     public static boolean downloadFile(@NotNull @Nls String taskName, @NotNull HttpRequest.Builder requestBuilder, @NotNull File file) throws IOException, InterruptedException {
-        try (MultiThreadDownloadManager downloadManager = new ProgressBarDownloadManager(taskName)) {
-            return downloadManager.downloadFile(requestBuilder, file);
-        }
-    }
-
-    /**
-     * 下载文件，更新旧进度条
-     *
-     * @param progressBar    进度条
-     * @param requestBuilder http请求
-     * @param file           下载到的文件
-     * @return 下载是否完成
-     * @throws IOException          IO错误
-     * @throws InterruptedException 线程被中断
-     * @apiNote 请注意进度条长度!
-     */
-    @SuppressWarnings("unused")
-    @Contract(pure = true)
-    public static boolean downloadFileOnlyUpdateProgress(@NotNull ProgressBar progressBar, @NotNull HttpRequest.Builder requestBuilder, @NotNull File file) throws IOException, InterruptedException {
-        try (MultiThreadDownloadManager downloadManager = new ProgressBarDownloadManager(progressBar)) {
-            return downloadManager.downloadFile(requestBuilder, file);
+        try (ProgressBarDownloadManager downloadManager = new ProgressBarDownloadManager()) {
+            return downloadManager.downloadFile(requestBuilder, file, taskName);
         }
     }
 }

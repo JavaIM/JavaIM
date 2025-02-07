@@ -88,7 +88,7 @@ public class MultiThreadDownloadManager implements AutoCloseable {
      * @throws InterruptedException  线程被中断
      */
     @Contract(pure = true)
-    public final boolean downloadFile(HttpRequest.Builder requestBuilder, File file) throws IllegalStateException, IOException, InterruptedException {
+    public boolean downloadFile(HttpRequest.Builder requestBuilder, File file) throws IllegalStateException, IOException, InterruptedException {
         if (canAddNewDownload) {
             synchronized (this) {
                 if (canAddNewDownload) {
