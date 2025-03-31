@@ -24,7 +24,7 @@ import static org.yuezhikong.utils.ConfigFileManager.getServerConfig;
 public final class SystemConfig {
     //协议版本
     @Getter
-    private static final int ProtocolVersion = 12;
+    private static final int ProtocolVersion = 13;
     //本程序版本：
     @Getter
     private static final String Version = "InDev";

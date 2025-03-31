@@ -13,8 +13,11 @@ import dev.samstevens.totp.time.SystemTimeProvider;
 import org.apache.commons.codec.binary.Base64;
 import org.yuezhikong.Server.ServerTools;
 import org.yuezhikong.Server.userData.user;
+import org.yuezhikong.utils.protocol.SystemProtocol;
 import org.yuezhikong.utils.protocol.TransferProtocol;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 public class TOTPCode {
@@ -22,45 +25,33 @@ public class TOTPCode {
     private TOTPCode() {}
 
     /**
+     * 执行 URLEncode 操作
+     * @param text 原始
+     * @return 编码后
+     */
+    private static String urlEncode(String text) {
+        return URLEncoder.encode(text, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+    }
+
+    /**
      * 生成TOTP secret
      * @param user 用户
      */
     public static void generateTOTPSecret(user user) {
         String secret = new DefaultSecretGenerator().generate();
-        QrData data = new QrData.Builder()
-                .label(user.getUserName())
-                .secret(secret)
-                .issuer("JavaIM")
-                .algorithm(HashingAlgorithm.SHA1)
-                .digits(6)
-                .period(30)
-                .build();
-        try {
-            TransferProtocol protocol = new TransferProtocol();
-            protocol.setTransferProtocolBody(new ArrayList<>());
-
-            TransferProtocol.TransferProtocolHeadBean headBean = new TransferProtocol.TransferProtocolHeadBean();
-            headBean.setType("QRCode");
-            protocol.setTransferProtocolHead(headBean);
-
-            TransferProtocol.TransferProtocolBodyBean bodyBean = new TransferProtocol.TransferProtocolBodyBean();
-            bodyBean.setData(Base64.encodeBase64String(new ZxingPngQrGenerator().generate(data)));
-            protocol.getTransferProtocolBody().add(bodyBean);
-            ServerTools.getServerInstanceOrThrow().getServerAPI()
-                    .sendJsonToClient(user, gson.toJson(protocol), "TransferProtocol");
-        } catch (QrGenerationException e) {
-            ServerTools.getServerInstanceOrThrow().getServerAPI().
-                    sendMessageToUser(user, "制作二维码失败");
-            ServerTools.getServerInstanceOrThrow().getServerAPI().
-                    sendMessageToUser(user, "secret:"+secret);
-            ServerTools.getServerInstanceOrThrow().getServerAPI().
-                    sendMessageToUser(user, "算法:SHA256");
-            ServerTools.getServerInstanceOrThrow().getServerAPI().
-                    sendMessageToUser(user, "每次有效期:30秒");
-            ServerTools.getServerInstanceOrThrow().getServerAPI().
-                    sendMessageToUser(user, "6位数");
-            throw new RuntimeException("QR Code Generate Failed",e);
-        }
+        SystemProtocol protocol = new SystemProtocol();
+        protocol.setType("TOTP");
+        protocol.setMessage("otpauth://"+
+                urlEncode("totp")+"/"+ // type
+                urlEncode(user.getUserName())+ // label
+                "?secret="+urlEncode(secret)+ // secret
+                "&issuer="+urlEncode("JavaIM")+ // issuer
+                "&algorithm="+urlEncode(HashingAlgorithm.SHA1.getFriendlyName())+ // algorithm
+                "&digits="+6+// digits
+                "&period="+30// period
+        );
+        ServerTools.getServerInstanceOrThrow().getServerAPI()
+                .sendJsonToClient(user, gson.toJson(protocol), "SystemProtocol");
         user.getUserInformation().setTotpSecret(secret);
         user.setUserInformation(user.getUserInformation());//触发持久化
     }
