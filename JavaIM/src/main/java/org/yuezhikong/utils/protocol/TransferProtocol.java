@@ -16,9 +16,6 @@ import java.util.List;
  * type:fileList
  * 文件列表
  * 此模式下，body约定List中每一个元素都是上传的文件的文件名
- * type:QRCode
- * 二维码
- * 此模式下，body约定List中每一个元素都是二维码的base64编码
  */
 @Data
 public class TransferProtocol {
