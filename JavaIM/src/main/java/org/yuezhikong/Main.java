@@ -148,25 +148,41 @@ public class Main {
         // 自动更新
         boolean checkUpdate, installUpdate;
         if (!commandLineArgs.containsKey("checkUpdate")) {
-            log.info("是否检查更新?(Y/N)");
-            checkUpdate = "Y".equals(
-                    reader.readLine(">").toUpperCase(Locale.ROOT)
-            );
+            checkUpdate = Boolean.parseBoolean(ConfigFileManager.getServerConfig("checkUpdate"));
         } else {
             checkUpdate = Boolean.parseBoolean(commandLineArgs.get("checkUpdate"));
         }
 
         if (checkUpdate) {
             if (!commandLineArgs.containsKey("installUpdate")) {
-                log.info("是否允许自动安装更新?(Y/N)");
+                log.info("是否自动安装更新?(Y/N)");
                 installUpdate = "Y".equals(
                         reader.readLine(">").toUpperCase(Locale.ROOT)
                 );
             } else {
                 installUpdate = Boolean.parseBoolean(commandLineArgs.get("installUpdate"));
             }
-
-            CheckUpdate.checkUpdate(installUpdate, commandLineArgs.getOrDefault("githubAccessToken", ""));
+            String githubAccessToken = commandLineArgs.getOrDefault("githubAccessToken", "");
+            if (githubAccessToken.isEmpty()) {
+                if (ConfigFileManager.getServerConfig("githubAccessToken").isEmpty()) {
+                    log.info("检测到您未设置Github Token, 是否设置?(Y/N)");
+                    if ("Y".equals(reader.readLine(">").toUpperCase(Locale.ROOT))) {
+                        githubAccessToken = reader.readLine("Github Token>");
+                        ConfigFileManager.setServerConfig("githubAccessToken", githubAccessToken);
+                        ConfigFileManager.rewriteServerConfig();
+                        CheckUpdate.checkUpdate(installUpdate, githubAccessToken);
+                    } else {
+                        log.info("未设置Github Token, 无法进行自动更新，已跳过更新任务");
+                    }
+                }
+                else {
+                    githubAccessToken = ConfigFileManager.getServerConfig("githubAccessToken");
+                    CheckUpdate.checkUpdate(installUpdate, githubAccessToken);
+                }
+            }
+            else {
+                CheckUpdate.checkUpdate(installUpdate, githubAccessToken);
+            }
         }
         // 启动JavaIM启动逻辑
         ConsoleMain(commandLineArgs, reader);
@@ -178,11 +194,15 @@ public class Main {
      * @param reader LineReader
      */
     private static void firstStart(LineReader reader) {
-        log.info("检测到您疑似是首次启动 JavaIM, 是否进行配置?(Y/N)");
+        log.info("检测到您可能是首次启动 JavaIM, 是否进行配置?(Y/N)");
         if (!"Y".equals(reader.readLine(">").toUpperCase(Locale.ROOT)))
             return;
         log.info("请设置服务器名称");
         ConfigFileManager.setServerConfig("serverName", reader.readLine("服务器名称>"));
+        log.info("是否自动检查更新?(Y/N)");
+        if ("Y".equals(reader.readLine("是否自动检查更新>").toUpperCase(Locale.ROOT))) {
+            ConfigFileManager.setServerConfig("checkUpdate", "true");
+        }
         log.info("是否使用sqlite(Y/N)");
         if ("Y".equals(reader.readLine("是否使用sqlite>").toUpperCase(Locale.ROOT))) {
             ConfigFileManager.setServerConfig("sqlite", "true");

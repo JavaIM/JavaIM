@@ -37,6 +37,7 @@ public class ConfigFileManager {
     public static void createServerConfig() {
         try (OutputStream fos = new FileOutputStream("server.properties")) {
             prop.setProperty("serverName", "A JavaIM Server");
+            prop.setProperty("checkUpdate", "false");
             prop.setProperty("sqlite", "true");
             prop.setProperty("mysqlHost", "127.0.0.1");
             prop.setProperty("mysqlPort", "3306");
@@ -44,6 +45,7 @@ public class ConfigFileManager {
             prop.setProperty("mysqlUser", "JavaIM");
             prop.setProperty("mysqlPasswd", "JavaIM");
             prop.setProperty("mavenCenterRepo", "https://repo1.maven.org/maven2");
+            prop.setProperty("githubAccessToken", "");
             prop.store(fos, "JavaIM Configuration");
         } catch (IOException ex) {
             log.error("出现错误!", ex);
