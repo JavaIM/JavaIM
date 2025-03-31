@@ -1,9 +1,11 @@
-name: Dependabot auto-merge
+name: PR Request
 on: pull_request
 
 permissions:
   pull-requests: write
   contents: write
+  actions: read
+  security-events: write
 
 jobs:
   codeql-build:
