@@ -6,7 +6,11 @@ permissions:
   contents: write
 
 jobs:
+  codeql-build:
+    uses: ./.github/workflows/buildandcodeql.yml
+    
   dependabot:
+    needs: codeql-build
     runs-on: ubuntu-latest
     if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'JavaIM/JavaIM'
     steps:
