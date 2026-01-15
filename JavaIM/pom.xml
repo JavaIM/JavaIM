@@ -43,7 +43,7 @@
         <dependency>
             <groupId>me.tongfei</groupId>
             <artifactId>progressbar</artifactId>
-            <version>0.10.1</version>
+            <version>0.10.2</version>
         </dependency>
 
         <!-- Source generator -->
