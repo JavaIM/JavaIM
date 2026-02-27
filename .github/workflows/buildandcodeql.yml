@@ -56,7 +56,7 @@ jobs:
       run: mkdir artifact && cp JavaIM/target/JavaIM*.jar artifact
       
     - name: Upload artifact
-      uses: actions/upload-artifact@v6.0.0
+      uses: actions/upload-artifact@v7.0.0
       with:
           name: JavaIM
           path: artifact
