@@ -4,6 +4,9 @@ plugins {
     id 'maven-publish'
 }
 
+// Apply Kotlin plugin (version declared in root build.gradle with apply false)
+apply plugin: 'org.jetbrains.kotlin.jvm'
+
 dependencies {
     // Database
     implementation 'org.xerial:sqlite-jdbc:3.41.2.2'
@@ -21,6 +24,8 @@ dependencies {
     implementation 'cn.hutool:hutool-crypto:5.8.18'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.jetbrains:annotations:24.0.1'
+    // Kotlin standard library (match Kotlin plugin version)
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10'
 
     // JavaFX
     implementation 'org.openjfx:javafx-base:17.0.1:linux'
@@ -115,6 +120,14 @@ shadowJar {
 }
 
 assemble.dependsOn shadowJar
+
+// Configure Kotlin compilation to target Java 17
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = '17'
+        freeCompilerArgs += ['-Xjsr305=strict']
+    }
+}
 
 // Source JAR configuration
 task sourcesJar(type: Jar) {
