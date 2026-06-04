@@ -2,50 +2,74 @@ plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'maven-publish'
+    id 'com.github.ben-manes.versions' version '0.51.0'
 }
 
 // Apply Kotlin plugin (version declared in root build.gradle with apply false)
 apply plugin: 'org.jetbrains.kotlin.jvm'
 
 dependencies {
-    // Database
-    implementation 'org.xerial:sqlite-jdbc:3.41.2.2'
-    implementation 'com.mysql:mysql-connector-j:8.0.32'
+    // Command Line Parser
+    implementation 'commons-cli:commons-cli:1.11.0'
 
-    // Apache Commons
-    implementation 'commons-io:commons-io:2.11.0'
-    implementation 'commons-codec:commons-codec:1.15'
+    // File I/O
+    implementation 'commons-io:commons-io:2.22.0'
+
+    // Terminal
+    implementation 'org.jline:jline:4.1.3'
+    implementation 'org.fusesource.jansi:jansi:2.4.3'
+
+    // Progress bar
+    implementation 'me.tongfei:progressbar:0.10.2'
+
+    // Source generator
+    compileOnly 'org.projectlombok:lombok:1.18.46'
+    annotationProcessor 'org.projectlombok:lombok:1.18.46'
 
     // Logging
-    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
-    implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
+    implementation 'org.apache.logging.log4j:log4j-api:2.26.0'
+    implementation 'org.slf4j:jul-to-slf4j:2.0.18'
+    implementation 'org.apache.logging.log4j:log4j-core:2.26.0'
+    implementation('org.apache.logging.log4j:log4j-slf4j2-impl:2.26.0') {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    implementation 'org.slf4j:slf4j-api:2.0.18'
 
-    // Utility Libraries
-    implementation 'cn.hutool:hutool-crypto:5.8.18'
-    implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'org.jetbrains:annotations:24.0.1'
-    // Kotlin standard library (match Kotlin plugin version)
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10'
+    // gson
+    implementation('com.google.code.gson:gson:2.14.0') {
+        exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
+    }
 
-    // JavaFX
-    implementation 'org.openjfx:javafx-base:17.0.1:linux'
-    implementation 'org.openjfx:javafx-base:17.0.1:win'
-    implementation 'org.openjfx:javafx-controls:17.0.1:linux'
-    implementation 'org.openjfx:javafx-controls:17.0.1:win'
-    implementation 'org.openjfx:javafx-fxml:17.0.1:linux'
-    implementation 'org.openjfx:javafx-fxml:17.0.1:win'
-    implementation 'org.openjfx:javafx-graphics:17.0.1:linux'
-    implementation 'org.openjfx:javafx-graphics:17.0.1:win'
+    // TOTP
+    implementation('dev.samstevens.totp:totp:1.7.1') {
+        exclude group: 'com.google.zxing', module: 'core'
+        exclude group: 'com.google.zxing', module: 'javase'
+    }
 
-    // UI Libraries
-    implementation 'com.jfoenix:jfoenix:9.0.10'
-    implementation 'de.jensd:fontawesomefx:8.9'
+    // Jetbrains annotations
+    compileOnly 'org.jetbrains:annotations:26.1.0'
 
-    // Shade Plugin Extensions
-    implementation 'io.github.edwgiz:log4j-maven-shade-plugin-extensions:2.20.0'
+    // netty
+    implementation 'io.netty:netty-all:4.2.15.Final'
+
+    // Cert generator & JCE Provider
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.84'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.84'
+
+    // Database
+    implementation 'org.mybatis:mybatis:3.5.19'
+    implementation('com.mysql:mysql-connector-j:9.7.0') {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+    implementation('org.xerial:sqlite-jdbc:3.53.1.0') {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
 
     // Custom Transformer
     implementation project(':LibraryTransformers')
+
+    // Shade Plugin Extensions
+    implementation 'io.github.edwgiz:log4j-maven-shade-plugin-extensions:2.20.0'
 }
 
 def manifestFile = file('src/main/resources/META-INF/MANIFEST.MF')
@@ -73,9 +97,7 @@ shadowJar {
         }
     }
 
-    // Exclude unnecessary files
-    exclude 'org/iq80/snappy/**'
-    exclude 'org/slf4j/**'
+    // Exclude unnecessary files - based on Maven shade plugin configuration
     exclude 'org/apache/maven/**'
     exclude 'org/codehaus/**'
     exclude 'org/jdom2/**'
@@ -86,37 +108,28 @@ shadowJar {
     exclude 'org/eclipse/**'
     exclude 'META-INF/*.SF'
     exclude 'META-INF/*.DSA'
-    exclude 'META-INF/about.html'
-    exclude 'META-INF/NOTICE'
     exclude 'META-INF/maven/**'
     exclude 'META-INF/maven'
     exclude 'META-INF/sisu/**'
     exclude 'META-INF/sisu'
-    exclude 'META-INF/NOTICE.txt'
     exclude 'META-INF/*.RSA'
     exclude 'module-info.class'
-    exclude 'about.html'
+    exclude 'SCL.lombok'
     exclude 'org/vafer/**'
     exclude 'org/vafer'
     exclude 'META-INF/DEPENDENCIES'
-    exclude 'licenses/**'
-    exclude 'licenses'
-    exclude 'LICENSE'
-    exclude 'README'
     exclude 'org/objectweb/**'
     exclude 'org/objectweb'
     exclude 'META-INF/plexus/**'
     exclude 'META-INF/plexus'
     exclude 'META-INF/versions/9/module-info.class'
+    // NOTE: do not exclude the SLF4J service provider here — removing it prevents
+    // SLF4J from finding a binding at runtime (causes NOP logger warnings).
+    // If you need to avoid duplicate provider files, prefer using
+    // service file merging (mergeServiceFiles) instead of excluding the provider.
 
     // Resource transformations
     mergeServiceFiles()
-
-    // Note: For custom transformer (LibraryTransformers), you may need to configure
-    // additional transformation logic here. The shadow plugin in Gradle has limited
-    // support for custom transformers compared to Maven. You might need to:
-    // 1. Implement custom shadow transformation using transformers block
-    // 2. Or implement the transformation logic directly in your build script
 }
 
 assemble.dependsOn shadowJar
@@ -148,6 +161,3 @@ publishing {
         }
     }
 }
-
-
-
