@@ -1,29 +1,34 @@
 plugins {
     id 'java'
     id 'maven-publish'
+    // Make Kotlin plugins available to subprojects (declare here with apply false)
+    id 'org.jetbrains.kotlin.jvm' version '1.9.10' apply false
+    id 'org.jetbrains.kotlin.multiplatform' version '1.9.10' apply false
 }
 
 group = 'org.yuezhikong'
 version = '1.0-SNAPSHOT'
 
 allprojects {
-    apply plugin: 'java'
-
     repositories {
         mavenCentral()
-    }
-
-    java {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    tasks.withType(JavaCompile) {
-        options.encoding = 'UTF-8'
     }
 }
 
 subprojects {
     apply plugin: 'maven-publish'
+
+    if (project.path == ':JavaIM' || project.path == ':LibraryTransformers') {
+        apply plugin: 'java'
+
+        java {
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            options.encoding = 'UTF-8'
+        }
+    }
 }
 

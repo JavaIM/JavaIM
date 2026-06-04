@@ -3,4 +3,4 @@ rootProject.name = 'JavaIM-Parent'
 include 'LibraryTransformers'
 include 'JavaIM'
 
-include 'compose-ui'
+include 'Compose-ui'
