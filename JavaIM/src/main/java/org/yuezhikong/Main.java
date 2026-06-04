@@ -16,300 +16,218 @@
  */
 package org.yuezhikong;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.yuezhikong.newClient.ClientMain;
-import org.yuezhikong.newServer.ServerMain;
+import lombok.Getter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.jline.jansi.AnsiConsole;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
+import org.yuezhikong.Server.Server;
+import org.yuezhikong.Server.ServerTools;
+import org.yuezhikong.Server.network.ExitWatchdog;
+import org.yuezhikong.Server.network.SSLNettyServer;
 import org.yuezhikong.utils.ConfigFileManager;
-import org.yuezhikong.utils.Logger;
+import org.yuezhikong.utils.ConsoleCommandRequest;
 import org.yuezhikong.utils.Notice;
+import org.yuezhikong.utils.checkUpdate.CheckUpdate;
 
 import java.io.File;
-import java.io.PrintStream;
-import java.util.Scanner;
-
-import static org.yuezhikong.CodeDynamicConfig.*;
+import java.io.IOException;
+import java.security.Security;
+import java.util.Locale;
+import java.util.Map;
+import java.util.logging.Level;
 
 public class Main {
-    private static final org.yuezhikong.utils.Logger logger = new org.yuezhikong.utils.Logger(null);
+    private final static Logger log;
+    @Getter
+    private final static Terminal terminal;
 
-    public static void CreateServerProperties(){
-        ConfigFileManager prop = new ConfigFileManager();
-        prop.CreateServerprop();
-    }
-    public static void CreateClientProperties(){
-        ConfigFileManager prop = new ConfigFileManager();
-        prop.CreateClientprop();
-    }
-
-    /**
-     * 重定向System.out与System.err
-     */
-    private static void stdoutRedistribution()
-    {
-        Logger stdOut = new Logger(true);
-        System.setOut(new PrintStream(System.out)
-        {
-            @Override
-            public void print(boolean b) {
-                stdOut.info(String.valueOf(b));
-            }
-
-            @Override
-            public void print(char c) {
-                stdOut.info(String.valueOf(c));
-            }
-
-            @Override
-            public void print(int i) {
-                stdOut.info(String.valueOf(i));
-            }
-
-            @Override
-            public void print(long l) {
-                stdOut.info(String.valueOf(l));
-            }
-
-            @Override
-            public void print(float f) {
-                stdOut.info(String.valueOf(f));
-            }
-
-            @Override
-            public void print(double d) {
-                stdOut.info(String.valueOf(d));
-            }
-
-            @Override
-            public void print(char @NotNull [] s) {
-                stdOut.info(new String(s));
-            }
-
-            @Override
-            public void print(@Nullable String s) {
-                stdOut.info(s);
-            }
-
-            @Override
-            public void print(@Nullable Object obj) {
-                stdOut.info(String.valueOf(obj));
-            }
-            @Override
-            public void println(boolean b) {
-                stdOut.info(String.valueOf(b));
-            }
-
-            @Override
-            public void println(char c) {
-                stdOut.info(String.valueOf(c));
-            }
-
-            @Override
-            public void println(int i) {
-                stdOut.info(String.valueOf(i));
-            }
-
-            @Override
-            public void println(long l) {
-                stdOut.info(String.valueOf(l));
-            }
-
-            @Override
-            public void println(float f) {
-                stdOut.info(String.valueOf(f));
-            }
-
-            @Override
-            public void println(double d) {
-                stdOut.info(String.valueOf(d));
-            }
-
-            @Override
-            public void println(char @NotNull [] s) {
-                stdOut.info(new String(s));
-            }
-
-            @Override
-            public void println(@Nullable String s) {
-                stdOut.info(s);
-            }
-
-            @Override
-            public void println(@Nullable Object obj) {
-                stdOut.info(String.valueOf(obj));
-            }
-        });
-        System.setErr(new PrintStream(System.err)
-        {
-            @Override
-            public void print(boolean b) {
-                stdOut.error(String.valueOf(b));
-            }
-
-            @Override
-            public void print(char c) {
-                stdOut.error(String.valueOf(c));
-            }
-
-            @Override
-            public void print(int i) {
-                stdOut.error(String.valueOf(i));
-            }
-
-            @Override
-            public void print(long l) {
-                stdOut.error(String.valueOf(l));
-            }
-
-            @Override
-            public void print(float f) {
-                stdOut.error(String.valueOf(f));
-            }
-
-            @Override
-            public void print(double d) {
-                stdOut.error(String.valueOf(d));
-            }
-
-            @Override
-            public void print(char @NotNull [] s) {
-                stdOut.error(new String(s));
-            }
-
-            @Override
-            public void print(@Nullable String s) {
-                stdOut.error(s);
-            }
-
-            @Override
-            public void print(@Nullable Object obj) {
-                stdOut.error(String.valueOf(obj));
-            }
-            @Override
-            public void println(boolean b) {
-                stdOut.error(String.valueOf(b));
-            }
-
-            @Override
-            public void println(char c) {
-                stdOut.error(String.valueOf(c));
-            }
-
-            @Override
-            public void println(int i) {
-                stdOut.error(String.valueOf(i));
-            }
-
-            @Override
-            public void println(long l) {
-                stdOut.error(String.valueOf(l));
-            }
-
-            @Override
-            public void println(float f) {
-                stdOut.error(String.valueOf(f));
-            }
-
-            @Override
-            public void println(double d) {
-                stdOut.error(String.valueOf(d));
-            }
-
-            @Override
-            public void println(char @NotNull [] s) {
-                stdOut.error(new String(s));
-            }
-
-            @Override
-            public void println(@Nullable String s) {
-                stdOut.error(s);
-            }
-
-            @Override
-            public void println(@Nullable Object obj) {
-                stdOut.error(String.valueOf(obj));
-            }
-        });
-
-    }
-    public static void ConsoleMain()
-    {
-        logger.info("欢迎来到JavaIM！版本："+getVersion());
-        logger.info("使用客户端模式请输入1，服务端模式请输入2:");
-        logger.info("请输入想选择的模式");
-        logger.info("1:服务端");
-        logger.info("2:客户端");
-        Scanner scanner = new Scanner(System.in);
-        int UserInput = scanner.nextInt();
-        if (UserInput == 1)
-        {
-            logger.info("请输入绑定的端口");
-            ThreadGroup ServerGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(),"ServerGroup");
-            try {
-                new Thread(ServerGroup,"Server Thread")
-                {
-                    @Override
-                    public void run() {
-                        this.setUncaughtExceptionHandler(CrashReport.getCrashReport());
-                        new ServerMain().start(scanner.nextInt());
-                    }
-                    public Thread start2()
-                    {
-                        start();
-                        return this;
-                    }
-                }.start2().join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.exit(0);
+    static {
+        System.out.println("正在初始化JavaIM...");
+        System.out.println("正在初始化Slf4j...");
+        // Slf4j Logger加载
+        log = LoggerFactory.getLogger(Main.class);
+        // 安装 JUL to slf4j
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+        if (log.isTraceEnabled())
+            java.util.logging.Logger.getLogger("").setLevel(Level.FINEST);
+        // 初始化 JLine Terminal
+        log.info("正在初始化Jline...");
+        Terminal terminal1;
+        try {
+            if (System.console() != null) {
+                AnsiConsole.systemInstall();
+                terminal1 = AnsiConsole.getTerminal();
+            } else
+                terminal1 = TerminalBuilder.builder().system(true).exec(false).ffm(false).jna(false).dumb(true).build();
+        } catch (IOException e) {
+            terminal1 = null;
+            log.error("JavaIM 初始化失败");
+            System.exit(1);
         }
-        else if (UserInput == 2)
-        {
-            logger.info("请输入ip");
-            scanner.nextLine();
-            String Address = scanner.nextLine();
-            logger.info("请输入端口");
-            new ClientMain().start(Address,scanner.nextInt());
-            System.exit(0);
-        }
+        terminal = terminal1;
+        log.info("JavaIM初始化完成");
     }
+
+    public static void ConsoleMain(Map<String, String> commandLineArgs, LineReader lineReader) {
+        log.info("欢迎来到JavaIM！版本：{}", SystemConfig.getVersion());
+        log.info("正在启动服务端...");
+
+        int serverPort;
+        if (!commandLineArgs.containsKey("bindPort")) {
+            log.info("请输入绑定的端口");
+            serverPort = Integer.parseInt(
+                    lineReader.readLine(">")
+            );
+        } else
+            serverPort = Integer.parseInt(commandLineArgs.get("bindPort"));
+        ThreadGroup serverGroup = new ThreadGroup(Thread.currentThread().getThreadGroup(), "serverGroup");
+        try {
+            new Thread(serverGroup, "Server Thread") {
+                @Override
+                public void run() {
+                    Server server = new Server();
+                    server.start(serverPort, new SSLNettyServer());
+                    this.setName("NetworkServer Watchdog");
+                    if (server.isStopped())
+                        return;
+                    ExitWatchdog.initInstance();
+                }
+
+                public Thread start2() {
+                    start();
+                    return this;
+                }
+            }.start2().join();
+        } catch (InterruptedException e) {
+            log.error("出现错误!", e);
+        }
+        System.exit(0);
+    }
+
     /**
      * 程序的入口点，程序从这里开始运行至结束
      */
     public static void main(String[] args) {
-        new Notice();
-        stdoutRedistribution();
+        // 设定默认的未捕获异常处理器
+        Thread.setDefaultUncaughtExceptionHandler(CrashReport.getCrashReport());
+        // 初始化Shutdown Hook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (ServerTools.getServerInstance() == null || !ServerTools.getServerInstance().isServerCompleteStart())
+                    return;
+                try {
+                    ServerTools.getServerInstance().stop();
+                } catch (IllegalStateException ignored) {
+                }
+            } catch (Throwable ignored) {
+            }
+        }));
+        // 初始化BouncyCastle，设置为JCE Provider
+        Security.addProvider(new BouncyCastleProvider());
+        // 初始化主线程崩溃报告程序
         Thread.currentThread().setUncaughtExceptionHandler(CrashReport.getCrashReport());
-        //服务端与客户端配置文件初始化
-        if (!(new File("server.properties").exists())){
-            logger.info("目录下没有检测到服务端配置文件，正在创建");
-            CreateServerProperties();
+        // 初始化 LineReader
+        LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
+        // 服务端配置文件初始化
+        if (!(new File("server.properties").exists())) {
+            log.info("目录下没有检测到服务端配置文件，判断为第一次进入");
+            ConfigFileManager.createServerConfig();
+            Notice.displayEula();
+            firstStart(reader);
+        } else
+            ConfigFileManager.reloadServerConfig();
+        // 命令行参数处理
+        Map<String, String> commandLineArgs = ConsoleCommandRequest.commandLineRequest(args);
+        // 自动更新
+        boolean checkUpdate, installUpdate;
+        if (!commandLineArgs.containsKey("checkUpdate")) {
+            checkUpdate = Boolean.parseBoolean(ConfigFileManager.getServerConfig("checkUpdate"));
+        } else {
+            checkUpdate = Boolean.parseBoolean(commandLineArgs.get("checkUpdate"));
         }
-        if (!(new File("client.properties").exists())){
-            logger.info("目录下没有检测到客户端配置文件，正在创建");
-            CreateClientProperties();
+
+        if (checkUpdate) {
+            if (!commandLineArgs.containsKey("installUpdate")) {
+                log.info("是否自动安装更新?(Y/N)");
+                installUpdate = "Y".equals(
+                        reader.readLine(">").toUpperCase(Locale.ROOT)
+                );
+            } else {
+                installUpdate = Boolean.parseBoolean(commandLineArgs.get("installUpdate"));
+            }
+            String githubAccessToken = commandLineArgs.getOrDefault("githubAccessToken", "");
+            if (githubAccessToken.isEmpty()) {
+                if (ConfigFileManager.getServerConfig("githubAccessToken").isEmpty()) {
+                    log.info("检测到您未设置Github Token, 是否设置?(Y/N)");
+                    if ("Y".equals(reader.readLine(">").toUpperCase(Locale.ROOT))) {
+                        githubAccessToken = reader.readLine("Github Token>");
+                        ConfigFileManager.setServerConfig("githubAccessToken", githubAccessToken);
+                        ConfigFileManager.rewriteServerConfig();
+                        CheckUpdate.checkUpdate(installUpdate, githubAccessToken);
+                    } else {
+                        log.info("未设置Github Token, 无法进行自动更新，已跳过更新任务");
+                    }
+                }
+                else {
+                    githubAccessToken = ConfigFileManager.getServerConfig("githubAccessToken");
+                    CheckUpdate.checkUpdate(installUpdate, githubAccessToken);
+                }
+            }
+            else {
+                CheckUpdate.checkUpdate(installUpdate, githubAccessToken);
+            }
         }
-        //命令行参数处理
-        ConsoleCommandRequest.Request(true,args);
-        //启动JavaIM启动逻辑
-        if (isThisVersionIsExpVersion())
-        {
-            logger.info("欢迎来到JavaIM！版本："+getVersion());
-            logger.info("此版本为实验性版本！不会保证稳定性");
-            logger.info("本版本存在一些正在开发中的内容，可能存在一些问题");
-            logger.info("本版本测试性内容：");
-            logger.info(getExpVersionText());
-            ExpVersionCode code = new ExpVersionCode();
-            code.run(logger);
+        // 启动JavaIM启动逻辑
+        ConsoleMain(commandLineArgs, reader);
+    }
+
+    /**
+     * 首次启动 JavaIM 时的向导
+     *
+     * @param reader LineReader
+     */
+    private static void firstStart(LineReader reader) {
+        log.info("检测到您可能是首次启动 JavaIM, 是否进行配置?(Y/N)");
+        if (!"Y".equals(reader.readLine(">").toUpperCase(Locale.ROOT)))
+            return;
+        log.info("请设置服务器名称");
+        ConfigFileManager.setServerConfig("serverName", reader.readLine("服务器名称>"));
+        log.info("是否自动检查更新?(Y/N)");
+        if ("Y".equals(reader.readLine("是否自动检查更新>").toUpperCase(Locale.ROOT))) {
+            ConfigFileManager.setServerConfig("checkUpdate", "true");
         }
-        else if (isGUIMode())
-        {
-            logger.info("GUI功能由于服务端与客户端底层重构，导致已被暂时关闭");
-            logger.info("正在为您使用控制台版本");
-            ConsoleMain();
+        log.info("是否使用sqlite(Y/N)");
+        if ("Y".equals(reader.readLine("是否使用sqlite>").toUpperCase(Locale.ROOT))) {
+            ConfigFileManager.setServerConfig("sqlite", "true");
+            ConfigFileManager.setServerConfig("mysqlHost", "");
+            ConfigFileManager.setServerConfig("mysqlPort", "");
+            ConfigFileManager.setServerConfig("mysqlDBName", "");
+            ConfigFileManager.setServerConfig("mysqlUser", "");
+            ConfigFileManager.setServerConfig("mysqlPasswd", "");
+            log.info("正在保存您的配置...");
+            ConfigFileManager.rewriteServerConfig();
+            log.info("设置向导成功完成!");
+            return;
         }
-        else
-            ConsoleMain();
+        log.info("请设置 mysql 地址");
+        ConfigFileManager.setServerConfig("mysqlHost", reader.readLine("mysql地址>"));
+        log.info("请设置 mysql 端口");
+        ConfigFileManager.setServerConfig("mysqlPort", reader.readLine("mysql端口>"));
+        log.info("请设置 mysql 数据库名称");
+        ConfigFileManager.setServerConfig("mysqlDBName", reader.readLine("mysql数据库名称>"));
+        log.info("请设置 mysql 登录用户");
+        ConfigFileManager.setServerConfig("mysqlUser", reader.readLine("mysql登录用户>"));
+        log.info("请设置 mysql 登录密码");
+        ConfigFileManager.setServerConfig("mysqlPasswd", reader.readLine("mysql登录密码>"));
+        log.info("正在保存您的配置...");
+        ConfigFileManager.rewriteServerConfig();
+        log.info("设置向导成功完成!");
     }
 }
