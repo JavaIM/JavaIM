@@ -49,8 +49,8 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: maven
-        
+        cache: gradle
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
@@ -63,11 +63,14 @@ jobs:
         # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
         
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
-      
+    - name: Make Gradle wrapper executable
+      run: chmod +x ./gradlew || true
+
+    - name: Build with Gradle
+      run: ./gradlew build shadowJar --no-daemon --warning-mode all
+
     - name: Preupload artifact
-      run: mkdir artifact && cp JavaIM/target/JavaIM*.jar artifact
+      run: mkdir -p artifact && cp JavaIM/build/libs/JavaIM-*-shaded.jar artifact || cp JavaIM/build/libs/JavaIM-*.jar artifact
 
     - name: Upload artifact
       uses: actions/upload-artifact@v1

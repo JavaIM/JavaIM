@@ -1,10 +1,20 @@
+# Gradle
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.zip
+
+# Maven (legacy - no longer used)
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+.m2/
+*.pom
+dependency-reduced-pom.xml
 
 ### RSA Key ###
 *.key
+
 ### Log ###
 *.gz
 *.log
@@ -12,9 +22,7 @@ logs
 
 ### build and debug###
 out/
-dependency-reduced-pom.xml
 debug/
-.gradle/
 *.jar
 ### IntelliJ IDEA ###
 .idea/modules.xml

@@ -1,0 +1,140 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'maven-publish'
+}
+
+dependencies {
+    // Database
+    implementation 'org.xerial:sqlite-jdbc:3.41.2.2'
+    implementation 'com.mysql:mysql-connector-j:8.0.32'
+
+    // Apache Commons
+    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'commons-codec:commons-codec:1.15'
+
+    // Logging
+    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
+
+    // Utility Libraries
+    implementation 'cn.hutool:hutool-crypto:5.8.18'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.jetbrains:annotations:24.0.1'
+
+    // JavaFX
+    implementation 'org.openjfx:javafx-base:17.0.1:linux'
+    implementation 'org.openjfx:javafx-base:17.0.1:win'
+    implementation 'org.openjfx:javafx-controls:17.0.1:linux'
+    implementation 'org.openjfx:javafx-controls:17.0.1:win'
+    implementation 'org.openjfx:javafx-fxml:17.0.1:linux'
+    implementation 'org.openjfx:javafx-fxml:17.0.1:win'
+    implementation 'org.openjfx:javafx-graphics:17.0.1:linux'
+    implementation 'org.openjfx:javafx-graphics:17.0.1:win'
+
+    // UI Libraries
+    implementation 'com.jfoenix:jfoenix:9.0.10'
+    implementation 'de.jensd:fontawesomefx:8.9'
+
+    // Shade Plugin Extensions
+    implementation 'io.github.edwgiz:log4j-maven-shade-plugin-extensions:2.20.0'
+
+    // Custom Transformer
+    implementation project(':LibraryTransformers')
+}
+
+def manifestFile = file('src/main/resources/META-INF/MANIFEST.MF')
+
+jar {
+    if (manifestFile.exists()) {
+        manifest {
+            from manifestFile
+        }
+    }
+    archiveBaseName = 'JavaIM'
+    archiveVersion = '1.0-SNAPSHOT'
+    archiveClassifier = 'plain'
+}
+
+shadowJar {
+    archiveBaseName = 'JavaIM'
+    archiveClassifier = ''
+    archiveVersion = '1.0-SNAPSHOT'
+
+    // Configure manifest
+    if (manifestFile.exists()) {
+        manifest {
+            from manifestFile
+        }
+    }
+
+    // Exclude unnecessary files
+    exclude 'org/iq80/snappy/**'
+    exclude 'org/slf4j/**'
+    exclude 'org/apache/maven/**'
+    exclude 'org/codehaus/**'
+    exclude 'org/jdom2/**'
+    exclude 'javax/**'
+    exclude 'javax'
+    exclude 'org/tukaani/**'
+    exclude 'org/sonatype/**'
+    exclude 'org/eclipse/**'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/about.html'
+    exclude 'META-INF/NOTICE'
+    exclude 'META-INF/maven/**'
+    exclude 'META-INF/maven'
+    exclude 'META-INF/sisu/**'
+    exclude 'META-INF/sisu'
+    exclude 'META-INF/NOTICE.txt'
+    exclude 'META-INF/*.RSA'
+    exclude 'module-info.class'
+    exclude 'about.html'
+    exclude 'org/vafer/**'
+    exclude 'org/vafer'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'licenses/**'
+    exclude 'licenses'
+    exclude 'LICENSE'
+    exclude 'README'
+    exclude 'org/objectweb/**'
+    exclude 'org/objectweb'
+    exclude 'META-INF/plexus/**'
+    exclude 'META-INF/plexus'
+    exclude 'META-INF/versions/9/module-info.class'
+
+    // Resource transformations
+    mergeServiceFiles()
+
+    // Note: For custom transformer (LibraryTransformers), you may need to configure
+    // additional transformation logic here. The shadow plugin in Gradle has limited
+    // support for custom transformers compared to Maven. You might need to:
+    // 1. Implement custom shadow transformation using transformers block
+    // 2. Or implement the transformation logic directly in your build script
+}
+
+assemble.dependsOn shadowJar
+
+// Source JAR configuration
+task sourcesJar(type: Jar) {
+    archiveBaseName = 'JavaIM'
+    archiveVersion = '1.0'
+    archiveClassifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.yuezhikong'
+            artifactId = 'JavaIM'
+            version = '1.0-SNAPSHOT'
+            from components.java
+            artifact sourcesJar
+        }
+    }
+}
+
+
+
