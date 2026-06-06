@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Implementation-Title: JavaIM
+Implementation-Vendor: QiLechan And AlexLiuDev233
+Created-By: Maven JAR Plugin 3.3.0
+Multi-Release: true
+Main-Class: org.yuezhikong.MainKt
+
+Name: org.yuezhikong
+Sealed: true

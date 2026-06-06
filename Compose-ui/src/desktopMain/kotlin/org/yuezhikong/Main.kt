@@ -1,28 +1,12 @@
 package org.yuezhikong
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.RadioButton
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,12 +16,15 @@ import androidx.compose.ui.window.application
 import kotlinx.coroutines.launch
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.jline.jansi.AnsiConsole
+import org.jline.reader.LineReaderBuilder
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
 import org.slf4j.LoggerFactory
 import org.slf4j.bridge.SLF4JBridgeHandler
+import org.yuezhikong.Main.ConsoleMain
 import org.yuezhikong.Server.ServerTools
 import org.yuezhikong.utils.ConfigFileManager
+import org.yuezhikong.utils.ConsoleCommandRequest
 import org.yuezhikong.utils.checkUpdate.CheckUpdate
 import java.io.File
 import java.io.IOException
@@ -49,11 +36,22 @@ import kotlin.system.exitProcess
 var log: org.slf4j.Logger ?= null
 var terminal: Terminal ?= null
 
-fun main() = application {
+fun main(args: Array<String>) = application {
     init()
-    Window(onCloseRequest = ::exitApplication, title = "JavaIM") {
-        JavaIMTheme {
-            App()
+    // 初始化 LineReader
+    val reader = LineReaderBuilder.builder().terminal(terminal).build()
+    // 命令行参数处理
+    val commandLineArgs = ConsoleCommandRequest.commandLineRequest(args)
+
+    if (commandLineArgs.containsKey("nogui")) {
+        log?.info("进入无界面模式")
+        ConsoleMain(commandLineArgs, reader)
+    }
+    else{
+        Window(onCloseRequest = ::exitApplication, title = "JavaIM") {
+            JavaIMTheme {
+                App(args)
+            }
         }
     }
 }
@@ -84,7 +82,7 @@ fun JavaIMTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun App() {
+fun App(args: Array<String>) {
     // 设定默认的未捕获异常处理器
     Thread.setDefaultUncaughtExceptionHandler(CrashReport.getCrashReport())
     // 初始化Shutdown Hook
@@ -107,8 +105,9 @@ fun App() {
 
     if (!(File("server.properties").exists())) {
         log?.info("目录下没有检测到服务端配置文件，判断为第一次进入")
+        var isVisible by remember { mutableStateOf(true) }
         ConfigFileManager.createServerConfig()
-        onFirstStart()
+        if (isVisible){ onFirstStart(onClose = { isVisible = false }) }
     } else
         ConfigFileManager.reloadServerConfig()
 
@@ -125,7 +124,7 @@ fun checkUpdateUI() {
     val installUpdate = mutableStateOf(false)
     val githubAccessToken = mutableStateOf(ConfigFileManager.getServerConfig("githubAccessToken") ?: "")
     val showTokenInput = mutableStateOf(githubAccessToken.value.isEmpty())
-    val tempToken = mutableStateOf("")
+    var tempToken by remember {mutableStateOf("")}
 
     if (showUpdateDialog.value) {
         Column(
@@ -176,8 +175,8 @@ fun checkUpdateUI() {
                 Spacer(modifier = Modifier.height(32.dp))
 
                 TextField(
-                    value = tempToken.value,
-                    onValueChange = { tempToken.value = it },
+                    value = tempToken,
+                    onValueChange = { tempToken = it },
                     label = { Text("Github Token") },
                     modifier = Modifier
                         .fillMaxWidth(0.8f)
@@ -188,9 +187,9 @@ fun checkUpdateUI() {
                 Row {
                     Button(
                         onClick = {
-                            if (tempToken.value.isNotEmpty()) {
-                                githubAccessToken.value = tempToken.value
-                                ConfigFileManager.setServerConfig("githubAccessToken", tempToken.value)
+                            if (tempToken.isNotEmpty()) {
+                                githubAccessToken.value = tempToken
+                                ConfigFileManager.setServerConfig("githubAccessToken", tempToken)
                                 ConfigFileManager.rewriteServerConfig()
                                 showTokenInput.value = false
                             }
@@ -217,7 +216,7 @@ fun checkUpdateUI() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun onFirstStart() {
+fun onFirstStart(onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     // 配置状态
@@ -549,7 +548,7 @@ fun onFirstStart() {
                             modifier = Modifier.padding(32.dp)
                         ) {
                             Text(
-                                "正在保存您的配置...",
+                                "您的配置已经保存",
                                 style = MaterialTheme.typography.h5
                             )
                             Spacer(modifier = Modifier.height(32.dp))
@@ -609,7 +608,7 @@ fun onFirstStart() {
                                 style = MaterialTheme.typography.h4
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("服务器已配置完成，即将开始启动...")
+                            Text("服务器已配置完成，您可以随时修改配置文件来调整设置。")
                             Spacer(modifier = Modifier.height(32.dp))
                             Text(
                                 "服务器名称: ${serverName.value}",
@@ -623,6 +622,11 @@ fun onFirstStart() {
                                 "数据库: ${if (useSqlite.value) "SQLite" else "MySQL"}",
                                 style = MaterialTheme.typography.body1
                             )
+                            Button(
+                                onClick = { onClose() }
+                            ){
+                                Text("完成")
+                            }
                         }
                     }
                 }
