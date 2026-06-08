@@ -1,0 +1,6 @@
+rootProject.name = 'JavaIM-Parent'
+
+include 'LibraryTransformers'
+include 'JavaIM'
+
+include 'Compose-ui'

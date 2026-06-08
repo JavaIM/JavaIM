@@ -1,0 +1,4 @@
+dependencies {
+    compileOnly 'org.apache.maven.plugins:maven-shade-plugin:3.3.0'
+}
+
