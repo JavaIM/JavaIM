@@ -70,6 +70,20 @@ dependencies {
 
     // Shade Plugin Extensions
     api 'io.github.edwgiz:log4j-maven-shade-plugin-extensions:2.20.0'
+
+    // Test dependencies
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core:5.19.0'
+    testImplementation('org.mockito:mockito-junit-jupiter:5.19.0') {
+        exclude group: 'org.junit.jupiter'
+        exclude group: 'org.junit.platform'
+    }
+}
+
+test {
+    useJUnitPlatform()
 }
 
 def manifestFile = file('src/main/resources/META-INF/MANIFEST.MF')
